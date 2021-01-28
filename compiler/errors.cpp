@@ -85,7 +85,7 @@ AutoErrorPos::~AutoErrorPos()
 int
 error(int number, ...)
 {
-	if (sPosOverride) {
+	if(sPosOverride) {
 		va_list ap;
 		va_start(ap, number);
 		error_va(sPosOverride->pos(), number, ap);
@@ -140,10 +140,10 @@ error(symbol* sym, int number, ...)
 static void
 abort_compiler()
 {
-	if (strlen(errfname) == 0) {
+	if(strlen(errfname) == 0) {
 		fprintf(stdout, "\nCompilation aborted.");
 	}
-	if (outf != NULL) {
+	if(outf != NULL) {
 		pc_closeasm(outf, TRUE);
 		outf = NULL;
 	}
@@ -157,28 +157,28 @@ ErrorReport::create_va(int number, int fileno, int lineno, va_list ap)
 	report.number = number;
 	report.fileno = fileno;
 	report.lineno = lineno;
-	if (report.fileno >= 0)
+	if(report.fileno >= 0)
 		report.filename = get_inputfile(report.fileno);
 	else
 		report.filename = inpfname;
 
-	if (number < FIRST_FATAL_ERROR || (number >= 200 && sc_warnings_are_errors))
+	if(number < FIRST_FATAL_ERROR || (number >= 200 && sc_warnings_are_errors))
 		report.type = ErrorType::Error;
-	else if (number < 200)
+	else if(number < 200)
 		report.type = ErrorType::Fatal;
 	else
 		report.type = ErrorType::Warning;
 
 	/* also check for disabled warnings */
-	if (report.type == ErrorType::Warning) {
+	if(report.type == ErrorType::Warning) {
 		int index = (report.number - 200) / 8;
 		int mask = 1 << ((report.number - 200) % 8);
-		if ((warndisable[index] & mask) != 0)
+		if((warndisable[index] & mask) != 0)
 			report.type = ErrorType::Suppressed;
 	}
 
 	const char* prefix = "";
-	switch (report.type) {
+	switch(report.type) {
 		case ErrorType::Error:
 			prefix = "error";
 			break;
@@ -192,9 +192,9 @@ ErrorReport::create_va(int number, int fileno, int lineno, va_list ap)
 	}
 
 	const char* format = nullptr;
-	if (report.number < FIRST_FATAL_ERROR)
+	if(report.number < FIRST_FATAL_ERROR)
 		format = errmsg[report.number - 1];
-	else if (report.number < 200)
+	else if(report.number < 200)
 		format = fatalmsg[report.number - FIRST_FATAL_ERROR];
 	else
 		format = warnmsg[report.number - 200];
@@ -230,14 +230,14 @@ report_error(ErrorReport* report)
 	 * the error reporting is enabled only in the second pass (and only when
 	 * actually producing output). Fatal errors may never be ignored.
 	 */
-	if (report->type != ErrorType::Fatal) {
-		if (errflag)
+	if(report->type != ErrorType::Fatal) {
+		if(errflag)
 			return;
-		if (sc_status != statWRITE && !sc_err_status)
+		if(sc_status != statWRITE && !sc_err_status)
 			return;
 	}
 
-	switch (report->type) {
+	switch(report->type) {
 		case ErrorType::Suppressed:
 			return;
 		case ErrorType::Warning:
@@ -252,39 +252,39 @@ report_error(ErrorReport* report)
 	}
 
 	FILE* fp = nullptr;
-	if (strlen(errfname) > 0)
+	if(strlen(errfname) > 0)
 		fp = fopen(errfname, "a");
-	if (!fp)
+	if(!fp)
 		fp = stdout;
 
 	fprintf(fp, "%s", report->message.c_str());
 	fflush(fp);
 
-	if (fp != stdout)
+	if(fp != stdout)
 		fclose(fp);
 
-	if (report->type == ErrorType::Fatal || errnum > 25) {
+	if(report->type == ErrorType::Fatal || errnum > 25) {
 		abort_compiler();
 		return;
 	}
 
 	// Count messages per line, reset if not the same line.
-	if (lastline != report->lineno || report->fileno != lastfile)
+	if(lastline != report->lineno || report->fileno != lastfile)
 		errorcount = 0;
 
 	lastline = report->lineno;
 	lastfile = report->fileno;
 
-	if (report->type != ErrorType::Warning)
+	if(report->type != ErrorType::Warning)
 		errorcount++;
-	if (errorcount >= 3)
+	if(errorcount >= 3)
 		error(FATAL_ERROR_OVERWHELMED_BY_BAD);
 }
 
 void
 errorset(int code, int line)
 {
-	switch (code) {
+	switch(code) {
 		case sRESET:
 			errflag = FALSE; /* start reporting errors */
 			break;
@@ -310,15 +310,15 @@ pc_enablewarning(int number, int enable)
 	int index;
 	unsigned char mask;
 
-	if (number < 200)
+	if(number < 200)
 		return FALSE; /* errors and fatal errors cannot be disabled */
 	number -= 200;
-	if (number >= NUM_WARNINGS)
+	if(number >= NUM_WARNINGS)
 		return FALSE;
 
 	index = number / 8;
 	mask = (unsigned char)(1 << (number % 8));
-	switch (enable) {
+	switch(enable) {
 		case 0:
 			warndisable[index] |= mask;
 			break;

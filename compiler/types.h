@@ -133,7 +133,7 @@ class Type
 		return kind_ == TypeKind::Struct;
 	}
 	pstruct_t* asStruct() const {
-		if (!isStruct())
+		if(!isStruct())
 			return nullptr;
 		return pstruct_ptr_;
 	}
@@ -152,7 +152,7 @@ class Type
 		return kind_ == TypeKind::Function;
 	}
 	funcenum_t* asFunction() const {
-		if (!isFunction())
+		if(!isFunction())
 			return nullptr;
 		return funcenum_ptr_;
 	}
@@ -166,7 +166,7 @@ class Type
 		return kind_ == TypeKind::Methodmap;
 	}
 	methodmap_t* asMethodmap() const {
-		if (!isMethodmap())
+		if(!isMethodmap())
 			return nullptr;
 		return methodmap_ptr_;
 	}
@@ -179,7 +179,7 @@ class Type
 		return kind_ == TypeKind::EnumStruct;
 	}
 	symbol* asEnumStruct() const {
-		if (!isEnumStruct())
+		if(!isEnumStruct())
 			return nullptr;
 		return enumstruct_ptr_;
 	}
@@ -264,7 +264,7 @@ class TypeDictionary
 
 	template <typename T>
 	void forEachType(const T& callback) {
-		for (const auto& type : types_)
+		for(const auto& type : types_)
 			callback(type.get());
 	}
 

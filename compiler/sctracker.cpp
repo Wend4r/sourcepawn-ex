@@ -59,8 +59,8 @@ pstruct_t::pstruct_t(const char* name)
 const structarg_t*
 pstructs_getarg(const pstruct_t* pstruct, sp::Atom* name)
 {
-	for (const auto& arg : pstruct->args) {
-		if (arg->name == name)
+	for(const auto& arg : pstruct->args) {
+		if(arg->name == name)
 			return arg.get();
 	}
 	return nullptr;
@@ -83,8 +83,8 @@ pstructs_free()
 pstruct_t*
 pstructs_find(const char* name)
 {
-	for (const auto& p : sStructs) {
-		if (strcmp(p->name, name) == 0)
+	for(const auto& p : sStructs) {
+		if(strcmp(p->name, name) == 0)
 			return p.get();
 	}
 	return nullptr;
@@ -93,7 +93,7 @@ pstructs_find(const char* name)
 structarg_t*
 pstructs_addarg(pstruct_t* pstruct, const structarg_t* arg)
 {
-	if (pstructs_getarg(pstruct, arg->name))
+	if(pstructs_getarg(pstruct, arg->name))
 		return nullptr;
 
 	auto newarg = std::make_unique<structarg_t>();
@@ -129,8 +129,8 @@ funcenum_for_symbol(symbol* sym)
 	functag_t* ft = new functag_t;
 
 	ft->ret_tag = sym->tag;
-	for (arginfo& arg : sym->function()->args) {
-		if (!arg.ident)
+	for(arginfo& arg : sym->function()->args) {
+		if(!arg.ident)
 			break;
 
 		funcarg_t dest;
@@ -158,11 +158,11 @@ functag_find_intrinsic(int tag)
 {
 	Type* type = gTypes.find(tag);
 	funcenum_t* fe = type->asFunction();
-	if (!fe)
+	if(!fe)
 		return nullptr;
-	if (strncmp(fe->name, "::ft:", 5) != 0)
+	if(strncmp(fe->name, "::ft:", 5) != 0)
 		return nullptr;
-	if (fe->entries.empty())
+	if(fe->entries.empty())
 		return nullptr;
 	return fe->entries.back();
 }
@@ -176,7 +176,7 @@ functags_add(funcenum_t* en, functag_t* src)
 static void
 EnterMemoryScope(std::vector<MemoryScope>& frame)
 {
-	if (frame.empty())
+	if(frame.empty())
 		frame.push_back(MemoryScope{0});
 	else
 		frame.push_back(MemoryScope{frame.back().scope_id + 1});
@@ -185,7 +185,7 @@ EnterMemoryScope(std::vector<MemoryScope>& frame)
 static void
 AllocInScope(MemoryScope& scope, int type, int size)
 {
-	if (type == MEMUSE_STATIC && !scope.usage.empty() && scope.usage.back().type == MEMUSE_STATIC) {
+	if(type == MEMUSE_STATIC && !scope.usage.empty() && scope.usage.back().type == MEMUSE_STATIC) {
 		scope.usage.back().size += size;
 	} else {
 		scope.usage.push_back(MemoryUse{type, size});
@@ -210,7 +210,7 @@ cell_t
 pop_static_heaplist()
 {
 	cell_t total = 0;
-	for (const auto& use : sHeapScopes.back().usage) {
+	for(const auto& use : sHeapScopes.back().usage) {
 		assert(use.type == MEMUSE_STATIC);
 		total += use.size;
 	}
@@ -242,9 +242,9 @@ markstack(int type, int size)
 static void
 modheap_for_scope(const MemoryScope& scope)
 {
-	for (size_t i = scope.usage.size() - 1; i < scope.usage.size(); i--) {
+	for(size_t i = scope.usage.size() - 1; i < scope.usage.size(); i--) {
 		const MemoryUse& use = scope.usage[i];
-		if (use.type == MEMUSE_STATIC) {
+		if(use.type == MEMUSE_STATIC) {
 			modheap((-1) * use.size * sizeof(cell));
 		} else {
 			modheap_i();
@@ -256,7 +256,7 @@ void
 modstk_for_scope(const MemoryScope& scope)
 {
 	cell_t total = 0;
-	for (const auto& use : scope.usage) {
+	for(const auto& use : scope.usage) {
 		assert(use.type == MEMUSE_STATIC);
 		total += use.size;
 	}
@@ -266,7 +266,7 @@ modstk_for_scope(const MemoryScope& scope)
 void
 popheaplist(bool codegen)
 {
-	if (codegen)
+	if(codegen)
 		modheap_for_scope(sHeapScopes.back());
 	sHeapScopes.pop_back();
 }
@@ -274,9 +274,9 @@ popheaplist(bool codegen)
 void
 genstackfree(int stop_id)
 {
-	for (size_t i = sStackScopes.size() - 1; i < sStackScopes.size(); i--) {
+	for(size_t i = sStackScopes.size() - 1; i < sStackScopes.size(); i--) {
 		const MemoryScope& scope = sStackScopes[i];
-		if (scope.scope_id <= stop_id)
+		if(scope.scope_id <= stop_id)
 			break;
 		modstk_for_scope(scope);
 	}
@@ -285,9 +285,9 @@ genstackfree(int stop_id)
 void
 genheapfree(int stop_id)
 {
-	for (size_t i = sHeapScopes.size() - 1; i < sHeapScopes.size(); i--) {
+	for(size_t i = sHeapScopes.size() - 1; i < sHeapScopes.size(); i--) {
 		const MemoryScope& scope = sHeapScopes[i];
-		if (scope.scope_id <= stop_id)
+		if(scope.scope_id <= stop_id)
 			break;
 		modheap_for_scope(scope);
 	}
@@ -296,7 +296,7 @@ genheapfree(int stop_id)
 void
 popstacklist(bool codegen)
 {
-	if (codegen)
+	if(codegen)
 		modstk_for_scope(sStackScopes.back());
 	sStackScopes.pop_back();
 }
@@ -336,14 +336,14 @@ methodmap_add(methodmap_t* parent, LayoutSpec spec, const char* name)
 {
 	auto map = std::make_unique<methodmap_t>(parent, spec, name);
 
-	if (spec == Layout_MethodMap && parent) {
-		if (parent->nullable)
+	if(spec == Layout_MethodMap && parent) {
+		if(parent->nullable)
 			map->nullable = parent->nullable;
-		if (parent->keyword_nullable)
+		if(parent->keyword_nullable)
 			map->keyword_nullable = parent->keyword_nullable;
 	}
 
-	if (spec == Layout_MethodMap)
+	if(spec == Layout_MethodMap)
 		map->tag = gTypes.defineMethodmap(name, map.get())->tagid();
 	else
 		map->tag = gTypes.defineObject(name)->tagid();
@@ -362,7 +362,7 @@ methodmap_t*
 methodmap_find_by_name(const char* name)
 {
 	int tag = pc_findtag(name);
-	if (tag == -1)
+	if(tag == -1)
 		return NULL;
 	return methodmap_find_by_tag(tag);
 }
@@ -370,11 +370,11 @@ methodmap_find_by_name(const char* name)
 methodmap_method_t*
 methodmap_find_method(methodmap_t* map, const char* name)
 {
-	for (const auto& method : map->methods) {
-		if (strcmp(method->name, name) == 0)
+	for(const auto& method : map->methods) {
+		if(strcmp(method->name, name) == 0)
 			return method.get();
 	}
-	if (map->parent)
+	if(map->parent)
 		return methodmap_find_method(map->parent, name);
 	return nullptr;
 }
@@ -388,18 +388,18 @@ methodmaps_free()
 LayoutSpec
 deduce_layout_spec_by_tag(int tag)
 {
-	if (methodmap_t* map = methodmap_find_by_tag(tag))
+	if(methodmap_t* map = methodmap_find_by_tag(tag))
 		return map->spec;
 
 	Type* type = gTypes.find(tag);
-	if (type && type->isFunction())
+	if(type && type->isFunction())
 		return Layout_FuncTag;
 
-	if (type && type->isStruct())
+	if(type && type->isStruct())
 		return Layout_PawnStruct;
 
-	if (Type* type = gTypes.find(tag)) {
-	  if (findglb(type->name()))
+	if(Type* type = gTypes.find(tag)) {
+	  if(findglb(type->name()))
 		  return Layout_Enum;
 	}
 
@@ -410,7 +410,7 @@ LayoutSpec
 deduce_layout_spec_by_name(const char* name)
 {
 	Type* type = gTypes.find(name);
-	if (!type)
+	if(!type)
 		return Layout_None;
 
 	return deduce_layout_spec_by_tag(type->tagid());
@@ -419,7 +419,7 @@ deduce_layout_spec_by_name(const char* name)
 const char*
 layout_spec_name(LayoutSpec spec)
 {
-	switch (spec) {
+	switch(spec) {
 		case Layout_None:
 			return "<none>";
 		case Layout_Enum:
@@ -440,17 +440,17 @@ bool
 can_redef_layout_spec(LayoutSpec def1, LayoutSpec def2)
 {
 	// Normalize the ordering, since these checks are symmetrical.
-	if (def1 > def2) {
+	if(def1 > def2) {
 		LayoutSpec temp = def2;
 		def2 = def1;
 		def1 = temp;
 	}
 
-	switch (def1) {
+	switch(def1) {
 		case Layout_None:
 			return true;
 		case Layout_Enum:
-			if (def2 == Layout_Enum || def2 == Layout_FuncTag)
+			if(def2 == Layout_Enum || def2 == Layout_FuncTag)
 				return true;
 			return def2 == Layout_MethodMap;
 		case Layout_FuncTag:

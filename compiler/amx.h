@@ -55,7 +55,7 @@
 #    define assert_static(e)                    \
 		do {                                    \
 			enum { assert_static__ = 1 / (e) }; \
-		} while (0)
+		} while(0)
 #endif
 
 #ifdef __cplusplus
@@ -153,7 +153,7 @@ typedef int(AMXAPI* AMX_IDLE)(struct tagAMX* amx, int AMXAPI Exec(struct tagAMX*
 /* Some compilers do not support the #pragma align, which should be fine. Some
  * compilers give a warning on unknown #pragmas, which is not so fine...
  */
-#if (defined SN_TARGET_PS2 || defined __GNUC__) && !defined AMX_NO_ALIGN
+#if(defined SN_TARGET_PS2 || defined __GNUC__) && !defined AMX_NO_ALIGN
 #    define AMX_NO_ALIGN
 #endif
 
@@ -330,12 +330,12 @@ enum {
 		int amx_length_;                                                                       \
 		amx_GetAddr((amx), (param), &amx_cstr_);                                               \
 		amx_StrLen(amx_cstr_, &amx_length_);                                                   \
-		if (amx_length_ > 0 &&                                                                 \
+		if(amx_length_ > 0 &&                                                                 \
 			((result) = (void*)alloca((amx_length_ + 1) * sizeof(*(result)))) != NULL)         \
 			amx_GetString((char*)(result), amx_cstr_, sizeof(*(result)) > 1, amx_length_ + 1); \
 		else                                                                                   \
 			(result) = NULL;                                                                   \
-	} while (0)
+	} while(0)
 
 uint16_t* AMXAPI amx_Align16(uint16_t* v);
 uint32_t* AMXAPI amx_Align32(uint32_t* v);

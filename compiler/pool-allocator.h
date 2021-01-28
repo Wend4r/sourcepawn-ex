@@ -64,7 +64,7 @@ class PoolAllocator final
 				*allocated = 0;
 				*reserved = 0;
 				*bookkeeping = 0;
-				for (const auto& pool : pools_) {
+				for(const auto& pool : pools_) {
 						*allocated += size_t(pool->ptr - pool->base.get());
 						*reserved += size_t(pool->end - pool->base.get());
 						*bookkeeping += sizeof(Pool);
@@ -75,7 +75,7 @@ class PoolAllocator final
 				// Guarantee malloc alignment.
 				size_t actualBytes = ke::Align(bytes, ke::kMallocAlignment);
 				Pool* last = pools_.empty() ? nullptr : pools_.back().get();
-				if (!last || (size_t(last->end - last->ptr) < actualBytes))
+				if(!last || (size_t(last->end - last->ptr) < actualBytes))
 						last = ensurePool(actualBytes);
 				char* ptr = last->ptr;
 				last->ptr += actualBytes;
@@ -84,12 +84,12 @@ class PoolAllocator final
 
 		template <typename T>
 		T* alloc(size_t count = 1) {
-				if (!ke::IsUintPtrMultiplySafe(count, sizeof(T))) {
+				if(!ke::IsUintPtrMultiplySafe(count, sizeof(T))) {
 						fprintf(stderr, "allocation overflow\n");
 						return nullptr;
 				}
 				void* ptr = rawAllocate(count * sizeof(T));
-				if (!ptr)
+				if(!ptr)
 						return nullptr;
 
 				return reinterpret_cast<T*>(ptr);
@@ -117,7 +117,7 @@ class PoolScope final
 				position_(allocator.enter())
 		{}
 		~PoolScope() {
-				if (pool_)
+				if(pool_)
 					pool_->leave(position_);
 		}
 
@@ -195,7 +195,7 @@ class StlPoolAllocator
 		typedef std::true_type propagate_on_container_swap;
 
 		static T* allocate(size_t n, const void* = nullptr) {
-				if (!ke::IsUintMultiplySafe(n, sizeof(T)))
+				if(!ke::IsUintMultiplySafe(n, sizeof(T)))
 						throw std::bad_alloc{};
 				return reinterpret_cast<T*>(PoolAllocationPolicy::Malloc(n * sizeof(T)));
 		}

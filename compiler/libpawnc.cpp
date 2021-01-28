@@ -86,29 +86,29 @@ pc_opensrc(char* filename)
 
 #if defined __linux__ || defined __FreeBSD__ || defined __OpenBSD__ || defined DARWIN
 	struct stat fileInfo;
-	if (stat(filename, &fileInfo) != 0) {
+	if(stat(filename, &fileInfo) != 0) {
 		return NULL;
 	}
 
-	if (S_ISDIR(fileInfo.st_mode)) {
+	if(S_ISDIR(fileInfo.st_mode)) {
 		return NULL;
 	}
 #endif
 
-	if ((fp = fopen(filename, "rb")) == NULL)
+	if((fp = fopen(filename, "rb")) == NULL)
 		return NULL;
-	if (fseek(fp, 0, SEEK_END) == -1)
+	if(fseek(fp, 0, SEEK_END) == -1)
 		goto err;
-	if ((length = ftell(fp)) == -1)
+	if((length = ftell(fp)) == -1)
 		goto err;
-	if (fseek(fp, 0, SEEK_SET) == -1)
+	if(fseek(fp, 0, SEEK_SET) == -1)
 		goto err;
 
-	if ((src = (src_file_t*)calloc(1, sizeof(src_file_t))) == NULL)
+	if((src = (src_file_t*)calloc(1, sizeof(src_file_t))) == NULL)
 		goto err;
-	if ((src->buffer = (char*)calloc(length, sizeof(char))) == NULL)
+	if((src->buffer = (char*)calloc(length, sizeof(char))) == NULL)
 		goto err;
-	if (fread(src->buffer, length, 1, fp) != 1)
+	if(fread(src->buffer, length, 1, fp) != 1)
 		goto err;
 
 	src->pos = src->buffer;
@@ -138,15 +138,15 @@ void*
 pc_createsrc(char* filename)
 {
 	src_file_t* src = (src_file_t*)calloc(1, sizeof(src_file_t));
-	if (!src)
+	if(!src)
 		return NULL;
-	if ((src->fp = fopen(filename, "wt")) == NULL) {
+	if((src->fp = fopen(filename, "wt")) == NULL) {
 		pc_closesrc(src);
 		return NULL;
 	}
 
 	src->maxlength = 1024;
-	if ((src->buffer = (char*)calloc(1, src->maxlength)) == NULL) {
+	if((src->buffer = (char*)calloc(1, src->maxlength)) == NULL) {
 		pc_closesrc(src);
 		return NULL;
 	}
@@ -164,9 +164,9 @@ void
 pc_closesrc(void* handle)
 {
 	src_file_t* src = (src_file_t*)handle;
-	if (!src)
+	if(!src)
 		return;
-	if (src->fp) {
+	if(src->fp) {
 		fwrite(src->buffer, src->pos - src->buffer, 1, src->fp);
 		fclose(src->fp);
 	}
@@ -187,20 +187,20 @@ pc_readsrc(void* handle, unsigned char* target, int maxchars)
 
 	assert(!src->fp);
 
-	if (src->pos == src->end)
+	if(src->pos == src->end)
 		return NULL;
 
-	while (outptr < outend && src->pos < src->end) {
+	while(outptr < outend && src->pos < src->end) {
 		char c = *src->pos++;
 		*outptr++ = c;
 
-		if (c == '\n')
+		if(c == '\n')
 			break;
-		if (c == '\r') {
+		if(c == '\r') {
 			// Handle CRLF.
-			if (src->pos < src->end && *src->pos == '\n') {
+			if(src->pos < src->end && *src->pos == '\n') {
 				src->pos++;
-				if (outptr < outend)
+				if(outptr < outend)
 					*outptr++ = '\n';
 			} else {
 				// Replace with \n.
@@ -228,19 +228,19 @@ pc_writesrc(void* handle, unsigned char* source)
 
 	assert(src->fp && src->maxlength);
 
-	if (src->pos + len > src->end) {
+	if(src->pos + len > src->end) {
 		char* newbuf;
 		size_t newmax = src->maxlength;
 		size_t newlen = (src->pos - src->buffer) + len;
-		while (newmax < newlen) {
+		while(newmax < newlen) {
 			// Grow by 1.5X
 			newmax += newmax + newmax / 2;
-			if (newmax < src->maxlength)
+			if(newmax < src->maxlength)
 				abort();
 		}
 
 		newbuf = (char*)realloc(src->buffer, newmax);
-		if (!newbuf)
+		if(!newbuf)
 			abort();
 		src->pos = newbuf + (src->pos - src->buffer);
 		src->end = newbuf + newmax;
@@ -298,9 +298,9 @@ pc_openasm(char* filename)
 void
 pc_closeasm(memfile_t* handle, int deletefile)
 {
-	if (handle) {
-		if (!deletefile) {
-			if (FILE* fp = fopen(handle->name.c_str(), "wb")) {
+	if(handle) {
+		if(!deletefile) {
+			if(FILE* fp = fopen(handle->name.c_str(), "wb")) {
 				fwrite(handle->base.get(), handle->usedoffs, 1, fp);
 				fclose(fp);
 			}

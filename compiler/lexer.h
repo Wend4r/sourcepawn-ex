@@ -228,7 +228,7 @@ enum TokenKind {
 static inline bool
 IsChainedOp(int token)
 {
-	switch (token) {
+	switch(token) {
 		case tlGE:
 		case tlLE:
 		case '>':
@@ -242,7 +242,7 @@ IsChainedOp(int token)
 static inline bool
 IsAssignOp(int token)
 {
-	switch (token) {
+	switch(token) {
 		case taMULT:
 		case taDIV:
 		case taMOD:

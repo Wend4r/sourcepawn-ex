@@ -470,7 +470,7 @@ static SEQUENCE sequences_cmp[] = {
 	{"sgrtr!jzer %1!", "jsleq %1!", seqsize(2, 1) - seqsize(1, 1)},
 	{"sgeq!jzer %1!", "jsless %1!", seqsize(2, 1) - seqsize(1, 1)},
 	/* Test for zero (common case, especially for strings)
-	 * E.g. the test expression of: "for (i=0; str{i}!=0; ++i)"
+	 * E.g. the test expression of: "for(i=0; str{i}!=0; ++i)"
 	 *
 	 *    zero.alt                jzer n1
 	 *    jeq n1                  -
@@ -501,7 +501,7 @@ static SEQUENCE sequences_cmp[] = {
 	 *    load.pri n1             ;$exp
 	 *    ;$exp                   -
 	 *    --------------------------------------
-	 *    load.pri n1             inc n1  ; n++, e.g. "for (n=0; n<10; n++)"
+	 *    load.pri n1             inc n1  ; n++, e.g. "for(n=0; n<10; n++)"
 	 *    inc n1                  ;$exp
 	 *    ;$exp                   -
 	 * Plus the varieties for stack relative increments

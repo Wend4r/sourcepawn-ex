@@ -328,7 +328,7 @@ struct methodmap_method_t;
 struct value {
 	char ident;      /* iCONSTEXPR, iVARIABLE, iARRAY, iARRAYCELL,
 						 * iEXPRESSION or iREFERENCE */
-	/* symbol in symbol table, NULL for (constant) expression */
+	/* symbol in symbol table, NULL for(constant) expression */
 	symbol* sym;
 	cell constval;   /* value of the constant expression (if ident==iCONSTEXPR)
 						 * also used for the size of a literal array */
@@ -337,7 +337,7 @@ struct value {
 	// Returns whether the value can be rematerialized based on static
 	// information, or whether it is the result of an expression.
 	bool canRematerialize() const {
-		switch (ident) {
+		switch(ident) {
 			case iVARIABLE:
 			case iCONSTEXPR:
 				return true;

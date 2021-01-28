@@ -85,20 +85,20 @@ plungequalifiedfile(char* name)
 	do {
 		fp = pc_opensrc(name);
 		ext = strchr(name, '\0'); /* save position */
-		if (fp == NULL) {
+		if(fp == NULL) {
 			/* try to push_back an extension */
 			strcpy(ext, extensions[ext_idx]);
 			fp = pc_opensrc(name);
-			if (fp == NULL)
+			if(fp == NULL)
 				*ext = '\0'; /* on failure, restore filename */
 		}
 		ext_idx++;
-	} while (fp == NULL && ext_idx < (sizeof extensions / sizeof extensions[0]));
-	if (fp == NULL) {
+	} while(fp == NULL && ext_idx < (sizeof extensions / sizeof extensions[0]));
+	if(fp == NULL) {
 		*ext = '\0'; /* restore filename */
 		return FALSE;
 	}
-	if (sc_showincludes && sc_status == statFIRST) {
+	if(sc_showincludes && sc_status == statFIRST) {
 		fprintf(stdout, "Note: including file: %s\n", name);
 	}
 	gInputFileStack.push_back(inpf);
@@ -110,7 +110,7 @@ plungequalifiedfile(char* name)
 	gCurrentFileStack.push_back(fcurrent);
 	gCurrentLineStack.push_back(fline);
 	inpfname = strdup(name); /* set name of include file */
-	if (inpfname == NULL)
+	if(inpfname == NULL)
 		error(FATAL_ERROR_OOM);
 	inpf = fp; /* set input file pointer to include file */
 	fnumber++;
@@ -131,17 +131,17 @@ plungefile(char* name, int try_currentpath, int try_includepaths)
 {
 	int result = FALSE;
 
-	if (try_currentpath) {
+	if(try_currentpath) {
 		result = plungequalifiedfile(name);
-		if (!result) {
+		if(!result) {
 			/* failed to open the file in the active directory, try to open the file
 			 * in the same directory as the current file --but first check whether
 			 * there is a (relative) path for the current file
 			 */
 			char* ptr;
-			if ((ptr = strrchr(inpfname, DIRSEP_CHAR)) != 0) {
+			if((ptr = strrchr(inpfname, DIRSEP_CHAR)) != 0) {
 				int len = (int)(ptr - inpfname) + 1;
-				if (len + strlen(name) < _MAX_PATH) {
+				if(len + strlen(name) < _MAX_PATH) {
 					char path[_MAX_PATH];
 					SafeStrcpyN(path, sizeof(path), inpfname, len);
 					SafeStrcat(path, sizeof(path), name);
@@ -151,10 +151,10 @@ plungefile(char* name, int try_currentpath, int try_includepaths)
 		}
 	}
 
-	if (try_includepaths && name[0] != DIRSEP_CHAR) {
+	if(try_includepaths && name[0] != DIRSEP_CHAR) {
 		int i;
 		char* ptr;
-		for (i = 0; !result && (ptr = get_path(i)) != NULL; i++) {
+		for(i = 0; !result && (ptr = get_path(i)) != NULL; i++) {
 			char path[_MAX_PATH];
 			SafeSprintf(path, sizeof(path), "%s%s", ptr, name);
 			result = plungequalifiedfile(path);
@@ -167,9 +167,9 @@ static void
 check_empty(const unsigned char* lptr)
 {
 	/* verifies that the string contains only whitespace */
-	while (*lptr <= ' ' && *lptr != '\0')
+	while(*lptr <= ' ' && *lptr != '\0')
 		lptr++;
-	if (*lptr != '\0')
+	if(*lptr != '\0')
 		error(38); /* extra characters on line */
 }
 
@@ -192,34 +192,34 @@ doinclude(int silent)
 	size_t i;
 	int result;
 
-	while (*lptr <= ' ' && *lptr != '\0') /* skip leading whitespace */
+	while(*lptr <= ' ' && *lptr != '\0') /* skip leading whitespace */
 		lptr++;
-	if (*lptr == '<' || *lptr == '\"') {
+	if(*lptr == '<' || *lptr == '\"') {
 		c = (char)((*lptr == '\"') ? '\"' : '>'); /* termination character */
 		lptr++;
-		while (*lptr <= ' ' && *lptr != '\0') /* skip whitespace after quote */
+		while(*lptr <= ' ' && *lptr != '\0') /* skip whitespace after quote */
 			lptr++;
 	} else {
 		c = '\0';
 	}
 
 	i = 0;
-	while (*lptr != c && *lptr != '\0' && i < sizeof name - 1) /* find the end of the string */
+	while(*lptr != c && *lptr != '\0' && i < sizeof name - 1) /* find the end of the string */
 		name[i++] = *lptr++;
-	while (i > 0 && name[i - 1] <= ' ')
+	while(i > 0 && name[i - 1] <= ' ')
 		i--; /* strip trailing whitespace */
 	assert(i < sizeof name);
 	name[i] = '\0'; /* zero-terminate the string */
 
-	if (*lptr != c) { /* verify correct string termination */
+	if(*lptr != c) { /* verify correct string termination */
 		error(37);    /* invalid string */
 		return;
 	}
-	if (c != '\0')
+	if(c != '\0')
 		check_empty(lptr + 1); /* verify that the rest of the line is whitespace */
 
 	result = plungefile(name, (c != '>'), TRUE);
-	if (!result && !silent)
+	if(!result && !silent)
 		error(FATAL_ERROR_READ, name);
 }
 
@@ -239,26 +239,26 @@ readline(unsigned char* line)
 	unsigned char* ptr;
 	symbol* sym;
 
-	if (lptr == term_expr)
+	if(lptr == term_expr)
 		return;
 	num = sLINEMAX;
 	cont = FALSE;
 	do {
-		if (inpf == NULL || pc_eofsrc(inpf)) {
-			if (cont)
+		if(inpf == NULL || pc_eofsrc(inpf)) {
+			if(cont)
 				error(49); /* invalid line continuation */
-			if (inpf != NULL && inpf != inpf_org)
+			if(inpf != NULL && inpf != inpf_org)
 				pc_closesrc(inpf);
-			if (gCurrentLineStack.empty()) {
+			if(gCurrentLineStack.empty()) {
 				freading = FALSE;
 				*line = '\0';
 				/* when there is nothing more to read, the #if/#else stack should
 				 * be empty and we should not be in a comment
 				 */
 				assert(iflevel >= 0);
-				if (iflevel > 0)
+				if(iflevel > 0)
 					error(1, "#endif", "-end of file-");
-				else if (icomment != 0)
+				else if(icomment != 0)
 					error(1, "*/", "-end of file-");
 				return;
 			}
@@ -277,30 +277,30 @@ readline(unsigned char* line)
 			listline = -1; /* force a #line directive when changing the file */
 		}
 
-		if (pc_readsrc(inpf, line, num) == NULL) {
+		if(pc_readsrc(inpf, line, num) == NULL) {
 			*line = '\0'; /* delete line */
 			cont = FALSE;
 		} else {
 			/* check whether to erase leading spaces */
-			if (cont) {
+			if(cont) {
 				unsigned char* ptr = line;
-				while (*ptr <= ' ' && *ptr != '\0')
+				while(*ptr <= ' ' && *ptr != '\0')
 					ptr++;
-				if (ptr != line)
+				if(ptr != line)
 					memmove(line, ptr, strlen((char*)ptr) + 1);
 			}
 			cont = FALSE;
 			/* check whether a full line was read */
-			if (strchr((char*)line, '\n') == NULL && !pc_eofsrc(inpf))
+			if(strchr((char*)line, '\n') == NULL && !pc_eofsrc(inpf))
 				error(75); /* line too long */
 			/* check if the next line must be concatenated to this line */
-			if ((ptr = (unsigned char*)strchr((char*)line, '\n')) == NULL)
+			if((ptr = (unsigned char*)strchr((char*)line, '\n')) == NULL)
 				ptr = (unsigned char*)strchr((char*)line, '\r');
-			if (ptr != NULL && ptr > line) {
+			if(ptr != NULL && ptr > line) {
 				assert(*(ptr + 1) == '\0'); /* '\n' or '\r' should be last in the string */
-				while (ptr > line && *ptr <= ' ')
+				while(ptr > line && *ptr <= ' ')
 					ptr--; /* skip trailing whitespace */
-				if (*ptr == '\\') {
+				if(*ptr == '\\') {
 					cont = TRUE;
 					/* set '\a' at the position of '\\' to make it possible to check
 					 * for a line continuation in a single line comment (error 49)
@@ -316,7 +316,7 @@ readline(unsigned char* line)
 		sym = findconst("__LINE__");
 		assert(sym != NULL);
 		sym->setAddr(fline);
-	} while (num >= 0 && cont);
+	} while(num >= 0 && cont);
 }
 
 /*  stripcom
@@ -342,10 +342,10 @@ stripcom(unsigned char* line)
 	int commentidx = 0;
 	int skipstar = TRUE;
 
-	while (*line) {
-		if (icomment != 0) {
-			if (*line == '*' && *(line + 1) == '/') {
-				if (icomment == 2) {
+	while(*line) {
+		if(icomment != 0) {
+			if(*line == '*' && *(line + 1) == '/') {
+				if(icomment == 2) {
 					assert(commentidx < COMMENT_LIMIT + COMMENT_MARGIN);
 					comment[commentidx] = '\0';
 				}
@@ -354,15 +354,15 @@ stripcom(unsigned char* line)
 				*(line + 1) = ' ';
 				line += 2;
 			} else {
-				if (*line == '/' && *(line + 1) == '*')
+				if(*line == '/' && *(line + 1) == '*')
 					error(216); /* nested comment */
 				/* collect the comment characters in a string */
-				if (icomment == 2) {
-					if (skipstar && ((*line != '\0' && *line <= ' ') || *line == '*')) {
+				if(icomment == 2) {
+					if(skipstar && ((*line != '\0' && *line <= ' ') || *line == '*')) {
 						/* ignore leading whitespace and '*' characters */
-					} else if (commentidx < COMMENT_LIMIT + COMMENT_MARGIN - 1) {
+					} else if(commentidx < COMMENT_LIMIT + COMMENT_MARGIN - 1) {
 						comment[commentidx++] = (char)((*line != '\n') ? *line : ' ');
-						if (commentidx > COMMENT_LIMIT && *line != '\0' && *line <= ' ') {
+						if(commentidx > COMMENT_LIMIT && *line != '\0' && *line <= ' ') {
 							comment[commentidx] = '\0';
 							commentidx = 0;
 						}
@@ -373,10 +373,10 @@ stripcom(unsigned char* line)
 				line += 1;
 			}
 		} else {
-			if (*line == '/' && *(line + 1) == '*') {
+			if(*line == '/' && *(line + 1) == '*') {
 				icomment = 1; /* start comment */
 				/* there must be two "*" behind the slash and then white space */
-				if (*(line + 2) == '*' && *(line + 3) <= ' ') {
+				if(*(line + 2) == '*' && *(line + 3) <= ' ') {
 					icomment = 2; /* documentation comment */
 				}
 				commentidx = 0;
@@ -384,28 +384,28 @@ stripcom(unsigned char* line)
 				*line = ' '; /* replace '/' and '*' characters by spaces */
 				*(line + 1) = ' ';
 				line += 2;
-				if (icomment == 2)
+				if(icomment == 2)
 					*line++ = ' ';
-			} else if (*line == '/' && *(line + 1) == '/') { /* comment to end of line */
-				if (strchr((char*)line, '\a') != NULL)
+			} else if(*line == '/' && *(line + 1) == '/') { /* comment to end of line */
+				if(strchr((char*)line, '\a') != NULL)
 					error(49); /* invalid line continuation */
-				if (*(line + 2) == '/' && *(line + 3) <= ' ') {
+				if(*(line + 2) == '/' && *(line + 3) <= ' ') {
 					/* documentation comment */
 					char* str = (char*)line + 3;
 					char* end;
-					while (*str <= ' ' && *str != '\0')
+					while(*str <= ' ' && *str != '\0')
 						str++; /* skip leading whitespace */
-					if ((end = strrchr(str, '\n')) != NULL)
+					if((end = strrchr(str, '\n')) != NULL)
 						*end = '\0'; /* erase trailing '\n' */
 				}
 				*line++ = '\n'; /* put "newline" at first slash */
 				*line = '\0';   /* put "zero-terminator" at second slash */
 			} else {
-				if (*line == '\"' || *line == '\'') { /* leave literals unaltered */
+				if(*line == '\"' || *line == '\'') { /* leave literals unaltered */
 					c = *line;                        /* ending quote, single or double */
 					line += 1;
-					while (*line != c && *line != '\0') {
-						if (*line == sc_ctrlchar && *(line + 1) != '\0')
+					while(*line != c && *line != '\0') {
+						if(*line == sc_ctrlchar && *(line + 1) != '\0')
 							line += 1; /* skip escape character (but avoid skipping past '\0' */
 						line += 1;
 					}
@@ -416,7 +416,7 @@ stripcom(unsigned char* line)
 			}
 		}
 	}
-	if (icomment == 2) {
+	if(icomment == 2) {
 		assert(commentidx < COMMENT_LIMIT + COMMENT_MARGIN);
 		comment[commentidx] = '\0';
 	}
@@ -438,17 +438,17 @@ btoi(cell* val, const unsigned char* curptr)
 
 	*val = 0;
 	ptr = curptr;
-	if (*ptr == '0' && *(ptr + 1) == 'b') {
+	if(*ptr == '0' && *(ptr + 1) == 'b') {
 		ptr += 2;
-		while (*ptr == '0' || *ptr == '1' || *ptr == '_') {
-			if (*ptr != '_')
+		while(*ptr == '0' || *ptr == '1' || *ptr == '_') {
+			if(*ptr != '_')
 				*val = (*val << 1) | (*ptr - '0');
 			ptr++;
 		}
 	} else {
 		return 0;
 	}
-	if (alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
+	if(alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
 		return 0;
 	else
 		return (int)(ptr - curptr);
@@ -469,12 +469,12 @@ otoi(cell* val, const unsigned char* curptr)
 
 	*val = 0;
 	ptr = curptr;
-	if (!isdigit(*ptr)) /* should start with digit */
+	if(!isdigit(*ptr)) /* should start with digit */
 		return 0;
-	if (*ptr == '0' && *(ptr + 1) == 'o') {
+	if(*ptr == '0' && *(ptr + 1) == 'o') {
 		ptr += 2;
-		while (isoctal(*ptr) || *ptr == '_') {
-			if (*ptr != '_') {
+		while(isoctal(*ptr) || *ptr == '_') {
+			if(*ptr != '_') {
 				assert(isoctal(*ptr));
 				*val = (*val << 3) + (*ptr - '0');
 			}
@@ -483,7 +483,7 @@ otoi(cell* val, const unsigned char* curptr)
 	} else {
 		return 0;
 	}
-	if (alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
+	if(alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
 		return 0;
 	else
 		return (int)(ptr - curptr);
@@ -502,16 +502,16 @@ dtoi(cell* val, const unsigned char* curptr)
 
 	*val = 0;
 	ptr = curptr;
-	if (!isdigit(*ptr)) /* should start with digit */
+	if(!isdigit(*ptr)) /* should start with digit */
 		return 0;
-	while (isdigit(*ptr) || *ptr == '_') {
-		if (*ptr != '_')
+	while(isdigit(*ptr) || *ptr == '_') {
+		if(*ptr != '_')
 			*val = (*val * 10) + (*ptr - '0');
 		ptr++;
 	}
-	if (alphanum(*ptr)) /* number must be delimited by non-alphanumerical */
+	if(alphanum(*ptr)) /* number must be delimited by non-alphanumerical */
 		return 0;
-	if (*ptr == '.' && isdigit(*(ptr + 1)))
+	if(*ptr == '.' && isdigit(*(ptr + 1)))
 		return 0; /* but a fractional part must not be present */
 	return (int)(ptr - curptr);
 }
@@ -529,15 +529,15 @@ htoi(cell* val, const unsigned char* curptr)
 
 	*val = 0;
 	ptr = curptr;
-	if (!isdigit(*ptr)) /* should start with digit */
+	if(!isdigit(*ptr)) /* should start with digit */
 		return 0;
-	if (*ptr == '0' && *(ptr + 1) == 'x') { /* C style hexadecimal notation */
+	if(*ptr == '0' && *(ptr + 1) == 'x') { /* C style hexadecimal notation */
 		ptr += 2;
-		while (ishex(*ptr) || *ptr == '_') {
-			if (*ptr != '_') {
+		while(ishex(*ptr) || *ptr == '_') {
+			if(*ptr != '_') {
 				assert(ishex(*ptr));
 				*val = *val << 4;
-				if (isdigit(*ptr))
+				if(isdigit(*ptr))
 					*val += (*ptr - '0');
 				else
 					*val += (tolower(*ptr) - 'a' + 10);
@@ -547,7 +547,7 @@ htoi(cell* val, const unsigned char* curptr)
 	} else {
 		return 0;
 	}
-	if (alphanum(*ptr))
+	if(alphanum(*ptr))
 		return 0;
 	else
 		return (int)(ptr - curptr);
@@ -579,25 +579,25 @@ ftoi(cell* val, const unsigned char* curptr)
 	fnum = 0.0;
 	dnum = 0L;
 	ptr = curptr;
-	if (!isdigit(*ptr)) /* should start with digit */
+	if(!isdigit(*ptr)) /* should start with digit */
 		return 0;
-	while (isdigit(*ptr) || *ptr == '_') {
-		if (*ptr != '_') {
+	while(isdigit(*ptr) || *ptr == '_') {
+		if(*ptr != '_') {
 			fnum = (fnum * 10.0) + (*ptr - '0');
 			dnum = (dnum * 10L) + (*ptr - '0') * dbase;
 		}
 		ptr++;
 	}
-	if (*ptr != '.')
+	if(*ptr != '.')
 		return 0; /* there must be a period */
 	ptr++;
-	if (!isdigit(*ptr)) /* there must be at least one digit after the dot */
+	if(!isdigit(*ptr)) /* there must be at least one digit after the dot */
 		return 0;
 	ffrac = 0.0;
 	fmult = 1.0;
 	ignore = FALSE;
-	while (isdigit(*ptr) || *ptr == '_') {
-		if (*ptr != '_') {
+	while(isdigit(*ptr) || *ptr == '_') {
+		if(*ptr != '_') {
 			ffrac = (ffrac * 10.0) + (*ptr - '0');
 			fmult = fmult / 10.0;
 			dbase /= 10L;
@@ -606,19 +606,19 @@ ftoi(cell* val, const unsigned char* curptr)
 		ptr++;
 	}
 	fnum += ffrac * fmult; /* form the number so far */
-	if (*ptr == 'e') {     /* optional fractional part */
+	if(*ptr == 'e') {     /* optional fractional part */
 		int exp, sign;
 		ptr++;
-		if (*ptr == '-') {
+		if(*ptr == '-') {
 			sign = -1;
 			ptr++;
 		} else {
 			sign = 1;
 		}
-		if (!isdigit(*ptr)) /* 'e' should be followed by a digit */
+		if(!isdigit(*ptr)) /* 'e' should be followed by a digit */
 			return 0;
 		exp = 0;
-		while (isdigit(*ptr)) {
+		while(isdigit(*ptr)) {
 			exp = (exp * 10) + (*ptr - '0');
 			ptr++;
 		}
@@ -651,7 +651,7 @@ number(cell* val, const unsigned char* curptr)
 	int i;
 	cell value;
 
-	if ((i = btoi(&value, curptr)) != 0     /* binary? */
+	if((i = btoi(&value, curptr)) != 0     /* binary? */
 		|| (i = htoi(&value, curptr)) != 0  /* hexadecimal? */
 		|| (i = dtoi(&value, curptr)) != 0  /* decimal? */
 		|| (i = otoi(&value, curptr)) != 0) /* octal? */
@@ -684,7 +684,7 @@ preproc_expr(cell* val, int* tag)
 	 * compilations. Reset the staging index, but keep the code
 	 * index.
 	 */
-	if (stgget(&index, &code_index)) {
+	if(stgget(&index, &code_index)) {
 		error(57); /* unfinished expression */
 		stgdel(0, code_index);
 		stgset(FALSE);
@@ -717,18 +717,18 @@ getstring(unsigned char* dest, int max, const unsigned char* line)
 {
 	assert(dest != NULL && line != NULL);
 	*dest = '\0';
-	while (*line <= ' ' && *line != '\0')
+	while(*line <= ' ' && *line != '\0')
 		line++; /* skip whitespace */
-	if (*line == '"') {
+	if(*line == '"') {
 		int len = 0;
 		line++; /* skip " */
-		while (*line != '"' && *line != '\0') {
-			if (len < max - 1)
+		while(*line != '"' && *line != '\0') {
+			if(len < max - 1)
 				dest[len++] = *line;
 			line++;
 		}
 		dest[len] = '\0';
-		if (*line == '"')
+		if(*line == '"')
 			line++; /* skip closing " */
 		else
 			error(37); /* invalid string */
@@ -774,11 +774,11 @@ command(void)
 	int index;
 	cell code_index;
 
-	while (*lptr <= ' ' && *lptr != '\0')
+	while(*lptr <= ' ' && *lptr != '\0')
 		lptr += 1;
-	if (*lptr == '\0')
+	if(*lptr == '\0')
 		return CMD_EMPTYLINE; /* empty line */
-	if (*lptr != '#')
+	if(*lptr != '#')
 		return SKIPPING ? CMD_CONDFALSE : CMD_NONE; /* it is not a compiler directive */
 	/* compiler directive found */
 	indent_nowarn = TRUE; /* allow loose indentation" */
@@ -786,21 +786,21 @@ command(void)
 	/* on a pending expression, force to return a silent ';' token and force to
 	 * re-read the line
 	 */
-	if (!sc_needsemicolon && stgget(&index, &code_index)) {
+	if(!sc_needsemicolon && stgget(&index, &code_index)) {
 		lptr = term_expr;
 		return CMD_TERM;
 	}
 	tok = lex(&val, &str);
 	ret = SKIPPING ? CMD_CONDFALSE
 				   : CMD_DIRECTIVE; /* preset 'ret' to CMD_DIRECTIVE (most common case) */
-	switch (tok) {
+	switch(tok) {
 		case tpIF: /* conditional compilation */
 			ret = CMD_IF;
 			assert(iflevel >= 0);
-			if (iflevel >= sCOMP_STACK)
+			if(iflevel >= sCOMP_STACK)
 				error(FATAL_ERROR_ALLOC_OVERFLOW, "Conditional compilation stack");
 			iflevel++;
-			if (SKIPPING)
+			if(SKIPPING)
 				break; /* break out of switch */
 			skiplevel = iflevel;
 			preproc_expr(&val, NULL); /* get value (or 0 on error) */
@@ -811,13 +811,13 @@ command(void)
 		case tpELSEIF:
 			ret = CMD_IF;
 			assert(iflevel >= 0);
-			if (iflevel == 0) {
+			if(iflevel == 0) {
 				error(26); /* no matching #if */
 				errorset(sRESET, 0);
 			} else {
 				/* check for earlier #else */
-				if ((ifstack[iflevel - 1] & HANDLED_ELSE) == HANDLED_ELSE) {
-					if (tok == tpELSEIF)
+				if((ifstack[iflevel - 1] & HANDLED_ELSE) == HANDLED_ELSE) {
+					if(tok == tpELSEIF)
 						error(61); /* #elseif directive may not follow an #else */
 					else
 						error(60); /* multiple #else directives between #if ... #endif */
@@ -827,25 +827,25 @@ command(void)
 					/* if there has been a "parse mode" on this level, set "skip mode",
 					 * otherwise, clear "skip mode"
 					 */
-					if ((ifstack[iflevel - 1] & PARSEMODE) == PARSEMODE) {
+					if((ifstack[iflevel - 1] & PARSEMODE) == PARSEMODE) {
 						/* there has been a parse mode already on this level, so skip the rest */
 						ifstack[iflevel - 1] |= (char)SKIPMODE;
 						/* if we were already skipping this section, allow expressions with
 						 * undefined symbols; otherwise check the expression to catch errors
 						 */
-						if (tok == tpELSEIF) {
-							if (skiplevel == iflevel)
+						if(tok == tpELSEIF) {
+							if(skiplevel == iflevel)
 								preproc_expr(&val, NULL); /* get, but ignore the expression */
 							else
 								lptr = (unsigned char*)strchr((char*)lptr, '\0');
 						}
 					} else {
 						/* previous conditions were all FALSE */
-						if (tok == tpELSEIF) {
+						if(tok == tpELSEIF) {
 							/* if we were already skipping this section, allow expressions with
 							 * undefined symbols; otherwise check the expression to catch errors
 							 */
-							if (skiplevel == iflevel) {
+							if(skiplevel == iflevel) {
 								preproc_expr(&val, NULL); /* get value (or 0 on error) */
 							} else {
 								lptr = (unsigned char*)strchr((char*)lptr, '\0');
@@ -863,12 +863,12 @@ command(void)
 			break;
 		case tpENDIF:
 			ret = CMD_IF;
-			if (iflevel == 0) {
+			if(iflevel == 0) {
 				error(26); /* no matching "#if" */
 				errorset(sRESET, 0);
 			} else {
 				iflevel--;
-				if (iflevel < skiplevel)
+				if(iflevel < skiplevel)
 					skiplevel = iflevel;
 			}
 			check_empty(lptr);
@@ -876,17 +876,17 @@ command(void)
 		case tINCLUDE: /* #include directive */
 		case tpTRYINCLUDE:
 			ret = CMD_INCLUDE;
-			if (!SKIPPING)
+			if(!SKIPPING)
 				doinclude(tok == tpTRYINCLUDE);
 			break;
 		case tpFILE:
-			if (!SKIPPING) {
+			if(!SKIPPING) {
 				char pathname[_MAX_PATH];
 				lptr = getstring((unsigned char*)pathname, sizeof pathname, lptr);
-				if (strlen(pathname) > 0) {
+				if(strlen(pathname) > 0) {
 					free(inpfname);
 					inpfname = strdup(pathname);
-					if (inpfname == NULL)
+					if(inpfname == NULL)
 						error(FATAL_ERROR_OOM);
 					fline = 0;
 				}
@@ -894,99 +894,99 @@ command(void)
 			check_empty(lptr);
 			break;
 		case tpLINE:
-			if (!SKIPPING) {
-				if (lex(&val, &str) != tNUMBER)
+			if(!SKIPPING) {
+				if(lex(&val, &str) != tNUMBER)
 					error(8); /* invalid/non-constant expression */
 				fline = (int)val;
 			}
 			check_empty(lptr);
 			break;
 		case tpASSERT:
-			if (!SKIPPING && (sc_debug & sCHKBOUNDS) != 0) {
-				for (str = (char*)lptr; *str <= ' ' && *str != '\0'; str++)
+			if(!SKIPPING && (sc_debug & sCHKBOUNDS) != 0) {
+				for(str = (char*)lptr; *str <= ' ' && *str != '\0'; str++)
 					/* nothing */;        /* save start of expression */
 				preproc_expr(&val, NULL); /* get constant expression (or 0 on error) */
-				if (!val)
+				if(!val)
 					error(FATAL_ERROR_ASSERTION_FAILED, str); /* assertion failed */
 				check_empty(lptr);
 			}
 			break;
 		case tpPRAGMA:
-			if (!SKIPPING) {
-				if (lex(&val, &str) == tSYMBOL) {
-					if (strcmp(str, "ctrlchar") == 0) {
-						while (*lptr <= ' ' && *lptr != '\0')
+			if(!SKIPPING) {
+				if(lex(&val, &str) == tSYMBOL) {
+					if(strcmp(str, "ctrlchar") == 0) {
+						while(*lptr <= ' ' && *lptr != '\0')
 							lptr++;
-						if (*lptr == '\0') {
+						if(*lptr == '\0') {
 							sc_ctrlchar = sc_ctrlchar_org;
 						} else {
-							if (lex(&val, &str) != tNUMBER)
+							if(lex(&val, &str) != tNUMBER)
 								error(27); /* invalid character constant */
 							sc_ctrlchar = (char)val;
 						}
-					} else if (strcmp(str, "deprecated") == 0) {
-						while (*lptr <= ' ' && *lptr != '\0')
+					} else if(strcmp(str, "deprecated") == 0) {
+						while(*lptr <= ' ' && *lptr != '\0')
 							lptr++;
 						pc_deprecate = (char*)lptr;
 						lptr = (unsigned char*)strchr(
 							(char*)lptr,
 							'\0'); /* skip to end (ignore "extra characters on line") */
-					} else if (strcmp(str, "dynamic") == 0) {
+					} else if(strcmp(str, "dynamic") == 0) {
 						preproc_expr(&pc_stksize, NULL);
-					} else if (strcmp(str, "rational") == 0) {
-						while (*lptr != '\0')
+					} else if(strcmp(str, "rational") == 0) {
+						while(*lptr != '\0')
 							lptr++;
-					} else if (strcmp(str, "semicolon") == 0) {
+					} else if(strcmp(str, "semicolon") == 0) {
 						cell val;
 						preproc_expr(&val, NULL);
 						sc_needsemicolon = (int)val;
-					} else if (strcmp(str, "newdecls") == 0) {
-						while (*lptr <= ' ' && *lptr != '\0')
+					} else if(strcmp(str, "newdecls") == 0) {
+						while(*lptr <= ' ' && *lptr != '\0')
 							lptr++;
-						if (strncmp((char*)lptr, "required", 8) == 0)
+						if(strncmp((char*)lptr, "required", 8) == 0)
 							sc_require_newdecls = 1;
-						else if (strncmp((char*)lptr, "optional", 8) == 0)
+						else if(strncmp((char*)lptr, "optional", 8) == 0)
 							sc_require_newdecls = 0;
 						else
 							error(146);
 						lptr = (unsigned char*)strchr(
 							(char*)lptr,
 							'\0'); /* skip to end (ignore "extra characters on line") */
-					} else if (strcmp(str, "tabsize") == 0) {
+					} else if(strcmp(str, "tabsize") == 0) {
 						cell val;
 						preproc_expr(&val, NULL);
 						sc_tabsize = (int)val;
-					} else if (strcmp(str, "unused") == 0) {
+					} else if(strcmp(str, "unused") == 0) {
 						char name[sNAMEMAX + 1];
 						size_t i;
 						int comma;
 						symbol* sym;
 						do {
 							/* get the name */
-							while (*lptr <= ' ' && *lptr != '\0')
+							while(*lptr <= ' ' && *lptr != '\0')
 								lptr++;
-							for (i = 0; i < sizeof name && alphanum(*lptr); i++, lptr++)
+							for(i = 0; i < sizeof name && alphanum(*lptr); i++, lptr++)
 								name[i] = *lptr;
 							name[i] = '\0';
 							/* get the symbol */
 							sym = findloc(name);
-							if (sym == NULL)
+							if(sym == NULL)
 								sym = findglb(name);
-							if (sym != NULL) {
+							if(sym != NULL) {
 								sym->usage |= uREAD;
-								if (sym->ident == iVARIABLE || sym->ident == iREFERENCE ||
+								if(sym->ident == iVARIABLE || sym->ident == iREFERENCE ||
 									sym->ident == iARRAY || sym->ident == iREFARRAY)
 									sym->usage |= uWRITTEN;
 							} else {
 								error(17, name); /* undefined symbol */
 							}
 							/* see if a comma follows the name */
-							while (*lptr <= ' ' && *lptr != '\0')
+							while(*lptr <= ' ' && *lptr != '\0')
 								lptr++;
 							comma = (*lptr == ',');
-							if (comma)
+							if(comma)
 								lptr++;
-						} while (comma);
+						} while(comma);
 					} else {
 						error(207); /* unknown #pragma */
 					}
@@ -998,60 +998,60 @@ command(void)
 			break;
 		case tpENDINPUT:
 		case tpENDSCRPT:
-			if (!SKIPPING) {
+			if(!SKIPPING) {
 				check_empty(lptr);
 				assert(inpf != NULL);
-				if (inpf != inpf_org)
+				if(inpf != inpf_org)
 					pc_closesrc(inpf);
 				inpf = NULL;
 			}
 			break;
 		case tpDEFINE: {
 			ret = CMD_DEFINE;
-			if (!SKIPPING) {
+			if(!SKIPPING) {
 				char *pattern, *substitution;
 				const unsigned char *start, *end;
 				int count, prefixlen;
 				/* find the pattern to match */
-				while (*lptr <= ' ' && *lptr != '\0')
+				while(*lptr <= ' ' && *lptr != '\0')
 					lptr++;
 				start = lptr; /* save starting point of the match pattern */
 				count = 0;
-				while (*lptr > ' ' && *lptr != '\0') {
+				while(*lptr > ' ' && *lptr != '\0') {
 					litchar(&lptr, 0); /* litchar() advances "lptr" and handles escape characters */
 					count++;
 				}
 				end = lptr;
 				/* check pattern to match */
-				if (!alpha(*start)) {
+				if(!alpha(*start)) {
 					error(74); /* pattern must start with an alphabetic character */
 					break;
 				}
 				/* store matched pattern */
 				pattern = (char*)malloc(count + 1);
-				if (pattern == NULL)
+				if(pattern == NULL)
 					error(FATAL_ERROR_OOM);
 				lptr = start;
 				count = 0;
-				while (lptr != end) {
+				while(lptr != end) {
 					assert(lptr < end);
 					assert(*lptr != '\0');
 					pattern[count++] = (char)litchar(&lptr, 0);
 				}
 				pattern[count] = '\0';
 				/* special case, erase trailing variable, because it could match anything */
-				if (count >= 2 && isdigit(pattern[count - 1]) && pattern[count - 2] == '%')
+				if(count >= 2 && isdigit(pattern[count - 1]) && pattern[count - 2] == '%')
 					pattern[count - 2] = '\0';
 				/* find substitution string */
-				while (*lptr <= ' ' && *lptr != '\0')
+				while(*lptr <= ' ' && *lptr != '\0')
 					lptr++;
 				start = lptr; /* save starting point of the match pattern */
 				count = 0;
 				end = NULL;
-				while (*lptr != '\0') {
+				while(*lptr != '\0') {
 					/* keep position of the start of trailing whitespace */
-					if (*lptr <= ' ') {
-						if (end == NULL)
+					if(*lptr <= ' ') {
+						if(end == NULL)
 							end = lptr;
 					} else {
 						end = NULL;
@@ -1059,29 +1059,29 @@ command(void)
 					count++;
 					lptr++;
 				}
-				if (end == NULL)
+				if(end == NULL)
 					end = lptr;
 				/* store matched substitution */
 				substitution = (char*)malloc(count + 1); /* +1 for '\0' */
-				if (substitution == NULL)
+				if(substitution == NULL)
 					error(FATAL_ERROR_OOM);
 				lptr = start;
 				count = 0;
-				while (lptr != end) {
+				while(lptr != end) {
 					assert(lptr < end);
 					assert(*lptr != '\0');
 					substitution[count++] = *lptr++;
 				}
 				substitution[count] = '\0';
 				/* check whether the definition already exists */
-				for (prefixlen = 0, start = (unsigned char*)pattern; alphanum(*start);
+				for(prefixlen = 0, start = (unsigned char*)pattern; alphanum(*start);
 					 prefixlen++, start++)
 					/* nothing */;
 				assert(prefixlen > 0);
 
 				macro_t def;
-				if (find_subst(pattern, prefixlen, &def)) {
-					if (strcmp(def.first, pattern) != 0 || strcmp(def.second, substitution) != 0)
+				if(find_subst(pattern, prefixlen, &def)) {
+					if(strcmp(def.first, pattern) != 0 || strcmp(def.second, substitution) != 0)
 						error(201, pattern); /* redefinition of macro (non-identical) */
 					delete_subst(pattern, prefixlen);
 				}
@@ -1094,16 +1094,16 @@ command(void)
 			break;
 		} /* case */
 		case tpUNDEF:
-			if (!SKIPPING) {
-				if (lex(&val, &str) == tSYMBOL) {
-					if (delete_subst(str, strlen(str))) {
+			if(!SKIPPING) {
+				if(lex(&val, &str) == tSYMBOL) {
+					if(delete_subst(str, strlen(str))) {
 						/* also undefine normal constants */
 						symbol* sym = findconst(str);
-						if (sym != NULL && !(sym->enumroot && sym->enumfield)) {
+						if(sym != NULL && !(sym->enumroot && sym->enumfield)) {
 							delete_symbol(&glbtab, sym);
 						}
 					}
-					if (!ret)
+					if(!ret)
 						error(17, str); /* undefined symbol */
 				} else {
 					error(20, str); /* invalid symbol name */
@@ -1112,15 +1112,15 @@ command(void)
 			}
 			break;
 		case tpERROR:
-			while (*lptr <= ' ' && *lptr != '\0')
+			while(*lptr <= ' ' && *lptr != '\0')
 				lptr++;
-			if (!SKIPPING)
+			if(!SKIPPING)
 				error(FATAL_ERROR_USER_ERROR, lptr); /* user error */
 			break;
 		case tpWARNING:
-			while (*lptr <= ' ' && *lptr != '\0')
+			while(*lptr <= ' ' && *lptr != '\0')
 				lptr++;
-			if (!SKIPPING)
+			if(!SKIPPING)
 				error(224, lptr); /* user warning */
 			break;
 		default:
@@ -1133,7 +1133,7 @@ command(void)
 static int
 is_startstring(const unsigned char* string)
 {
-	if (*string == '\"' || *string == '\'')
+	if(*string == '\"' || *string == '\'')
 		return TRUE; /* "..." */
 	return FALSE;
 }
@@ -1144,7 +1144,7 @@ skipstring(const unsigned char* string)
 	char endquote = *string;
 	assert(endquote == '"' || endquote == '\'');
 	string++; /* skip open quote */
-	while (*string != endquote && *string != '\0')
+	while(*string != endquote && *string != '\0')
 		litchar(&string, 0);
 	return string;
 }
@@ -1156,7 +1156,7 @@ skippgroup(const unsigned char* string)
 	char open = *string;
 	char close;
 
-	switch (open) {
+	switch(open) {
 		case '(':
 			close = ')';
 			break;
@@ -1175,14 +1175,14 @@ skippgroup(const unsigned char* string)
 	}
 
 	string++;
-	while (*string != close || nest > 0) {
-		if (*string == open)
+	while(*string != close || nest > 0) {
+		if(*string == open)
 			nest++;
-		else if (*string == close)
+		else if(*string == close)
 			nest--;
-		else if (is_startstring(string))
+		else if(is_startstring(string))
 			string = skipstring(string);
-		if (*string == '\0')
+		if(*string == '\0')
 			break;
 		string++;
 	}
@@ -1193,7 +1193,7 @@ static char*
 strdel(char* str, size_t len)
 {
 	size_t length = strlen(str);
-	if (len > length)
+	if(len > length)
 		len = length;
 	memmove(str, str + len, length - len + 1); /* include EOS byte */
 	return str;
@@ -1222,7 +1222,7 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 	memset(args, 0, sizeof args);
 
 	/* check the length of the prefix */
-	for (prefixlen = 0, s = (unsigned char*)pattern; alphanum(*s); prefixlen++, s++)
+	for(prefixlen = 0, s = (unsigned char*)pattern; alphanum(*s); prefixlen++, s++)
 		/* nothing */;
 	assert(prefixlen > 0);
 	assert(strncmp((char*)line, pattern, prefixlen) == 0);
@@ -1233,10 +1233,10 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 	s = line + prefixlen;
 	p = (unsigned char*)pattern + prefixlen;
 	match = TRUE; /* so far, pattern matches */
-	while (match && *s != '\0' && *p != '\0') {
-		if (*p == '%') {
+	while(match && *s != '\0' && *p != '\0') {
+		if(*p == '%') {
 			p++; /* skip '%' */
-			if (isdigit(*p)) {
+			if(isdigit(*p)) {
 				arg = *p - '0';
 				assert(arg >= 0 && arg <= 9);
 				p++; /* skip parameter id */
@@ -1245,29 +1245,29 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 				 * (skipping strings in the process
 				 */
 				e = s;
-				while (*e != *p && *e != '\0' && *e != '\n') {
-					if (is_startstring(e)) /* skip strings */
+				while(*e != *p && *e != '\0' && *e != '\n') {
+					if(is_startstring(e)) /* skip strings */
 						e = skipstring(e);
-					else if (strchr("({[", *e) != NULL) /* skip parenthized groups */
+					else if(strchr("({[", *e) != NULL) /* skip parenthized groups */
 						e = skippgroup(e);
-					if (*e != '\0')
+					if(*e != '\0')
 						e++; /* skip non-alphapetic character (or closing quote of
 							  * a string, or the closing paranthese of a group) */
 				}
 				/* store the parameter (overrule any earlier) */
-				if (args[arg] != NULL)
+				if(args[arg] != NULL)
 					free(args[arg]);
 				else
 					argsnum++;
 				len = (int)(e - s);
 				args[arg] = (unsigned char*)malloc(len + 1);
-				if (args[arg] == NULL)
+				if(args[arg] == NULL)
 					error(FATAL_ERROR_OOM);
 				SafeStrcpy((char*)args[arg], len + 1, (char*)s);
 				/* character behind the pattern was matched too */
-				if (*e == *p) {
+				if(*e == *p) {
 					s = e + 1;
-				} else if (*e == '\n' && *p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
+				} else if(*e == '\n' && *p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
 					s = e; /* allow a trailing ; in the pattern match to end of line */
 				} else {
 					assert(*e == '\0' || *e == '\n');
@@ -1278,11 +1278,11 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 			} else {
 				match = FALSE;
 			}
-		} else if (*p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
+		} else if(*p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
 			/* source may be ';' or end of the line */
-			while (*s <= ' ' && *s != '\0')
+			while(*s <= ' ' && *s != '\0')
 				s++; /* skip white space */
-			if (*s != ';' && *s != '\0')
+			if(*s != ';' && *s != '\0')
 				match = FALSE;
 			p++; /* skip the semicolon in the pattern */
 		} else {
@@ -1291,40 +1291,40 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 			 * for two identical symbols
 			 */
 			assert((char*)p > pattern);
-			if (!alphanum(*p) && *(p - 1) != *p)
-				while (*s <= ' ' && *s != '\0')
+			if(!alphanum(*p) && *(p - 1) != *p)
+				while(*s <= ' ' && *s != '\0')
 					s++;         /* skip white space */
 			ch = litchar(&p, 0); /* this increments "p" */
-			if (*s != ch)
+			if(*s != ch)
 				match = FALSE;
 			else
 				s++; /* this character matches */
 		}
 	}
 
-	if (match && *p == '\0') {
+	if(match && *p == '\0') {
 		/* if the last character to match is an alphanumeric character, the
 		 * current character in the source may not be alphanumeric
 		 */
 		assert(p > (unsigned char*)pattern);
-		if (alphanum(*(p - 1)) && alphanum(*s))
+		if(alphanum(*(p - 1)) && alphanum(*s))
 			match = FALSE;
 	}
 
-	if (match) {
+	if(match) {
 		/* calculate the length of the substituted string */
-		for (e = (unsigned char*)substitution, len = 0; *e != '\0'; e++) {
-			if (*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2)) && argsnum) {
+		for(e = (unsigned char*)substitution, len = 0; *e != '\0'; e++) {
+			if(*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2)) && argsnum) {
 				stringize = 1;
 				e++; /* skip '#' */
 			} else {
 				stringize = 0;
 			}
-			if (*e == '%' && isdigit(*(e + 1)) && argsnum) {
+			if(*e == '%' && isdigit(*(e + 1)) && argsnum) {
 				arg = *(e + 1) - '0';
 				assert(arg >= 0 && arg <= 9);
 				assert(stringize == 0 || stringize == 1);
-				if (args[arg] != NULL) {
+				if(args[arg] != NULL) {
 					len += strlen((char*)args[arg]) + 2 * stringize;
 					e++;
 				} else {
@@ -1335,27 +1335,27 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 			}
 		}
 		/* check length of the string after substitution */
-		if (strlen((char*)line) + len - (int)(s - line) > buffersize) {
+		if(strlen((char*)line) + len - (int)(s - line) > buffersize) {
 			error(75); /* line too long */
 		} else {
 			/* substitute pattern */
 			strdel((char*)line, (int)(s - line));
-			for (e = (unsigned char*)substitution, s = line; *e != '\0'; e++) {
-				if (*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2))) {
+			for(e = (unsigned char*)substitution, s = line; *e != '\0'; e++) {
+				if(*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2))) {
 					stringize = 1;
 					e++; /* skip '#' */
 				} else {
 					stringize = 0;
 				}
-				if (*e == '%' && isdigit(*(e + 1))) {
+				if(*e == '%' && isdigit(*(e + 1))) {
 					arg = *(e + 1) - '0';
 					assert(arg >= 0 && arg <= 9);
-					if (args[arg] != NULL) {
-						if (stringize)
+					if(args[arg] != NULL) {
+						if(stringize)
 							strins((char*)s++, "\"", 1);
 						strins((char*)s, (char*)args[arg], strlen((char*)args[arg]));
 						s += strlen((char*)args[arg]);
-						if (stringize)
+						if(stringize)
 							strins((char*)s++, "\"", 1);
 					} else {
 						error(236); /* parameter does not exist, incorrect #define pattern */
@@ -1363,9 +1363,9 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 						s += 2;
 					}
 					e++; /* skip %, digit is skipped later */
-				} else if (*e == '"') {
+				} else if(*e == '"') {
 					p = e;
-					if (is_startstring(e)) {
+					if(is_startstring(e)) {
 						e = skipstring(e);
 						strins((char*)s, (char*)p, (e - p + 1));
 						s += (e - p + 1);
@@ -1381,8 +1381,8 @@ substpattern(unsigned char* line, size_t buffersize, const char* pattern,
 		}
 	}
 
-	for (arg = 0; arg < 10; arg++)
-		if (args[arg] != NULL)
+	for(arg = 0; arg < 10; arg++)
+		if(args[arg] != NULL)
 			free(args[arg]);
 
 	return match;
@@ -1395,29 +1395,29 @@ substallpatterns(unsigned char* line, int buffersize)
 	int prefixlen;
 
 	start = line;
-	while (*start != '\0') {
+	while(*start != '\0') {
 		/* find the start of a prefix (skip all non-alphabetic characters),
 		 * also skip strings
 		 */
-		while (!alpha(*start) && *start != '\0') {
+		while(!alpha(*start) && *start != '\0') {
 			/* skip strings */
-			if (is_startstring(start)) {
+			if(is_startstring(start)) {
 				start = (unsigned char*)skipstring(start);
-				if (*start == '\0')
+				if(*start == '\0')
 					break; /* abort loop on error */
 			}
 			start++; /* skip non-alphapetic character (or closing quote of a string) */
 		}
-		if (*start == '\0')
+		if(*start == '\0')
 			break; /* abort loop on error */
 		/* if matching the operator "defined", skip it plus the symbol behind it */
-		if (strncmp((char*)start, "defined", 7) == 0 && !isalpha((char)*(start + 7))) {
+		if(strncmp((char*)start, "defined", 7) == 0 && !isalpha((char)*(start + 7))) {
 			start += 7; /* skip "defined" */
 			/* skip white space & parantheses */
-			while ((*start <= ' ' && *start != '\0') || *start == '(')
+			while((*start <= ' ' && *start != '\0') || *start == '(')
 				start++;
 			/* skip the symbol behind it */
-			while (alphanum(*start))
+			while(alphanum(*start))
 				start++;
 			/* drop back into the main loop */
 			continue;
@@ -1425,16 +1425,16 @@ substallpatterns(unsigned char* line, int buffersize)
 		/* get the prefix (length), look for a matching definition */
 		prefixlen = 0;
 		end = start;
-		while (alphanum(*end)) {
+		while(alphanum(*end)) {
 			prefixlen++;
 			end++;
 		}
 		assert(prefixlen > 0);
 
 		macro_t subst;
-		if (find_subst((const char*)start, prefixlen, &subst)) {
+		if(find_subst((const char*)start, prefixlen, &subst)) {
 			/* properly match the pattern and substitute */
-			if (!substpattern(start, buffersize - (int)(start - line), subst.first, subst.second))
+			if(!substpattern(start, buffersize - (int)(start - line), subst.first, subst.second))
 				start = end; /* match failed, skip this prefix */
 			/* match succeeded: do not update "start", because the substitution text
 			 * may be matched by other macros
@@ -1463,34 +1463,34 @@ scanellipsis(const unsigned char* lptr)
 	short localcomment, found;
 
 	/* first look for the ellipsis in the remainder of the string */
-	while (*lptr <= ' ' && *lptr != '\0')
+	while(*lptr <= ' ' && *lptr != '\0')
 		lptr++;
-	if (lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
+	if(lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
 		return 1;
-	if (*lptr != '\0')
+	if(*lptr != '\0')
 		return 0; /* stumbled on something that is not an ellipsis and not white-space */
 
 	/* the ellipsis was not on the active line, read more lines from the current
 	 * file (but save its position first)
 	 */
-	if (inpf == NULL || pc_eofsrc(inpf))
+	if(inpf == NULL || pc_eofsrc(inpf))
 		return 0; /* quick exit: cannot read after EOF */
-	if ((localbuf = (unsigned char*)malloc((sLINEMAX + 1) * sizeof(unsigned char))) == NULL)
+	if((localbuf = (unsigned char*)malloc((sLINEMAX + 1) * sizeof(unsigned char))) == NULL)
 		return 0;
 	inpfmark = pc_getpossrc(inpf);
 	localcomment = icomment;
 
 	found = 0;
 	/* read from the file, skip preprocessing, but strip off comments */
-	while (!found && pc_readsrc(inpf, localbuf, sLINEMAX) != NULL) {
+	while(!found && pc_readsrc(inpf, localbuf, sLINEMAX) != NULL) {
 		stripcom(localbuf);
 		lptr = localbuf;
 		/* skip white space */
-		while (*lptr <= ' ' && *lptr != '\0')
+		while(*lptr <= ' ' && *lptr != '\0')
 			lptr++;
-		if (lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
+		if(lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
 			found = 1;
-		else if (*lptr != '\0')
+		else if(*lptr != '\0')
 			break; /* stumbled on something that is not an ellipsis and not white-space */
 	}
 
@@ -1518,7 +1518,7 @@ preprocess(void)
 {
 	int iscommand;
 
-	if (!freading)
+	if(!freading)
 		return;
 	do {
 		readline(pline);
@@ -1526,42 +1526,42 @@ preprocess(void)
 			pline); /* ??? no need for this when reading back from list file (in the second pass) */
 		lptr = pline; /* set "line pointer" to start of the parsing buffer */
 		iscommand = command();
-		if (iscommand != CMD_NONE)
+		if(iscommand != CMD_NONE)
 			errorset(sRESET, 0); /* reset error flag ("panic mode") on empty line or directive */
-		if (iscommand == CMD_NONE) {
+		if(iscommand == CMD_NONE) {
 			assert(lptr != term_expr);
 			substallpatterns(pline, sLINEMAX);
 			lptr = pline; /* reset "line pointer" to start of the parsing buffer */
 		}
-		if (sc_status == statFIRST && sc_listing && freading &&
+		if(sc_status == statFIRST && sc_listing && freading &&
 			(iscommand == CMD_NONE || iscommand == CMD_EMPTYLINE || iscommand == CMD_DIRECTIVE))
 		{
 			listline++;
-			if (fline != listline) {
+			if(fline != listline) {
 				listline = fline;
 				setlinedirect(fline);
 			}
-			if (iscommand == CMD_EMPTYLINE)
+			if(iscommand == CMD_EMPTYLINE)
 				pc_writeasm(outf, "\n");
 			else
 				pc_writeasm(outf, (char*)pline);
 		}
-	} while (iscommand != CMD_NONE && iscommand != CMD_TERM && freading); /* enddo */
+	} while(iscommand != CMD_NONE && iscommand != CMD_TERM && freading); /* enddo */
 }
 
 static void
 packedstring(const unsigned char* lptr, int flags, full_token_t* tok)
 {
-	while (*lptr != '\0') {
-		if (*lptr == '\a') { // ignore '\a' (which was inserted at a line concatenation)
+	while(*lptr != '\0') {
+		if(*lptr == '\a') { // ignore '\a' (which was inserted at a line concatenation)
 			lptr++;
 			continue;
 		}
 		ucell c = litchar(&lptr, flags); // litchar() alters "lptr"
-		if (c >= (ucell)(1 << sCHARBITS))
+		if(c >= (ucell)(1 << sCHARBITS))
 			error(43); // character constant exceeds range
 		glbstringread++;
-		if (tok->len >= sizeof(tok->str) - 1) {
+		if(tok->len >= sizeof(tok->str) - 1) {
 			error(75); // line too long
 			continue;
 		}
@@ -1624,7 +1624,7 @@ next_token()
 {
 	assert(sTokenBuffer->depth > 0);
 	int cursor = sTokenBuffer->cursor + 1;
-	if (cursor == MAX_TOKEN_DEPTH)
+	if(cursor == MAX_TOKEN_DEPTH)
 		cursor = 0;
 	return &sTokenBuffer->tokens[cursor];
 }
@@ -1772,12 +1772,12 @@ lexinit()
 	memset(&sPreprocessBuffer, 0, sizeof(sPreprocessBuffer));
 	sTokenBuffer = &sNormalBuffer;
 
-	if (!sKeywords.elements()) {
+	if(!sKeywords.elements()) {
 		sKeywords.init(128);
 
 		const int kStart = tMIDDLE + 1;
 		const char** tokptr = &sc_tokens[kStart - tFIRST];
-		for (int i = kStart; i <= tLAST; i++, tokptr++) {
+		for(int i = kStart; i <= tLAST; i++, tokptr++) {
 			CharsAndLength key(*tokptr, strlen(*tokptr));
 			auto p = sKeywords.findForAdd(key);
 			assert(!p.found());
@@ -1790,9 +1790,9 @@ std::string
 get_token_string(int tok_id)
 {
 	std::string str;
-	if (tok_id < 256)
+	if(tok_id < 256)
 		return StringPrintf("%c", tok_id);
-	if (tok_id == tEOL)
+	if(tok_id == tEOL)
 		return "<newline>";
 	assert(tok_id >= tFIRST && tok_id <= tLAST);
 	return StringPrintf("%s", sc_tokens[tok_id - tFIRST]);
@@ -1803,7 +1803,7 @@ lex_keyword_impl(const char* match, size_t length)
 {
 	CharsAndLength key(match, length);
 	auto p = sKeywords.find(key);
-	if (!p.found())
+	if(!p.found())
 		return 0;
 	return p->value;
 }
@@ -1811,7 +1811,7 @@ lex_keyword_impl(const char* match, size_t length)
 static inline bool
 IsUnimplementedKeyword(int token)
 {
-	switch (token) {
+	switch(token) {
 		case tACQUIRE:
 		case tAS:
 		case tCATCH:
@@ -1862,7 +1862,7 @@ advance_token_ptr()
 	assert(sTokenBuffer->depth == 0);
 	sTokenBuffer->num_tokens++;
 	sTokenBuffer->cursor++;
-	if (sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
+	if(sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
 		sTokenBuffer->cursor = 0;
 
 	return current_token();
@@ -1884,7 +1884,7 @@ lexpop()
 
 	sTokenBuffer->depth--;
 	sTokenBuffer->cursor++;
-	if (sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
+	if(sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
 		sTokenBuffer->cursor = 0;
 }
 
@@ -1901,7 +1901,7 @@ lex(cell* lexvalue, char** lexsym)
 {
 	int newline;
 
-	if (sTokenBuffer->depth > 0) {
+	if(sTokenBuffer->depth > 0) {
 		lexpop();
 		*lexvalue = current_token()->value;
 		*lexsym = current_token()->str;
@@ -1918,16 +1918,16 @@ lex(cell* lexvalue, char** lexsym)
 	*lexsym = tok->str;
 
 	_lexnewline = FALSE;
-	if (!freading)
+	if(!freading)
 		return 0;
 
 	newline = (lptr == pline); /* does lptr point to start of line buffer */
-	while (*lptr <= ' ') {     /* delete leading white space */
-		if (*lptr == '\0') {
+	while(*lptr <= ' ') {     /* delete leading white space */
+		if(*lptr == '\0') {
 			preprocess_in_lex();
-			if (!freading)
+			if(!freading)
 				return 0;
-			if (lptr == term_expr) /* special sequence to terminate a pending expression */
+			if(lptr == term_expr) /* special sequence to terminate a pending expression */
 				return (tok->id = tENDEXPR);
 			_lexnewline = TRUE; /* set this after preprocess(), because
 								 * preprocess() calls lex() recursively */
@@ -1936,10 +1936,10 @@ lex(cell* lexvalue, char** lexsym)
 			lptr += 1;
 		}
 	}
-	if (newline) {
+	if(newline) {
 		stmtindent = 0;
-		for (int i = 0; i < (int)(lptr - pline); i++)
-			if (pline[i] == '\t' && sc_tabsize > 0)
+		for(int i = 0; i < (int)(lptr - pline); i++)
+			if(pline[i] == '\t' && sc_tabsize > 0)
 				stmtindent += (int)(sc_tabsize - (stmtindent + sc_tabsize) % sc_tabsize);
 			else
 				stmtindent++;
@@ -1960,7 +1960,7 @@ lex(cell* lexvalue, char** lexsym)
 static void
 lex_once(full_token_t* tok, cell* lexvalue)
 {
-	switch (*lptr) {
+	switch(*lptr) {
 		case '0':
 		case '1':
 		case '2':
@@ -1971,14 +1971,14 @@ lex_once(full_token_t* tok, cell* lexvalue)
 		case '7':
 		case '8':
 		case '9': {
-			if (lex_number(tok, lexvalue))
+			if(lex_number(tok, lexvalue))
 				return;
 			break;
 		}
 
 		case '*':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taMULT;
 			else
 				tok->id = '*';
@@ -1986,7 +1986,7 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '/':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taDIV;
 			else
 				tok->id = '/';
@@ -1994,7 +1994,7 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '%':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taMOD;
 			else
 				tok->id = '%';
@@ -2002,9 +2002,9 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '+':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taADD;
-			else if (lex_match_char('+'))
+			else if(lex_match_char('+'))
 				tok->id = tINC;
 			else
 				tok->id = '+';
@@ -2012,9 +2012,9 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '-':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taSUB;
-			else if (lex_match_char('-'))
+			else if(lex_match_char('-'))
 				tok->id = tDEC;
 			else
 				tok->id = '-';
@@ -2022,12 +2022,12 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '<':
 			lptr++;
-			if (lex_match_char('<')) {
-				if (lex_match_char('='))
+			if(lex_match_char('<')) {
+				if(lex_match_char('='))
 					tok->id = taSHL;
 				else
 					tok->id = tSHL;
-			} else if (lex_match_char('=')) {
+			} else if(lex_match_char('=')) {
 				tok->id = tlLE;
 			} else {
 				tok->id = '<';
@@ -2036,18 +2036,18 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '>':
 			lptr++;
-			if (lex_match_char('>')) {
-				if (lex_match_char('>')) {
-					if (lex_match_char('='))
+			if(lex_match_char('>')) {
+				if(lex_match_char('>')) {
+					if(lex_match_char('='))
 						tok->id = taSHRU;
 					else
 						tok->id = tSHRU;
-				} else if (lex_match_char('=')) {
+				} else if(lex_match_char('=')) {
 					tok->id = taSHR;
 				} else {
 					tok->id = tSHR;
 				}
-			} else if (lex_match_char('=')) {
+			} else if(lex_match_char('=')) {
 				tok->id = tlGE;
 			} else {
 				tok->id = '>';
@@ -2056,9 +2056,9 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '&':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taAND;
-			else if (lex_match_char('&'))
+			else if(lex_match_char('&'))
 				tok->id = tlAND;
 			else
 				tok->id = '&';
@@ -2066,7 +2066,7 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '^':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taXOR;
 			else
 				tok->id = '^';
@@ -2074,9 +2074,9 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '|':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = taOR;
-			else if (lex_match_char('|'))
+			else if(lex_match_char('|'))
 				tok->id = tlOR;
 			else
 				tok->id = '|';
@@ -2084,7 +2084,7 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '=':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = tlEQ;
 			else
 				tok->id = '=';
@@ -2092,7 +2092,7 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '!':
 			lptr++;
-			if (lex_match_char('='))
+			if(lex_match_char('='))
 				tok->id = tlNE;
 			else
 				tok->id = '!';
@@ -2100,8 +2100,8 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case '.':
 			lptr++;
-			if (lex_match_char('.')) {
-				if (lex_match_char('.'))
+			if(lex_match_char('.')) {
+				if(lex_match_char('.'))
 					tok->id = tELLIPS;
 				else
 					tok->id = tDBLDOT;
@@ -2112,7 +2112,7 @@ lex_once(full_token_t* tok, cell* lexvalue)
 
 		case ':':
 			lptr++;
-			if (lex_match_char(':'))
+			if(lex_match_char(':'))
 				tok->id = tDBLCOLON;
 			else
 				tok->id = ':';
@@ -2126,16 +2126,16 @@ lex_once(full_token_t* tok, cell* lexvalue)
 			lptr += 1; /* skip quote */
 			tok->id = tNUMBER;
 			*lexvalue = tok->value = litchar(&lptr, UTF8MODE);
-			if (*lptr == '\'') {
+			if(*lptr == '\'') {
 				lptr += 1; /* skip final quote */
 			} else {
 				error(27); /* invalid character constant (must be one character) */
 
 				// Eat tokens on the same line until we can close the malformed
 				// string.
-				while (*lptr && *lptr != '\'')
+				while(*lptr && *lptr != '\'')
 					litchar(&lptr, UTF8MODE);
-				if (*lptr && *lptr == '\'')
+				if(*lptr && *lptr == '\'')
 					lptr++;
 			}
 			return;
@@ -2148,8 +2148,8 @@ lex_once(full_token_t* tok, cell* lexvalue)
 			return;
 	}
 
-	if (alpha(*lptr) || *lptr == '#') {
-		if (lex_symbol_or_keyword(tok))
+	if(alpha(*lptr) || *lptr == '#') {
+		if(lex_symbol_or_keyword(tok))
 			return;
 	}
 
@@ -2160,7 +2160,7 @@ lex_once(full_token_t* tok, cell* lexvalue)
 static bool
 lex_match_char(char c)
 {
-	if (*lptr != c)
+	if(*lptr != c)
 		return false;
 	lptr++;
 	return true;
@@ -2169,13 +2169,13 @@ lex_match_char(char c)
 static bool
 lex_number(full_token_t* tok, cell* lexvalue)
 {
-	if (int i = number(&tok->value, lptr)) {
+	if(int i = number(&tok->value, lptr)) {
 		tok->id = tNUMBER;
 		*lexvalue = tok->value;
 		lptr += i;
 		return true;
 	}
-	if (int i = ftoi(&tok->value, lptr)) {
+	if(int i = ftoi(&tok->value, lptr)) {
 		tok->id = tRATIONAL;
 		*lexvalue = tok->value;
 		lptr += i;
@@ -2194,17 +2194,17 @@ lex_string_literal(full_token_t* tok, cell* lexvalue)
 
 	glbstringread = 1;
 
-	for (;;) {
+	for(;;) {
 		assert(*lptr == '\"' || *lptr == '\'');
 
 		static char buffer[sLINEMAX + 1];
 		char* cat = buffer;
-		if (*lptr == '\"') {
+		if(*lptr == '\"') {
 			lptr += 1;
-			while (*lptr != '\"' && *lptr != '\0' && (cat - buffer) < sLINEMAX) {
-				if (*lptr != '\a') { /* ignore '\a' (which was inserted at a line concatenation) */
+			while(*lptr != '\"' && *lptr != '\0' && (cat - buffer) < sLINEMAX) {
+				if(*lptr != '\a') { /* ignore '\a' (which was inserted at a line concatenation) */
 					*cat++ = *lptr;
-					if (*lptr == sc_ctrlchar && *(lptr + 1) != '\0')
+					if(*lptr == sc_ctrlchar && *(lptr + 1) != '\0')
 						*cat++ = *++lptr; /* skip escape character plus the escaped character */
 				}
 				lptr++;
@@ -2212,27 +2212,27 @@ lex_string_literal(full_token_t* tok, cell* lexvalue)
 		} else {
 			lptr += 1;
 			ucell c = litchar(&lptr, UTF8MODE);
-			if (c >= (ucell)(1 << sCHARBITS))
+			if(c >= (ucell)(1 << sCHARBITS))
 				error(43); // character constant exceeds range
 			*cat++ = static_cast<char>(c);
 			/* invalid char declaration */
-			if (*lptr != '\'')
+			if(*lptr != '\'')
 				error(27); /* invalid character constant (must be one character) */
 		}
 		*cat = '\0'; /* terminate string */
 
 		packedstring((unsigned char*)buffer, 0, tok);
 
-		if (*lptr == '\"' || *lptr == '\'')
+		if(*lptr == '\"' || *lptr == '\'')
 			lptr += 1; /* skip final quote */
 		else
 			error(37); /* invalid (non-terminated) string */
 		/* see whether an ellipsis is following the string */
-		if (!scanellipsis(lptr))
+		if(!scanellipsis(lptr))
 			break; /* no concatenation of string literals */
 		/* there is an ellipses, go on parsing (this time with full preprocessing) */
-		while (*lptr <= ' ') {
-			if (*lptr == '\0') {
+		while(*lptr <= ' ') {
+			if(*lptr == '\0') {
 				preprocess_in_lex();
 				assert(freading && lptr != term_expr);
 			} else {
@@ -2241,15 +2241,15 @@ lex_string_literal(full_token_t* tok, cell* lexvalue)
 		}
 		assert(freading && lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.');
 		lptr += 3;
-		while (*lptr <= ' ') {
-			if (*lptr == '\0') {
+		while(*lptr <= ' ') {
+			if(*lptr == '\0') {
 				preprocess_in_lex();
 				assert(freading && lptr != term_expr);
 			} else {
 				lptr++;
 			}
 		}
-		if (!freading || !((*lptr == '\"') || (*lptr == '\''))) {
+		if(!freading || !((*lptr == '\"') || (*lptr == '\''))) {
 			error(37); /* invalid string concatenation */
 			break;
 		}
@@ -2260,21 +2260,21 @@ static bool
 lex_keyword(full_token_t* tok, const char* token_start)
 {
 	int tok_id = lex_keyword_impl(token_start, tok->len);
-	if (!tok_id)
+	if(!tok_id)
 		return false;
 
-	if (IsUnimplementedKeyword(tok_id)) {
+	if(IsUnimplementedKeyword(tok_id)) {
 		// Try to gracefully error.
 		error(173, get_token_string(tok_id).c_str());
 		tok->id = tSYMBOL;
 		strcpy(tok->str, get_token_string(tok_id).c_str());
 		tok->len = strlen(tok->str);
-	} else if (*lptr == ':' && (tok_id == tINT || tok_id == tVOID)) {
+	} else if(*lptr == ':' && (tok_id == tINT || tok_id == tVOID)) {
 		// Special case 'int:' to its old behavior: an implicit view_as<> cast
 		// with Pawn's awful lowercase coercion semantics.
 		std::string token_str = get_token_string(tok_id);
 		const char* token = token_str.c_str();
-		switch (tok_id) {
+		switch(tok_id) {
 			case tINT:
 				error(238, token, token);
 				break;
@@ -2301,29 +2301,29 @@ lex_symbol_or_keyword(full_token_t* tok)
 	assert(alpha(first_char) || first_char == '#');
 
 	bool maybe_keyword = (first_char != PUBLIC_CHAR);
-	while (true) {
+	while(true) {
 		char c = *++lptr;
-		if (isdigit(c)) {
+		if(isdigit(c)) {
 			// Only symbols have numbers, so this terminates a keyword if we
 			// started with '#".
-			if (first_char == '#')
+			if(first_char == '#')
 				break;
 			maybe_keyword = false;
-		} else if (!isalpha(c) && c != '_') {
+		} else if(!isalpha(c) && c != '_') {
 			break;
 		}
 	}
 
 	tok->len = lptr - token_start;
-	if (tok->len == 1 && first_char == PUBLIC_CHAR) {
+	if(tok->len == 1 && first_char == PUBLIC_CHAR) {
 		tok->id = PUBLIC_CHAR;
 		return true;
 	}
-	if (maybe_keyword) {
-		if (lex_keyword(tok, (const char*)token_start))
+	if(maybe_keyword) {
+		if(lex_keyword(tok, (const char*)token_start))
 			return true;
 	}
-	if (first_char != '#') {
+	if(first_char != '#') {
 		lex_symbol(tok, (const char*)token_start);
 		return true;
 	}
@@ -2337,7 +2337,7 @@ static void
 lex_symbol(full_token_t* tok, const char* token_start)
 {
 	ke::SafeStrcpyN(tok->str, sizeof(tok->str), token_start, tok->len);
-	if (tok->len > sNAMEMAX) {
+	if(tok->len > sNAMEMAX) {
 		static_assert(sNAMEMAX < sizeof(tok->str), "sLINEMAX should be > sNAMEMAX");
 		tok->str[sNAMEMAX] = '\0';
 		tok->len = sNAMEMAX;
@@ -2346,16 +2346,16 @@ lex_symbol(full_token_t* tok, const char* token_start)
 
 	tok->id = tSYMBOL;
 
-	if (*lptr == ':' && *(lptr + 1) != ':') {
-		if (sc_allowtags) {
+	if(*lptr == ':' && *(lptr + 1) != ':') {
+		if(sc_allowtags) {
 			tok->id = tLABEL;
 			lptr++;
-		} else if (gTypes.find(tok->str)) {
+		} else if(gTypes.find(tok->str)) {
 			// This looks like a tag override (a tag with this name exists), but
 			// tags are not allowed right now, so it is probably an error.
 			error(220);
 		}
-	} else if (tok->len == 1 && *token_start == '_') {
+	} else if(tok->len == 1 && *token_start == '_') {
 		// By itself, '_' is not a symbol but a placeholder. However, '_:' is
 		// a label which is why we handle this after the label check.
 		tok->id = '_';
@@ -2379,7 +2379,7 @@ lexpush(void)
 {
 	assert(sTokenBuffer->depth < MAX_TOKEN_DEPTH);
 	sTokenBuffer->depth++;
-	if (sTokenBuffer->cursor == 0)
+	if(sTokenBuffer->cursor == 0)
 		sTokenBuffer->cursor = MAX_TOKEN_DEPTH - 1;
 	else
 		sTokenBuffer->cursor--;
@@ -2396,7 +2396,7 @@ void
 lexclr(int clreol)
 {
 	sTokenBuffer->depth = 0;
-	if (clreol) {
+	if(clreol) {
 		lptr = (unsigned char*)strchr((char*)pline, '\0');
 		assert(lptr != NULL);
 	}
@@ -2406,7 +2406,7 @@ lexclr(int clreol)
 int
 lexpeek(int id)
 {
-	if (matchtoken(id)) {
+	if(matchtoken(id)) {
 		lexpush();
 		return TRUE;
 	}
@@ -2437,12 +2437,12 @@ matchtoken(int token)
 
 	tok = lex(&val, &str);
 
-	if (token == tok)
+	if(token == tok)
 		return 1;
-	if (token == tTERM && (tok == ';' || tok == tENDEXPR))
+	if(token == tTERM && (tok == ';' || tok == tENDEXPR))
 		return 1;
 
-	if (!sc_needsemicolon && token == tTERM && (_lexnewline || !freading)) {
+	if(!sc_needsemicolon && token == tTERM && (_lexnewline || !freading)) {
 		/* Push "tok" back, because it is the token following the implicit statement
 		 * termination (newline) token.
 		 */
@@ -2483,18 +2483,18 @@ needtoken(int token)
 	char s1[20], s2[20];
 	int t;
 
-	if ((t = matchtoken(token)) != 0) {
+	if((t = matchtoken(token)) != 0) {
 		return t;
 	} else {
 		/* token already pushed back */
 		assert(sTokenBuffer->depth > 0);
-		if (token < 256)
+		if(token < 256)
 			sprintf(s1, "%c", (char)token); /* single character token */
 		else
 			strcpy(s1, sc_tokens[token - tFIRST]); /* multi-character symbol */
-		if (!freading)
+		if(!freading)
 			strcpy(s2, "-end of file-");
-		else if (next_token()->id < 256)
+		else if(next_token()->id < 256)
 			sprintf(s2, "%c", (char)next_token()->id);
 		else
 			strcpy(s2, sc_tokens[next_token()->id - tFIRST]);
@@ -2514,7 +2514,7 @@ peek_same_line()
 	// If there's tokens pushed back, then |fline| is the line of the furthest
 	// token parsed. If fline == current token's line, we are guaranteed any
 	// buffered token is still on the same line.
-	if (sTokenBuffer->depth > 0 && current_token()->end.line == fline)
+	if(sTokenBuffer->depth > 0 && current_token()->end.line == fline)
 		return next_token()->id;
 
 	// Make sure the next token is lexed by lexing, and then buffering it.
@@ -2528,7 +2528,7 @@ peek_same_line()
 
 	// If the next token starts on the line the last token ends, then the next
 	// token is considered on the same line.
-	if (next->start.line == current_token()->end.line)
+	if(next->start.line == current_token()->end.line)
 		return next->id;
 
 	return tEOL;
@@ -2537,23 +2537,23 @@ peek_same_line()
 int
 require_newline(TerminatorPolicy policy)
 {
-	if (policy != TerminatorPolicy::Newline) {
+	if(policy != TerminatorPolicy::Newline) {
 		// Semicolon must be on the same line.
 		auto pos = current_token()->start;
 		int next_tok_id = peek_same_line();
-		if (next_tok_id == ';') {
+		if(next_tok_id == ';') {
 			lexpop();
-		} else if (policy == TerminatorPolicy::Semicolon && sc_needsemicolon) {
+		} else if(policy == TerminatorPolicy::Semicolon && sc_needsemicolon) {
 			error(pos, 1, ";", get_token_string(next_tok_id).c_str());
 		}
 	}
 
 	int tokid = peek_same_line();
-	if (tokid == tEOL || tokid == 0)
+	if(tokid == tEOL || tokid == 0)
 		return TRUE;
 
 	char s[20];
-	if (tokid < 256)
+	if(tokid < 256)
 		sprintf(s, "%c", (char)tokid);
 	else
 		strcpy(s, sc_tokens[tokid - tFIRST]);
@@ -2566,9 +2566,9 @@ litadd(const char* str, size_t len)
 {
 	ucell val = 0;
 	int byte = 0;
-	for (size_t i = 0; i < len; i++) {
+	for(size_t i = 0; i < len; i++) {
 		val |= (unsigned char)str[i] << (8 * byte);
-		if (byte == sizeof(ucell) - 1) {
+		if(byte == sizeof(ucell) - 1) {
 			litadd(val);
 			val = 0;
 			byte = 0;
@@ -2576,7 +2576,7 @@ litadd(const char* str, size_t len)
 			byte++;
 		}
 	}
-	if (byte != 0) {
+	if(byte != 0) {
 		// There are zeroes to terminate |val|.
 		litadd(val);
 	} else {
@@ -2601,8 +2601,8 @@ litchar(const unsigned char** lptr, int flags)
 	const unsigned char* cptr;
 
 	cptr = *lptr;
-	if (*cptr != sc_ctrlchar) { /* no escape character */
-		if ((flags & UTF8MODE) != 0) {
+	if(*cptr != sc_ctrlchar) { /* no escape character */
+		if((flags & UTF8MODE) != 0) {
 			c = get_utf8_char(cptr, &cptr);
 			assert(c >= 0); /* file was already scanned for conformance to UTF-8 */
 		} else {
@@ -2611,11 +2611,11 @@ litchar(const unsigned char** lptr, int flags)
 		}
 	} else {
 		cptr += 1;
-		if (*cptr == sc_ctrlchar) {
+		if(*cptr == sc_ctrlchar) {
 			c = *cptr; /* \\ == \ (the escape character itself) */
 			cptr += 1;
 		} else {
-			switch (*cptr) {
+			switch(*cptr) {
 				case 'a': /* \a == audible alarm */
 					c = 7;
 					cptr += 1;
@@ -2652,15 +2652,15 @@ litchar(const unsigned char** lptr, int flags)
 					int digits = 0;
 					cptr += 1;
 					c = 0;
-					while (ishex(*cptr) && digits < 2) {
-						if (isdigit(*cptr))
+					while(ishex(*cptr) && digits < 2) {
+						if(isdigit(*cptr))
 							c = (c << 4) + (*cptr - '0');
 						else
 							c = (c << 4) + (tolower(*cptr) - 'a' + 10);
 						cptr++;
 						digits++;
 					}
-					if (*cptr == ';')
+					if(*cptr == ';')
 						cptr++; /* swallow a trailing ';' */
 					break;
 				}
@@ -2671,11 +2671,11 @@ litchar(const unsigned char** lptr, int flags)
 					cptr += 1;
 					break;
 				default:
-					if (isdigit(*cptr)) { /* \ddd */
+					if(isdigit(*cptr)) { /* \ddd */
 						c = 0;
-						while (*cptr >= '0' && *cptr <= '9') /* decimal! */
+						while(*cptr >= '0' && *cptr <= '9') /* decimal! */
 							c = c * 10 + *cptr++ - '0';
-						if (*cptr == ';')
+						if(*cptr == ';')
 							cptr++; /* swallow a trailing ';' */
 					} else {
 						error(27); /* invalid character constant */
@@ -2740,7 +2740,7 @@ add_symbol(symbol* root, symbol* entry)
 {
 	entry->next = root->next;
 	root->next = entry;
-	if (root == &glbtab)
+	if(root == &glbtab)
 		AddToHashTable(sp_Globals, entry);
 	return entry;
 }
@@ -2760,12 +2760,12 @@ delete_symbol(symbol* root, symbol* sym)
 	 * in the table pointed at by "root")
 	 */
 	assert(root != sym);
-	while (root->next != sym) {
+	while(root->next != sym) {
 		root = root->next;
 		assert(root != NULL);
 	}
 
-	if (origRoot == &glbtab)
+	if(origRoot == &glbtab)
 		RemoveFromHashTable(sp_Globals, sym);
 
 	/* unlink it, then free it */
@@ -2776,8 +2776,8 @@ delete_symbol(symbol* root, symbol* sym)
 int
 get_actual_compound(symbol* sym)
 {
-	if (sym->ident == iARRAY || sym->ident == iREFARRAY) {
-		while (sym->parent())
+	if(sym->ident == iARRAY || sym->ident == iREFARRAY) {
+		while(sym->parent())
 			sym = sym->parent();
 	}
 
@@ -2793,11 +2793,11 @@ delete_symbols(symbol* root, int level, int delete_functions)
 
 	/* erase only the symbols with a deeper nesting level than the
 	 * specified nesting level */
-	while (root->next != NULL) {
+	while(root->next != NULL) {
 		sym = root->next;
-		if (get_actual_compound(sym) < level)
+		if(get_actual_compound(sym) < level)
 			break;
-		switch (sym->ident) {
+		switch(sym->ident) {
 			case iVARIABLE:
 			case iARRAY:
 				/* do not delete global variables if functions are preserved */
@@ -2813,12 +2813,12 @@ delete_symbols(symbol* root, int level, int delete_functions)
 				 * (locals) are also deleted
 				 */
 				mustdelete = delete_functions;
-				for (parent_sym = sym->parent(); parent_sym != NULL && parent_sym->ident != iFUNCTN;
+				for(parent_sym = sym->parent(); parent_sym != NULL && parent_sym->ident != iFUNCTN;
 					 parent_sym = parent_sym->parent())
 					assert(parent_sym->ident == iREFARRAY);
 				assert(parent_sym == NULL ||
 					   (parent_sym->ident == iFUNCTN && parent_sym->parent() == NULL));
-				if (parent_sym == NULL || parent_sym->ident != iFUNCTN)
+				if(parent_sym == NULL || parent_sym->ident != iFUNCTN)
 					mustdelete = TRUE;
 				break;
 			case iCONSTEXPR:
@@ -2849,8 +2849,8 @@ delete_symbols(symbol* root, int level, int delete_functions)
 				assert(0);
 				break;
 		}
-		if (mustdelete) {
-			if (origRoot == &glbtab)
+		if(mustdelete) {
+			if(origRoot == &glbtab)
 				RemoveFromHashTable(sp_Globals, sym);
 			root->next = sym->next;
 			free_symbol(sym);
@@ -2858,16 +2858,16 @@ delete_symbols(symbol* root, int level, int delete_functions)
 			/* if the function was prototyped, but not implemented in this source,
 			 * mark it as such, so that its use can be flagged
 			 */
-			if (sym->ident == iFUNCTN && !sym->defined)
+			if(sym->ident == iFUNCTN && !sym->defined)
 				sym->missing = true;
-			if (sym->ident == iFUNCTN || sym->ident == iVARIABLE || sym->ident == iARRAY)
+			if(sym->ident == iFUNCTN || sym->ident == iVARIABLE || sym->ident == iARRAY)
 				sym->defined = false;
 			/* for user defined operators, also remove the "prototyped" flag, as
 			 * user-defined operators *must* be declared before use
 			 */
-			if (sym->ident == iFUNCTN && !alpha(*sym->name()))
+			if(sym->ident == iFUNCTN && !alpha(*sym->name()))
 				sym->prototyped = false;
-			if (origRoot == &glbtab)
+			if(origRoot == &glbtab)
 				sym->clear_refers();
 			root = sym; /* skip the symbol */
 		}
@@ -2880,16 +2880,16 @@ markusage(symbol* sym, int usage)
 {
 	// When compiling a skipped function, do not accumulate liveness information
 	// for referenced functions.
-	if (sc_status == statSKIP && sym->ident == iFUNCTN)
+	if(sc_status == statSKIP && sym->ident == iFUNCTN)
 		return;
 
 	sym->usage |= usage;
-	if ((usage & uWRITTEN) != 0)
+	if((usage & uWRITTEN) != 0)
 		sym->lnumber = fline;
-	/* check if (global) reference must be added to the symbol */
-	if ((usage & (uREAD | uWRITTEN)) != 0) {
+	/* check if(global) reference must be added to the symbol */
+	if((usage & (uREAD | uWRITTEN)) != 0) {
 		/* only do this for global symbols */
-		if (sym->vclass == sGLOBAL && curfunc)
+		if(sym->vclass == sGLOBAL && curfunc)
 			curfunc->add_reference_to(sym);
 	}
 }
@@ -2914,8 +2914,8 @@ findloc(const char* name)
 {
 	symbol* sym = loctab.next;
 	sp::Atom* atom = gAtoms.add(name);
-	while (sym != NULL) {
-		if (atom == sym->nameAtom() &&
+	while(sym != NULL) {
+		if(atom == sym->nameAtom() &&
 			(sym->parent() == NULL ||
 			 sym->ident ==
 				 iCONSTEXPR)) /* sub-types (hierarchical types) are skipped, except for enum fields */
@@ -2933,10 +2933,10 @@ findconst(const char* name)
 	symbol* sym;
 
 	sym = findloc(name);          /* try local symbols first */
-	if (sym == NULL || sym->ident != iCONSTEXPR) { /* not found, or not a constant */
+	if(sym == NULL || sym->ident != iCONSTEXPR) { /* not found, or not a constant */
 		sym = FindInHashTable(sp_Globals, name, fcurrent);
 	}
-	if (sym == NULL || sym->ident != iCONSTEXPR)
+	if(sym == NULL || sym->ident != iCONSTEXPR)
 		return NULL;
 	assert(sym->parent() == NULL || sym->enumfield);
 	/* ^^^ constants have no hierarchy, but enumeration fields may have a parent */
@@ -2951,7 +2951,7 @@ FunctionData::FunctionData()
 }
 
 FunctionData::~FunctionData() {
-	if (dbgstrs) {
+	if(dbgstrs) {
 		delete_stringtable(dbgstrs);
 		free(dbgstrs);
 	}
@@ -3008,9 +3008,9 @@ symbol::symbol(const char* symname, cell symaddr, int symident, int symvclass, i
    parent_(nullptr),
    child_(nullptr)
 {
-	if (symname)
+	if(symname)
 		name_ = gAtoms.add(symname);
-	if (symident == iFUNCTN)
+	if(symident == iFUNCTN)
 		data_.reset(new FunctionData);
 	memset(&dim, 0, sizeof(dim));
 }
@@ -3044,14 +3044,14 @@ symbol::symbol(const symbol& other)
 
 symbol::~symbol()
 {
-	if (ident == iFUNCTN) {
+	if(ident == iFUNCTN) {
 		/* run through the argument list; "default array" arguments
 		 * must be freed explicitly; the tag list must also be freed */
-		for (arginfo* arg = &function()->args[0]; arg->ident != 0; arg++) {
-			if (arg->ident == iREFARRAY && arg->hasdefault)
+		for(arginfo* arg = &function()->args[0]; arg->ident != 0; arg++) {
+			if(arg->ident == iREFARRAY && arg->hasdefault)
 				free(arg->defvalue.array.data);
 		}
-	} else if (ident == iCONSTEXPR && enumroot) {
+	} else if(ident == iCONSTEXPR && enumroot) {
 		/* free the constant list of an enum root */
 		assert(dim.enumlist != NULL);
 		delete_consttable(dim.enumlist);
@@ -3062,8 +3062,8 @@ symbol::~symbol()
 void
 symbol::add_reference_to(symbol* other)
 {
-	for (symbol* sym : refers_to_) {
-		if (sym == other)
+	for(symbol* sym : refers_to_) {
+		if(sym == other)
 			return;
 	}
 	refers_to_.push_back(other);
@@ -3076,8 +3076,8 @@ symbol::drop_reference_from(symbol* from)
 {
 #if !defined(NDEBUG)
 	bool found = false;
-	for (size_t i = 0; i < referred_from_.size(); i++) {
-		if (referred_from_[i] == from) {
+	for(size_t i = 0; i < referred_from_.size(); i++) {
+		if(referred_from_[i] == from) {
 			referred_from_[i] = nullptr;
 			found = true;
 			break;
@@ -3100,7 +3100,7 @@ addsym(const char* name, cell addr, int ident, int vclass, int tag)
 	symbol* sym = new symbol(name, addr, ident, vclass, tag);
 
 	/* then insert it in the list */
-	if (vclass == sGLOBAL)
+	if(vclass == sGLOBAL)
 		return add_symbol(&glbtab, sym);
 	return add_symbol(&loctab, sym);
 }
@@ -3136,17 +3136,17 @@ addvariable2(const char* name, cell addr, int ident, int vclass, int tag, int di
 	assert(vclass != sGLOBAL || (sym = findglb(name)) == NULL || !sym->defined ||
 		   (sym->ident == iFUNCTN && sym == curfunc));
 
-	if (ident == iARRAY || ident == iREFARRAY) {
+	if(ident == iARRAY || ident == iREFARRAY) {
 		symbol *parent = NULL, *top;
 		int level;
 		sym = NULL; /* to avoid a compiler warning */
-		for (level = 0; level < numdim; level++) {
+		for(level = 0; level < numdim; level++) {
 			top = addsym(name, addr, ident, vclass, tag);
 			top->defined = true;
 			top->dim.array.length = dim[level];
 			top->dim.array.slength = 0;
-			if (level == numdim - 1 && tag == pc_tag_string) {
-				if (slength == 0)
+			if(level == numdim - 1 && tag == pc_tag_string) {
+				if(slength == 0)
 					top->dim.array.length = dim[level] * sizeof(cell);
 				else
 					top->dim.array.slength = slength;
@@ -3154,11 +3154,11 @@ addvariable2(const char* name, cell addr, int ident, int vclass, int tag, int di
 			top->dim.array.level = (short)(numdim - level - 1);
 			top->x.tags.index = idxtag[level];
 			top->set_parent(parent);
-			if (parent) {
+			if(parent) {
 				parent->set_array_child(top);
 			}
 			parent = top;
-			if (level == 0)
+			if(level == 0)
 				sym = top;
 		}
 	} else {
@@ -3192,15 +3192,15 @@ itoh(ucell val)
 	int i, nibble[16]; /* a 64-bit hexadecimal cell has 16 nibbles */
 	int max = 8;
 	ptr = itohstr;
-	for (i = 0; i < max; i += 1) {
+	for(i = 0; i < max; i += 1) {
 		nibble[i] = (int)(val & 0x0f); /* nibble 0 is lowest nibble */
 		val >>= 4;
 	} /* endfor */
 	i = max - 1;
-	while (nibble[i] == 0 && i > 0) /* search for highest non-zero nibble */
+	while(nibble[i] == 0 && i > 0) /* search for highest non-zero nibble */
 		i -= 1;
-	while (i >= 0) {
-		if (nibble[i] >= 10)
+	while(i >= 0) {
+		if(nibble[i] >= 10)
 			*ptr++ = (char)('a' + (nibble[i] - 10));
 		else
 			*ptr++ = (char)('0' + nibble[i]);
@@ -3221,7 +3221,7 @@ int
 expecttoken(int id, token_t* tok)
 {
 	int rval = needtoken(id);
-	if (rval) {
+	if(rval) {
 		tok->val = current_token()->value;
 		tok->id = current_token()->id;
 		tok->str = current_token()->str;
@@ -3233,7 +3233,7 @@ expecttoken(int id, token_t* tok)
 int
 matchtoken2(int id, token_t* tok)
 {
-	if (matchtoken(id)) {
+	if(matchtoken(id)) {
 		tok->id = tokeninfo(&tok->val, &tok->str);
 		return TRUE;
 	}
@@ -3243,7 +3243,7 @@ matchtoken2(int id, token_t* tok)
 int
 matchsymbol(token_ident_t* ident)
 {
-	if (lextok(&ident->tok) != tSYMBOL) {
+	if(lextok(&ident->tok) != tSYMBOL) {
 		lexpush();
 		return FALSE;
 	}
@@ -3255,7 +3255,7 @@ matchsymbol(token_ident_t* ident)
 int
 needsymbol(token_ident_t* ident)
 {
-	if (!expecttoken(tSYMBOL, &ident->tok))
+	if(!expecttoken(tSYMBOL, &ident->tok))
 		return FALSE;
 	strcpy(ident->name, ident->tok.str);
 	ident->tok.str = ident->name;
@@ -3269,7 +3269,7 @@ find_enumstruct_field(Type* type, const char* name)
 
 	char const_name[METHOD_NAMEMAX + 1];
 	ke::SafeSprintf(const_name, sizeof(const_name), "%s::%s", type->name(), name);
-	if (symbol* sym = findconst(const_name))
+	if(symbol* sym = findconst(const_name))
 		return sym;
 	return findglb(const_name);
 }
@@ -3277,12 +3277,12 @@ find_enumstruct_field(Type* type, const char* name)
 void
 declare_methodmap_symbol(methodmap_t* map, bool can_redef)
 {
-	if (!can_redef)
+	if(!can_redef)
 		return;
 
 	symbol* sym = findglb(map->name);
-	if (sym && sym->ident != iMETHODMAP) {
-		if (sym->ident == iCONSTEXPR) {
+	if(sym && sym->ident != iMETHODMAP) {
+		if(sym->ident == iCONSTEXPR) {
 			// We should only hit this on the first pass. Assert really hard that
 			// we're about to kill an enum definition and not something random.
 			assert(sc_status == statFIRST);
@@ -3292,10 +3292,10 @@ declare_methodmap_symbol(methodmap_t* map, bool can_redef)
 			sym->ident = iMETHODMAP;
 
 			// Kill previous enumstruct properties, if any.
-			if (sym->enumroot) {
-				for (constvalue* cv = sym->dim.enumlist; cv; cv = cv->next) {
+			if(sym->enumroot) {
+				for(constvalue* cv = sym->dim.enumlist; cv; cv = cv->next) {
 					symbol* csym = findglb(cv->name);
-					if (csym && csym->ident == iCONSTEXPR && csym->parent() == sym &&
+					if(csym && csym->ident == iCONSTEXPR && csym->parent() == sym &&
 						csym->enumfield)
 					{
 						csym->enumfield = false;
@@ -3312,7 +3312,7 @@ declare_methodmap_symbol(methodmap_t* map, bool can_redef)
 		}
 	}
 
-	if (!sym) {
+	if(!sym) {
 		sym = addsym(map->name,  // name
 					 0,          // addr
 					 iMETHODMAP, // ident
@@ -3327,7 +3327,7 @@ void
 declare_handle_intrinsics()
 {
 	// Must not have an existing Handle methodmap.
-	if (methodmap_find_by_name("Handle")) {
+	if(methodmap_find_by_name("Handle")) {
 		error(156);
 		return;
 	}
@@ -3337,7 +3337,7 @@ declare_handle_intrinsics()
 
 	declare_methodmap_symbol(map, true);
 
-	if (symbol* sym = findglb("CloseHandle")) {
+	if(symbol* sym = findglb("CloseHandle")) {
 		auto dtor = std::make_unique<methodmap_method_t>(map);
 		dtor->target = sym;
 		strcpy(dtor->name, "~Handle");

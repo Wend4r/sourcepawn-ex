@@ -75,19 +75,19 @@ writetrailer(void)
 	assert(sc_dataalign != 0);
 
 	/* pad code to align data segment */
-	if ((code_idx % sc_dataalign) != 0) {
+	if((code_idx % sc_dataalign) != 0) {
 		begcseg();
-		while ((code_idx % sc_dataalign) != 0)
+		while((code_idx % sc_dataalign) != 0)
 			nooperation();
 	}
 
 	/* pad data segment to align the stack and the heap */
 	assert(litidx == 0 || !cc_ok()); /* literal queue should have been emptied */
 	assert(sc_dataalign % sizeof(cell) == 0);
-	if (((glb_declared * sizeof(cell)) % sc_dataalign) != 0) {
+	if(((glb_declared * sizeof(cell)) % sc_dataalign) != 0) {
 		begdseg();
 		defstorage();
-		while (((glb_declared * sizeof(cell)) % sc_dataalign) != 0) {
+		while(((glb_declared * sizeof(cell)) % sc_dataalign) != 0) {
 			stgwrite("0 ");
 			glb_declared++;
 		}
@@ -111,7 +111,7 @@ writetrailer(void)
 void
 begcseg(void)
 {
-	if (sc_status != statSKIP && (curseg != sIN_CSEG || fcurrent != fcurseg)) {
+	if(sc_status != statSKIP && (curseg != sIN_CSEG || fcurrent != fcurseg)) {
 		stgwrite("\n");
 		stgwrite("CODE ");
 		outval(fcurrent, FALSE);
@@ -130,7 +130,7 @@ begcseg(void)
 void
 begdseg(void)
 {
-	if (sc_status != statSKIP && (curseg != sIN_DSEG || fcurrent != fcurseg)) {
+	if(sc_status != statSKIP && (curseg != sIN_DSEG || fcurrent != fcurseg)) {
 		stgwrite("\n");
 		stgwrite("DATA ");
 		outval(fcurrent, FALSE);
@@ -144,11 +144,11 @@ begdseg(void)
 void
 setline(int chkbounds)
 {
-	if (sc_asmfile) {
+	if(sc_asmfile) {
 		stgwrite("\t; line ");
 		outval(fline, TRUE);
 	}
-	if ((sc_debug & sSYMBOLIC) != 0 || (chkbounds && (sc_debug & sCHKBOUNDS) != 0)) {
+	if((sc_debug & sSYMBOLIC) != 0 || (chkbounds && (sc_debug & sCHKBOUNDS) != 0)) {
 		/* generate a "break" (start statement) opcode rather than a "line" opcode
 		 * because earlier versions of Small/Pawn have an incompatible version of the
 		 * line opcode
@@ -162,7 +162,7 @@ setline(int chkbounds)
 void
 setfiledirect(char* name)
 {
-	if (sc_status == statFIRST && sc_listing) {
+	if(sc_status == statFIRST && sc_listing) {
 		assert(name != NULL);
 		pc_writeasm(outf, "#file ");
 		pc_writeasm(outf, name);
@@ -173,7 +173,7 @@ setfiledirect(char* name)
 void
 setlinedirect(int line)
 {
-	if (sc_status == statFIRST && sc_listing) {
+	if(sc_status == statFIRST && sc_listing) {
 		char string[40];
 		sprintf(string, "#line %d\n", line);
 		pc_writeasm(outf, string);
@@ -195,7 +195,7 @@ setlabel(int number)
 	 * may move (through optimization or through re-ordering). So write the
 	 * address only if it is known to accurate.
 	 */
-	if (!staging) {
+	if(!staging) {
 		stgwrite("\t\t; ");
 		outval(code_idx, FALSE);
 	}
@@ -209,7 +209,7 @@ setlabel(int number)
 void
 markexpr(optmark type, const char* name, cell offset)
 {
-	switch (type) {
+	switch(type) {
 		case sEXPR:
 			stgwrite("\t;$exp\n");
 			break;
@@ -236,7 +236,7 @@ void
 startfunc(const char* fname)
 {
 	stgwrite("\tproc");
-	if (sc_asmfile) {
+	if(sc_asmfile) {
 		char symname[2 * sNAMEMAX + 16];
 		funcdisplayname(symname, fname);
 		stgwrite("\t; ");
@@ -266,15 +266,15 @@ rvalue(value* lval)
 	symbol* sym;
 
 	sym = lval->sym;
-	if (lval->ident == iARRAYCELL) {
+	if(lval->ident == iARRAYCELL) {
 		/* indirect fetch, address already in PRI */
 		load_i();
-	} else if (lval->ident == iARRAYCHAR) {
+	} else if(lval->ident == iARRAYCHAR) {
 		/* indirect fetch of a character from a pack, address already in PRI */
 		stgwrite("\tlodb.i ");
 		outval(sCHARBITS / 8, TRUE); /* read one or two bytes */
 		code_idx += opcodes(1) + opargs(1);
-	} else if (lval->ident == iREFERENCE) {
+	} else if(lval->ident == iREFERENCE) {
 		/* indirect fetch, but address not yet in PRI */
 		assert(sym != NULL);
 		assert(sym->vclass == sLOCAL); /* global references don't exist in Pawn */
@@ -282,14 +282,14 @@ rvalue(value* lval)
 		outval(sym->addr(), TRUE);
 		markusage(sym, uREAD);
 		code_idx += opcodes(1) + opargs(1);
-	} else if (lval->ident == iACCESSOR) {
+	} else if(lval->ident == iACCESSOR) {
 		invoke_getter(lval->accessor);
 		lval->ident = iEXPRESSION;
 		lval->accessor = NULL;
 	} else {
 		/* direct or stack relative fetch */
 		assert(sym != NULL);
-		if (sym->vclass == sLOCAL)
+		if(sym->vclass == sLOCAL)
 			stgwrite("\tload.s.pri ");
 		else
 			stgwrite("\tload.pri ");
@@ -306,7 +306,7 @@ rvalue(svalue* sval)
 {
 	int ident = sval->val.ident;
 	rvalue(&sval->val);
-	if (ident == iACCESSOR)
+	if(ident == iACCESSOR)
 		sval->lvalue = FALSE;
 }
 
@@ -329,10 +329,10 @@ address(symbol* sym, regid reg)
 	/* the symbol can be a local array, a global array, or an array
 	 * that is passed by reference.
 	 */
-	if (sym->ident == iREFARRAY || sym->ident == iREFERENCE) {
+	if(sym->ident == iREFARRAY || sym->ident == iREFERENCE) {
 		/* reference to a variable or to an array; currently this is
 		 * always a local variable */
-		switch (reg) {
+		switch(reg) {
 			case sPRI:
 				stgwrite("\tload.s.pri ");
 				break;
@@ -342,15 +342,15 @@ address(symbol* sym, regid reg)
 		}
 	} else {
 		/* a local array or local variable */
-		switch (reg) {
+		switch(reg) {
 			case sPRI:
-				if (sym->vclass == sLOCAL)
+				if(sym->vclass == sLOCAL)
 					stgwrite("\taddr.pri ");
 				else
 					stgwrite("\tconst.pri ");
 				break;
 			case sALT:
-				if (sym->vclass == sLOCAL)
+				if(sym->vclass == sLOCAL)
 					stgwrite("\taddr.alt ");
 				else
 					stgwrite("\tconst.alt ");
@@ -365,7 +365,7 @@ address(symbol* sym, regid reg)
 static void
 addr_reg(int val, regid reg)
 {
-	if (reg == sPRI)
+	if(reg == sPRI)
 		stgwrite("\taddr.pri ");
 	else
 		stgwrite("\taddr.alt ");
@@ -381,7 +381,7 @@ addr_reg(int val, regid reg)
 static void
 load_argcount(regid reg)
 {
-	if (reg == sPRI)
+	if(reg == sPRI)
 		stgwrite("\tload.s.pri ");
 	else
 		stgwrite("\tload.s.alt ");
@@ -437,27 +437,27 @@ store(const value* lval)
 	symbol* sym;
 
 	sym = lval->sym;
-	if (lval->ident == iARRAYCELL) {
+	if(lval->ident == iARRAYCELL) {
 		/* store at address in ALT */
 		stgwrite("\tstor.i\n");
 		code_idx += opcodes(1);
-	} else if (lval->ident == iARRAYCHAR) {
+	} else if(lval->ident == iARRAYCHAR) {
 		/* store at address in ALT */
 		stgwrite("\tstrb.i ");
 		outval(sCHARBITS / 8, TRUE); /* write one or two bytes */
 		code_idx += opcodes(1) + opargs(1);
-	} else if (lval->ident == iREFERENCE) {
+	} else if(lval->ident == iREFERENCE) {
 		assert(sym != NULL);
 		assert(sym->vclass == sLOCAL);
 		stgwrite("\tsref.s.pri ");
 		outval(sym->addr(), TRUE);
 		code_idx += opcodes(1) + opargs(1);
-	} else if (lval->ident == iACCESSOR) {
+	} else if(lval->ident == iACCESSOR) {
 		invoke_setter(lval->accessor, TRUE);
 	} else {
 		assert(sym != NULL);
 		markusage(sym, uWRITTEN);
-		if (sym->vclass == sLOCAL)
+		if(sym->vclass == sLOCAL)
 			stgwrite("\tstor.s.pri ");
 		else
 			stgwrite("\tstor.pri ");
@@ -471,7 +471,7 @@ void
 loadreg(cell address, regid reg)
 {
 	assert(reg == sPRI || reg == sALT);
-	if (reg == sPRI)
+	if(reg == sPRI)
 		stgwrite("\tload.pri ");
 	else
 		stgwrite("\tload.alt ");
@@ -484,7 +484,7 @@ void
 storereg(cell address, regid reg)
 {
 	assert(reg == sPRI || reg == sALT);
-	if (reg == sPRI)
+	if(reg == sPRI)
 		stgwrite("\tstor.pri ");
 	else
 		stgwrite("\tstor.alt ");
@@ -514,13 +514,13 @@ copyarray(symbol* sym, cell size)
 	/* the symbol can be a local array, a global array, or an array
 	 * that is passed by reference.
 	 */
-	if (sym->ident == iREFARRAY) {
+	if(sym->ident == iREFARRAY) {
 		/* reference to an array; currently this is always a local variable */
 		assert(sym->vclass == sLOCAL); /* symbol must be stack relative */
 		stgwrite("\tload.s.alt ");
 	} else {
 		/* a local or global array */
-		if (sym->vclass == sLOCAL)
+		if(sym->vclass == sLOCAL)
 			stgwrite("\taddr.alt ");
 		else
 			stgwrite("\tconst.alt ");
@@ -541,13 +541,13 @@ fillarray(symbol* sym, cell size, cell value)
 	/* the symbol can be a local array, a global array, or an array
 	 * that is passed by reference.
 	 */
-	if (sym->ident == iREFARRAY) {
+	if(sym->ident == iREFARRAY) {
 		/* reference to an array; currently this is always a local variable */
 		assert(sym->vclass == sLOCAL); /* symbol must be stack relative */
 		stgwrite("\tload.s.alt ");
 	} else {
 		/* a local or global array */
-		if (sym->vclass == sLOCAL)
+		if(sym->vclass == sLOCAL)
 			stgwrite("\taddr.alt ");
 		else
 			stgwrite("\tconst.alt ");
@@ -577,9 +577,9 @@ void
 ldconst(cell val, regid reg)
 {
 	assert(reg == sPRI || reg == sALT);
-	switch (reg) {
+	switch(reg) {
 		case sPRI:
-			if (val == 0) {
+			if(val == 0) {
 				stgwrite("\tzero.pri\n");
 				code_idx += opcodes(1);
 			} else {
@@ -589,7 +589,7 @@ ldconst(cell val, regid reg)
 			}
 			break;
 		case sALT:
-			if (val == 0) {
+			if(val == 0) {
 				stgwrite("\tzero.alt\n");
 				code_idx += opcodes(1);
 			} else {
@@ -622,7 +622,7 @@ void
 pushreg(regid reg)
 {
 	assert(reg == sPRI || reg == sALT);
-	switch (reg) {
+	switch(reg) {
 		case sPRI:
 			stgwrite("\tpush.pri\n");
 			break;
@@ -650,7 +650,7 @@ void
 popreg(regid reg)
 {
 	assert(reg == sPRI || reg == sALT);
-	switch (reg) {
+	switch(reg) {
 		case sPRI:
 			stgwrite("\tpop.pri\n");
 			break;
@@ -671,7 +671,7 @@ popreg(regid reg)
 void
 genarray(int dims, int _autozero)
 {
-	if (_autozero) {
+	if(_autozero) {
 		stgwrite("\tgenarray.z ");
 	} else {
 		stgwrite("\tgenarray ");
@@ -710,7 +710,7 @@ ffswitch(int label)
 void
 ffcase(cell value, char* labelname, int newtable)
 {
-	if (newtable) {
+	if(newtable) {
 		stgwrite("\tcasetbl\n");
 		code_idx += opcodes(1);
 	}
@@ -733,17 +733,17 @@ ffcall(symbol* sym, int numargs)
 
 	assert(sym != NULL);
 	assert(sym->ident == iFUNCTN);
-	if (sc_asmfile)
+	if(sc_asmfile)
 		funcdisplayname(symname, sym->name());
-	if (sym->native) {
+	if(sym->native) {
 		/* reserve a SYSREQ id if called for the first time */
 		stgwrite("\tsysreq.n ");
 
 		/* Look for an alias */
 		symbol* target = sym;
-		if (lookup_alias(aliasname, sym->name())) {
+		if(lookup_alias(aliasname, sym->name())) {
 			symbol* asym = findglb(aliasname);
-			if (asym && asym->ident == iFUNCTN && sym->native)
+			if(asym && asym->ident == iFUNCTN && sym->native)
 				target = asym;
 		}
 		stgwrite(target->name());
@@ -757,7 +757,7 @@ ffcall(symbol* sym, int numargs)
 		/* normal function */
 		stgwrite("\tcall ");
 		stgwrite(symname);
-		if (sc_asmfile &&
+		if(sc_asmfile &&
 			((!isalpha(symname[0]) && symname[0] != '_' && symname[0] != sc_ctrlchar)))
 		{
 			stgwrite("\t; ");
@@ -832,7 +832,7 @@ defstorage(void)
 void
 modstk(int delta)
 {
-	if (delta) {
+	if(delta) {
 		stgwrite("\tstack ");
 		outval(delta, TRUE);
 		code_idx += opcodes(1) + opargs(1);
@@ -842,7 +842,7 @@ modstk(int delta)
 void
 modheap(int delta)
 {
-	if (delta) {
+	if(delta) {
 		stgwrite("\theap ");
 		outval(delta, TRUE);
 		code_idx += opcodes(1) + opargs(1);
@@ -924,7 +924,7 @@ char2addr(void)
 void
 addconst(cell value)
 {
-	if (value != 0) {
+	if(value != 0) {
 		stgwrite("\tadd.c ");
 		outval(value, TRUE);
 		code_idx += opcodes(1) + opargs(1);
@@ -1214,11 +1214,11 @@ inc(const value* lval)
 	symbol* sym;
 
 	sym = lval->sym;
-	if (lval->ident == iARRAYCELL) {
+	if(lval->ident == iARRAYCELL) {
 		/* indirect increment, address already in PRI */
 		stgwrite("\tinc.i\n");
 		code_idx += opcodes(1);
-	} else if (lval->ident == iARRAYCHAR) {
+	} else if(lval->ident == iARRAYCHAR) {
 		/* indirect increment of single character, address already in PRI */
 		stgwrite("\tpush.pri\n");
 		stgwrite("\tpush.alt\n");
@@ -1231,7 +1231,7 @@ inc(const value* lval)
 		stgwrite("\tpop.alt\n");
 		stgwrite("\tpop.pri\n");
 		code_idx += opcodes(8) + opargs(2);
-	} else if (lval->ident == iREFERENCE) {
+	} else if(lval->ident == iREFERENCE) {
 		assert(sym != NULL);
 		stgwrite("\tpush.pri\n");
 		/* load dereferenced value */
@@ -1245,13 +1245,13 @@ inc(const value* lval)
 		outval(sym->addr(), TRUE);
 		stgwrite("\tpop.pri\n");
 		code_idx += opcodes(5) + opargs(2);
-	} else if (lval->ident == iACCESSOR) {
+	} else if(lval->ident == iACCESSOR) {
 		inc_pri();
 		invoke_setter(lval->accessor, FALSE);
 	} else {
 		/* local or global variable */
 		assert(sym != NULL);
-		if (sym->vclass == sLOCAL)
+		if(sym->vclass == sLOCAL)
 			stgwrite("\tinc.s ");
 		else
 			stgwrite("\tinc ");
@@ -1270,11 +1270,11 @@ dec(const value* lval)
 	symbol* sym;
 
 	sym = lval->sym;
-	if (lval->ident == iARRAYCELL) {
+	if(lval->ident == iARRAYCELL) {
 		/* indirect decrement, address already in PRI */
 		stgwrite("\tdec.i\n");
 		code_idx += opcodes(1);
-	} else if (lval->ident == iARRAYCHAR) {
+	} else if(lval->ident == iARRAYCHAR) {
 		/* indirect decrement of single character, address already in PRI */
 		stgwrite("\tpush.pri\n");
 		stgwrite("\tpush.alt\n");
@@ -1287,7 +1287,7 @@ dec(const value* lval)
 		stgwrite("\tpop.alt\n");
 		stgwrite("\tpop.pri\n");
 		code_idx += opcodes(8) + opargs(2);
-	} else if (lval->ident == iREFERENCE) {
+	} else if(lval->ident == iREFERENCE) {
 		assert(sym != NULL);
 		stgwrite("\tpush.pri\n");
 		/* load dereferenced value */
@@ -1301,13 +1301,13 @@ dec(const value* lval)
 		outval(sym->addr(), TRUE);
 		stgwrite("\tpop.pri\n");
 		code_idx += opcodes(5) + opargs(2);
-	} else if (lval->ident == iACCESSOR) {
+	} else if(lval->ident == iACCESSOR) {
 		dec_pri();
 		invoke_setter(lval->accessor, FALSE);
 	} else {
 		/* local or global variable */
 		assert(sym != NULL);
-		if (sym->vclass == sLOCAL)
+		if(sym->vclass == sLOCAL)
 			stgwrite("\tdec.s ");
 		else
 			stgwrite("\tdec ");
@@ -1343,14 +1343,14 @@ void
 outval(cell val, int newline)
 {
 	stgwrite(itoh(val));
-	if (newline)
+	if(newline)
 		stgwrite("\n");
 }
 
 void
 invoke_getter(methodmap_method_t* method)
 {
-	if (!method->getter) {
+	if(!method->getter) {
 		error(149, method->name);
 		return;
 	}
@@ -1360,27 +1360,27 @@ invoke_getter(methodmap_method_t* method)
 	pushreg(sPRI);
 	ffcall(method->getter, 1);
 
-	if (sc_status != statSKIP)
+	if(sc_status != statSKIP)
 		markusage(method->getter, uREAD);
 }
 
 void
 invoke_setter(methodmap_method_t* method, int save)
 {
-	if (!method->setter) {
+	if(!method->setter) {
 		error(152, method->name);
 		return;
 	}
 
-	if (save)
+	if(save)
 		pushreg(sPRI);
 	pushreg(sPRI);
 	pushreg(sALT);
 	ffcall(method->setter, 2);
-	if (save)
+	if(save)
 		popreg(sPRI);
 
-	if (sc_status != statSKIP)
+	if(sc_status != statSKIP)
 		markusage(method->setter, uREAD);
 }
 
@@ -1395,7 +1395,7 @@ load_glbfn(symbol* sym)
 	stgwrite("\n");
 	code_idx += opcodes(1) + opargs(1);
 
-	if (sc_status != statSKIP)
+	if(sc_status != statSKIP)
 		markusage(sym, uREAD);
 }
 
@@ -1408,21 +1408,21 @@ dumplits()
 {
 	int j, k;
 
-	if (sc_status == statSKIP)
+	if(sc_status == statSKIP)
 		return ke::ReturnAndVoid(litidx);
 
 	k = 0;
-	while (k < litidx) {
+	while(k < litidx) {
 		/* should be in the data segment */
 		assert(curseg == 2);
 		defstorage();
 		j = 16; /* 16 values per line */
-		while (j && k < litidx) {
+		while(j && k < litidx) {
 			outval(litq[k], FALSE);
 			stgwrite(" ");
 			k++;
 			j--;
-			if (j == 0 || k >= litidx)
+			if(j == 0 || k >= litidx)
 				stgwrite("\n"); /* force a newline after 10 dumps */
 			/* Note: stgwrite() buffers a line until it is complete. It recognizes
 			 * the end of line as a sequence of "\n\0", so something like "\n\t"
@@ -1440,7 +1440,7 @@ dumplits()
 void
 dumpzero(int count)
 {
-	if (sc_status == statSKIP || count <= 0)
+	if(sc_status == statSKIP || count <= 0)
 		return;
 	assert(curseg == 2);
 
@@ -1453,12 +1453,12 @@ dumpzero(int count)
 static void
 chk_grow_litq(void)
 {
-	if (litidx >= litmax) {
+	if(litidx >= litmax) {
 		cell* p;
 
 		litmax += sDEF_LITMAX;
 		p = (cell*)realloc(litq, litmax * sizeof(cell));
-		if (p == NULL)
+		if(p == NULL)
 			error(FATAL_ERROR_ALLOC_OVERFLOW, "literal table");
 		litq = p;
 	}

@@ -31,11 +31,11 @@ struct SymbolHashPolicy {
 	}
 
 	static bool matches(const NameAndScope& key, symbol* sym) {
-		if (sym->parent() && sym->ident != iCONSTEXPR)
+		if(sym->parent() && sym->ident != iCONSTEXPR)
 			return false;
-		if (sym->is_static && sym->fnumber != key.fnumber)
+		if(sym->is_static && sym->fnumber != key.fnumber)
 			return false;
-		if (key.name != sym->nameAtom())
+		if(key.name != sym->nameAtom())
 			return false;
 		return true;
 	}
@@ -56,7 +56,7 @@ HashTable*
 NewHashTable()
 {
 	HashTable* ht = new HashTable();
-	if (!ht->init()) {
+	if(!ht->init()) {
 		delete ht;
 		return nullptr;
 	}
@@ -74,7 +74,7 @@ FindInHashTable(HashTable* ht, const char* name, int fnumber)
 {
 	NameAndScope nas(name, fnumber);
 	HashTable::Result r = ht->find(nas);
-	if (!r.found())
+	if(!r.found())
 		return nullptr;
 	return *r;
 }

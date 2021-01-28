@@ -50,7 +50,7 @@ struct MacroTablePolicy {
 		return a == b;
 	}
 	static bool matches(const sp::CharsAndLength& a, const std::string& b) {
-		if (a.length() != b.length())
+		if(a.length() != b.length())
 			return false;
 		return strncmp(a.str(), b.c_str(), a.length()) == 0;
 	}
@@ -78,12 +78,12 @@ insert_string(stringlist* root, const char* string)
 	stringlist* cur;
 
 	assert(string != NULL);
-	if ((cur = (stringlist*)malloc(sizeof(stringlist))) == NULL)
+	if((cur = (stringlist*)malloc(sizeof(stringlist))) == NULL)
 		error(103); /* insufficient memory (fatal error) */
-	if ((cur->line = strdup(string)) == NULL)
+	if((cur->line = strdup(string)) == NULL)
 		error(103); /* insufficient memory (fatal error) */
 	cur->next = NULL;
-	if (root->tail)
+	if(root->tail)
 		root->tail->next = cur;
 	else
 		root->next = cur;
@@ -98,9 +98,9 @@ get_string(stringlist* root, int index)
 
 	assert(root != NULL);
 	cur = root->next;
-	while (cur != NULL && index-- > 0)
+	while(cur != NULL && index-- > 0)
 		cur = cur->next;
-	if (cur != NULL) {
+	if(cur != NULL) {
 		assert(cur->line != NULL);
 		return cur->line;
 	}
@@ -114,7 +114,7 @@ delete_stringtable(stringlist* root)
 
 	assert(root != NULL);
 	cur = root->next;
-	while (cur != NULL) {
+	while(cur != NULL) {
 		next = cur->next;
 		assert(cur->line != NULL);
 		free(cur->line);
@@ -127,14 +127,14 @@ delete_stringtable(stringlist* root)
 void
 insert_alias(const char* name, const char* alias)
 {
-	if (!sAliasTableInitialized) {
+	if(!sAliasTableInitialized) {
 		sAliases.init(128);
 		sAliasTableInitialized = true;
 	}
 
 	sp::CharsAndLength key(name, strlen(name));
 	auto p = sAliases.findForAdd(key);
-	if (p.found())
+	if(p.found())
 		p->value = alias;
 	else
 		sAliases.add(p, key, alias);
@@ -143,12 +143,12 @@ insert_alias(const char* name, const char* alias)
 bool
 lookup_alias(char* target, const char* name)
 {
-	if (!sAliasTableInitialized)
+	if(!sAliasTableInitialized)
 		return false;
 
 	sp::CharsAndLength key(name, strlen(name));
 	auto p = sAliases.find(key);
-	if (!p.found())
+	if(!p.found())
 		return false;
 	ke::SafeStrcpy(target, sNAMEMAX + 1, p->value.c_str());
 	return true;
@@ -157,7 +157,7 @@ lookup_alias(char* target, const char* name)
 void
 delete_aliastable(void)
 {
-	if (sAliasTableInitialized)
+	if(sAliasTableInitialized)
 		sAliases.clear();
 }
 
@@ -188,7 +188,7 @@ delete_pathtable(void)
 void
 insert_subst(const char* pattern, size_t pattern_length, const char* substitution)
 {
-	if (!sMacroTableInitialized) {
+	if(!sMacroTableInitialized) {
 		sMacros.init(1024);
 		sMacroTableInitialized = true;
 	}
@@ -197,9 +197,9 @@ insert_subst(const char* pattern, size_t pattern_length, const char* substitutio
 	macro.first = pattern;
 	macro.second = substitution;
 	macro.deprecated = false;
-	if (pc_deprecate.length() > 0) {
+	if(pc_deprecate.length() > 0) {
 		macro.deprecated = true;
-		if (sc_status == statWRITE)
+		if(sc_status == statWRITE)
 			macro.documentation = std::move(pc_deprecate);
 		else
 			pc_deprecate = "";
@@ -207,7 +207,7 @@ insert_subst(const char* pattern, size_t pattern_length, const char* substitutio
 
 	std::string key(pattern, pattern_length);
 	auto p = sMacros.findForAdd(key);
-	if (p.found())
+	if(p.found())
 		p->value = macro;
 	else
 		sMacros.add(p, std::move(key), macro);
@@ -218,14 +218,14 @@ find_subst(const char* name, size_t length, macro_t* macro)
 {
 	sp::CharsAndLength key(name, length);
 	auto p = sMacros.find(key);
-	if (!p.found())
+	if(!p.found())
 		return false;
 
 	MacroEntry& entry = p->value;
-	if (entry.deprecated)
+	if(entry.deprecated)
 		error(234, p->key.c_str(), entry.documentation.c_str());
 
-	if (macro) {
+	if(macro) {
 		macro->first = entry.first.c_str();
 		macro->second = entry.second.c_str();
 	}
@@ -237,7 +237,7 @@ delete_subst(const char* name, size_t length)
 {
 	sp::CharsAndLength key(name, length);
 	auto p = sMacros.find(key);
-	if (!p.found())
+	if(!p.found())
 		return false;
 
 	sMacros.remove(p);
@@ -278,7 +278,7 @@ static stringlist inputfiles;
 stringlist*
 insert_inputfile(char* string)
 {
-	if (sc_status != statFIRST)
+	if(sc_status != statFIRST)
 		return insert_string(&inputfiles, string);
 	return NULL;
 }
@@ -328,7 +328,7 @@ static stringlist dbgstrings;
 stringlist*
 insert_dbgfile(const char* filename)
 {
-	if (sc_status == statWRITE && (sc_debug & sSYMBOLIC) != 0) {
+	if(sc_status == statWRITE && (sc_debug & sSYMBOLIC) != 0) {
 		char string[_MAX_PATH + 40];
 		assert(filename != NULL);
 		assert(strlen(filename) + 40 < sizeof string);
@@ -341,9 +341,9 @@ insert_dbgfile(const char* filename)
 stringlist*
 insert_dbgline(int linenr)
 {
-	if (sc_status == statWRITE && (sc_debug & sSYMBOLIC) != 0) {
+	if(sc_status == statWRITE && (sc_debug & sSYMBOLIC) != 0) {
 		char string[40];
-		if (linenr > 0)
+		if(linenr > 0)
 			linenr--; /* line numbers are zero-based in the debug information */
 		sprintf(string, "L:%" PRIxC " %x", code_idx, linenr);
 		return insert_string(&dbgstrings, string);
@@ -354,7 +354,7 @@ insert_dbgline(int linenr)
 stringlist*
 insert_dbgsymbol(symbol* sym)
 {
-	if (sc_status == statWRITE && (sc_debug & sSYMBOLIC) != 0) {
+	if(sc_status == statWRITE && (sc_debug & sSYMBOLIC) != 0) {
 		char string[2 * sNAMEMAX + 128];
 		char symname[2 * sNAMEMAX + 16];
 
@@ -363,13 +363,13 @@ insert_dbgsymbol(symbol* sym)
 		assert(sym->ident != iFUNCTN);
 		sprintf(string, "S:%" PRIxC " %x:%s %" PRIxC " %" PRIxC " %x %x %x", sym->addr(), sym->tag,
 				symname, sym->codeaddr, code_idx, sym->ident, sym->vclass, (int)sym->is_const);
-		if (sym->ident == iARRAY || sym->ident == iREFARRAY) {
+		if(sym->ident == iARRAY || sym->ident == iREFARRAY) {
 #if !defined NDEBUG
 			int count = sym->dim.array.level;
 #endif
 			symbol* sub;
 			strcat(string, " [ ");
-			for (sub = sym; sub != NULL; sub = sub->array_child()) {
+			for(sub = sym; sub != NULL; sub = sub->array_child()) {
 				assert(sub->dim.array.level == count--);
 				sprintf(string + strlen(string), "%x:%x ", sub->x.tags.index,
 						sub->dim.array.length);
@@ -377,8 +377,8 @@ insert_dbgsymbol(symbol* sym)
 			strcat(string, "]");
 		}
 
-		if (curfunc) {
-			if (!curfunc->function()->dbgstrs)
+		if(curfunc) {
+			if(!curfunc->function()->dbgstrs)
 				curfunc->function()->dbgstrs = (stringlist*)calloc(1, sizeof(stringlist));
 			return insert_string(curfunc->function()->dbgstrs, string);
 		}

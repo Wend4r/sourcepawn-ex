@@ -10,7 +10,7 @@
 
 struct KeywordTablePolicy {
 	static bool matches(const sp::CharsAndLength& a, const sp::CharsAndLength& b) {
-		if (a.length() != b.length())
+		if(a.length() != b.length())
 			return false;
 		return strncmp(a.str(), b.str(), a.length()) == 0;
 	}

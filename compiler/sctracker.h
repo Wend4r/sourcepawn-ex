@@ -76,13 +76,13 @@ struct methodmap_method_t {
 
 	int property_tag() const {
 		assert(getter || setter);
-		if (getter)
+		if(getter)
 			return getter->tag;
 		arginfo* thisp = &setter->function()->args[0];
-		if (thisp->ident == 0)
+		if(thisp->ident == 0)
 			return pc_tag_void;
 		arginfo* valp = &setter->function()->args[1];
-		if (valp->ident != iVARIABLE)
+		if(valp->ident != iVARIABLE)
 			return pc_tag_void;
 		return valp->tag;
 	}

@@ -40,7 +40,7 @@ PoolAllocator::~PoolAllocator()
 char*
 PoolAllocator::enter()
 {
-	if (pools_.empty())
+	if(pools_.empty())
 		return nullptr;
 	return pools_.back()->ptr;
 }
@@ -54,9 +54,9 @@ PoolAllocator::leave(char* pos)
 void
 PoolAllocator::unwind(char* pos)
 {
-	while (!pools_.empty()) {
+	while(!pools_.empty()) {
 		Pool* last = pools_.back().get();
-		if (pos && pos >= last->base.get() && pos < last->end) {
+		if(pos && pos >= last->base.get() && pos < last->end) {
 			last->ptr = pos;
 			return;
 		}
@@ -68,7 +68,7 @@ PoolAllocator::Pool*
 PoolAllocator::ensurePool(size_t actualBytes)
 {
 	size_t bytesNeeded = actualBytes;
-	if (bytesNeeded < kDefaultPoolSize)
+	if(bytesNeeded < kDefaultPoolSize)
 		bytesNeeded = kDefaultPoolSize;
 
 	auto pool = std::make_unique<Pool>();
@@ -97,7 +97,7 @@ void*
 PoolAllocationPolicy::Malloc(size_t bytes)
 {
 	void* p = gPoolAllocator.rawAllocate(bytes);
-	if (!p) {
+	if(!p) {
 		fprintf(stderr, "OUT OF POOL MEMORY\n");
 		abort();
 	}

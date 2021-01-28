@@ -58,37 +58,37 @@
 #define sDEF_LITMAX 500    /* initial size of the literal pool, in "cells" */
 #define sDEF_AMXSTACK 4096 /* default stack size for AMX files */
 #define PREPROC_TERM \
-    '\x7f' /* termination character for preprocessor expressions (the "DEL" code) */
+	'\x7f' /* termination character for preprocessor expressions (the "DEL" code) */
 #define sDEF_PREFIX "sourcemod.inc" /* default prefix filename */
 
 struct arginfo { /* function argument info */
-    char name[sNAMEMAX + 1];
-    char ident; /* iVARIABLE, iREFERENCE, iREFARRAY or iVARARGS */
-    bool is_const;
-    int tag;    /* argument tag id */
-    int dim[sDIMEN_MAX];
-    int idxtag[sDIMEN_MAX];
-    int numdim;               /* number of dimensions */
-    unsigned char hasdefault; /* bit0: is there a default value? bit6: "tagof"; bit7: "sizeof" */
-    union {
-        cell val; /* default value */
-        struct {
-            cell* data;    /* values of default array */
-            int size;      /* complete length of default array */
-            int arraysize; /* size to reserve on the heap */
-            cell addr;     /* address of the default array in the data segment */
-        } array;
-    } defvalue;       /* default value, or pointer to default array */
-    int defvalue_tag; /* tag of the default value */
+	char name[sNAMEMAX + 1];
+	char ident; /* iVARIABLE, iREFERENCE, iREFARRAY or iVARARGS */
+	bool is_const;
+	int tag;    /* argument tag id */
+	int dim[sDIMEN_MAX];
+	int idxtag[sDIMEN_MAX];
+	int numdim;               /* number of dimensions */
+	unsigned char hasdefault; /* bit0: is there a default value? bit6: "tagof"; bit7: "sizeof" */
+	union {
+		cell val; /* default value */
+		struct {
+			cell* data;    /* values of default array */
+			int size;      /* complete length of default array */
+			int arraysize; /* size to reserve on the heap */
+			cell addr;     /* address of the default array in the data segment */
+		} array;
+	} defvalue;       /* default value, or pointer to default array */
+	int defvalue_tag; /* tag of the default value */
 };
 
 /*  Equate table, tagname table, library table */
 struct constvalue {
-    constvalue* next;
-    char name[sNAMEMAX + 1];
-    cell value;
-    int index; /* index level, for constants referring to array sizes/tags
-                         * tag for enumeration lists */
+	constvalue* next;
+	char name[sNAMEMAX + 1];
+	cell value;
+	int index; /* index level, for constants referring to array sizes/tags
+						 * tag for enumeration lists */
 };
 
 struct methodmap_t;
@@ -118,39 +118,39 @@ class FunctionData;
 class SymbolData
 {
   public:
-    virtual ~SymbolData() {}
-    virtual FunctionData* asFunction() {
-        return nullptr;
-    }
-    virtual EnumStructVarData* asEnumStructVar() {
-        return nullptr;
-    }
+	virtual ~SymbolData() {}
+	virtual FunctionData* asFunction() {
+		return nullptr;
+	}
+	virtual EnumStructVarData* asEnumStructVar() {
+		return nullptr;
+	}
 };
 
 class FunctionData final : public SymbolData
 {
   public:
-    FunctionData();
-    ~FunctionData() override;
-    FunctionData* asFunction() override {
-        return this;
-    }
+	FunctionData();
+	~FunctionData() override;
+	FunctionData* asFunction() override {
+		return this;
+	}
 
-    void resizeArgs(size_t nargs);
+	void resizeArgs(size_t nargs);
 
-    int funcid;          /* set for functions during codegen */
-    stringlist* dbgstrs; /* debug strings - functions only */
-    std::vector<arginfo> args;
+	int funcid;          /* set for functions during codegen */
+	stringlist* dbgstrs; /* debug strings - functions only */
+	std::vector<arginfo> args;
 };
 
 class EnumStructVarData final : public SymbolData
 {
   public:
-    EnumStructVarData* asEnumStructVar() override {
-        return this;
-    }
+	EnumStructVarData* asEnumStructVar() override {
+		return this;
+	}
 
-    std::vector<std::unique_ptr<symbol>> children;
+	std::vector<std::unique_ptr<symbol>> children;
 };
 
 struct symbol;
@@ -166,151 +166,151 @@ struct symbol;
  *      function        offset into code segment
  */
 struct symbol {
-    symbol();
-    symbol(const symbol& other);
-    symbol(const char* name, cell addr, int ident, int vclass, int tag);
-    ~symbol();
+	symbol();
+	symbol(const symbol& other);
+	symbol(const char* name, cell addr, int ident, int vclass, int tag);
+	~symbol();
 
-    symbol* next;
-    cell codeaddr; /* address (in the code segment) where the symbol declaration starts */
-    char vclass;   /* sLOCAL if "addr" refers to a local symbol */
-    char ident;    /* see below for possible values */
-    int compound;  /* compound level (braces nesting level) */
-    int tag;       /* tagname id */
+	symbol* next;
+	cell codeaddr; /* address (in the code segment) where the symbol declaration starts */
+	char vclass;   /* sLOCAL if "addr" refers to a local symbol */
+	char ident;    /* see below for possible values */
+	int compound;  /* compound level (braces nesting level) */
+	int tag;       /* tagname id */
 
-    // See uREAD/uWRITTEN above.
-    uint8_t usage : 2;
+	// See uREAD/uWRITTEN above.
+	uint8_t usage : 2;
 
-    // Variable: the variable is defined in the source file.
-    // Function: the function is defined ("implemented") in the source file
-    // Constant: the symbol is defined in the source file.
-    bool defined : 1;       // remove when moving to a single-pass system
-    bool is_const : 1;
+	// Variable: the variable is defined in the source file.
+	// Function: the function is defined ("implemented") in the source file
+	// Constant: the symbol is defined in the source file.
+	bool defined : 1;       // remove when moving to a single-pass system
+	bool is_const : 1;
 
-    // Variables and functions.
-    bool stock : 1;         // discardable without warning
-    bool is_public : 1;     // publicly exposed
-    bool is_static : 1;     // declared as static
+	// Variables and functions.
+	bool stock : 1;         // discardable without warning
+	bool is_public : 1;     // publicly exposed
+	bool is_static : 1;     // declared as static
 
-    // TODO: make this an ident.
-    bool is_struct : 1;
+	// TODO: make this an ident.
+	bool is_struct : 1;
 
-    // Functions only.
-    bool prototyped : 1;    // prototyped, implicitly via a definition or explicitly
-    bool missing : 1;       // the function is not implemented in this source file
-    bool callback : 1;      // used as a callback
-    bool skipped : 1;       // skipped in codegen
-    bool retvalue : 1;      // function returns (or should return) a value
-    bool forward : 1;       // the function is explicitly forwardly declared
-    bool native : 1;        // the function is native
+	// Functions only.
+	bool prototyped : 1;    // prototyped, implicitly via a definition or explicitly
+	bool missing : 1;       // the function is not implemented in this source file
+	bool callback : 1;      // used as a callback
+	bool skipped : 1;       // skipped in codegen
+	bool retvalue : 1;      // function returns (or should return) a value
+	bool forward : 1;       // the function is explicitly forwardly declared
+	bool native : 1;        // the function is native
 
-    // Constants only.
-    bool enumroot : 1;      // the constant is the "root" of an enumeration
-    bool enumfield : 1;     // the constant is a field in a named enumeration
-    bool predefined : 1;    // the constant is pre-defined and should be kept between passes
+	// Constants only.
+	bool enumroot : 1;      // the constant is the "root" of an enumeration
+	bool enumfield : 1;     // the constant is a field in a named enumeration
+	bool predefined : 1;    // the constant is pre-defined and should be kept between passes
 
-    // General symbol flags.
-    bool deprecated : 1;    // symbol is deprecated (avoid use)
-    bool queued : 1;        // symbol is queued for a local work algorithm
+	// General symbol flags.
+	bool deprecated : 1;    // symbol is deprecated (avoid use)
+	bool queued : 1;        // symbol is queued for a local work algorithm
 
-    union {
-        struct {
-            int index; /* array & enum: tag of array indices or the enum item */
-            int field; /* enumeration fields, where a size is attached to the field */
-        } tags;        /* extra tags */
-    } x;               /* 'x' for 'extra' */
-    union {
-        constvalue* enumlist; /* list of names for the "root" of an enumeration */
-        struct {
-            cell length;  /* arrays: length (size) */
-            cell slength; /* if a string index, this will be set to the original size */
-            short level;  /* number of dimensions below this level */
-        } array;
-    } dim;       /* for 'dimension', both functions and arrays */
-    int fnumber; /* file number in which the symbol is declared */
-    int lnumber; /* line number for the declaration */
-    std::string documentation; /* optional documentation string */
-    methodmap_t* methodmap;    /* if ident == iMETHODMAP */
+	union {
+		struct {
+			int index; /* array & enum: tag of array indices or the enum item */
+			int field; /* enumeration fields, where a size is attached to the field */
+		} tags;        /* extra tags */
+	} x;               /* 'x' for 'extra' */
+	union {
+		constvalue* enumlist; /* list of names for the "root" of an enumeration */
+		struct {
+			cell length;  /* arrays: length (size) */
+			cell slength; /* if a string index, this will be set to the original size */
+			short level;  /* number of dimensions below this level */
+		} array;
+	} dim;       /* for 'dimension', both functions and arrays */
+	int fnumber; /* file number in which the symbol is declared */
+	int lnumber; /* line number for the declaration */
+	std::string documentation; /* optional documentation string */
+	methodmap_t* methodmap;    /* if ident == iMETHODMAP */
 
-    int addr() const {
-        return addr_;
-    }
-    void setAddr(int addr) {
-        addr_ = addr;
-    }
-    sp::Atom* nameAtom() const {
-        return name_;
-    }
-    const char* name() const {
-        return name_ ? name_->chars() : "";
-    }
-    void setName(sp::Atom* name) {
-        name_ = name;
-    }
-    FunctionData* function() const {
-        assert(ident == iFUNCTN);
-        return data_->asFunction();
-    }
-    symbol* parent() const {
-        return parent_;
-    }
-    void set_parent(symbol* parent) {
-        parent_ = parent;
-    }
+	int addr() const {
+		return addr_;
+	}
+	void setAddr(int addr) {
+		addr_ = addr;
+	}
+	sp::Atom* nameAtom() const {
+		return name_;
+	}
+	const char* name() const {
+		return name_ ? name_->chars() : "";
+	}
+	void setName(sp::Atom* name) {
+		name_ = name;
+	}
+	FunctionData* function() const {
+		assert(ident == iFUNCTN);
+		return data_->asFunction();
+	}
+	symbol* parent() const {
+		return parent_;
+	}
+	void set_parent(symbol* parent) {
+		parent_ = parent;
+	}
 
-    symbol* array_return() const {
-        assert(ident == iFUNCTN);
-        return child_;
-    }
-    void set_array_return(symbol* child) {
-        assert(ident == iFUNCTN);
-        assert(!child_);
-        child_ = child;
-    }
-    symbol* array_child() const {
-        assert(ident == iARRAY || ident == iREFARRAY);
-        return child_;
-    }
-    void set_array_child(symbol* child) {
-        assert(ident == iARRAY || ident == iREFARRAY);
-        assert(!child_);
-        child_ = child;
-    }
-    SymbolData* data() const {
-        return data_.get();
-    }
-    void set_data(std::unique_ptr<SymbolData>&& data) {
-        data_ = std::move(data);
-    }
+	symbol* array_return() const {
+		assert(ident == iFUNCTN);
+		return child_;
+	}
+	void set_array_return(symbol* child) {
+		assert(ident == iFUNCTN);
+		assert(!child_);
+		child_ = child;
+	}
+	symbol* array_child() const {
+		assert(ident == iARRAY || ident == iREFARRAY);
+		return child_;
+	}
+	void set_array_child(symbol* child) {
+		assert(ident == iARRAY || ident == iREFARRAY);
+		assert(!child_);
+		child_ = child;
+	}
+	SymbolData* data() const {
+		return data_.get();
+	}
+	void set_data(std::unique_ptr<SymbolData>&& data) {
+		data_ = std::move(data);
+	}
 
-    void add_reference_to(symbol* other);
-    void drop_reference_from(symbol* from);
+	void add_reference_to(symbol* other);
+	void drop_reference_from(symbol* from);
 
-    std::vector<symbol*>& refers_to() {
-        return refers_to_;
-    }
-    bool is_unreferenced() const {
-        return referred_from_count_ == 0;
-    }
-    void clear_refers() {
-        refers_to_.clear();
-        referred_from_.clear();
-    }
+	std::vector<symbol*>& refers_to() {
+		return refers_to_;
+	}
+	bool is_unreferenced() const {
+		return referred_from_count_ == 0;
+	}
+	void clear_refers() {
+		refers_to_.clear();
+		referred_from_.clear();
+	}
 
   private:
-    cell addr_; /* address or offset (or value for constant, index for native function) */
-    sp::Atom* name_;
-    std::unique_ptr<SymbolData> data_;
+	cell addr_; /* address or offset (or value for constant, index for native function) */
+	sp::Atom* name_;
+	std::unique_ptr<SymbolData> data_;
 
-    // Other symbols that this symbol refers to.
-    std::vector<symbol*> refers_to_;
+	// Other symbols that this symbol refers to.
+	std::vector<symbol*> refers_to_;
 
-    // All the symbols that refer to this symbol.
-    std::vector<symbol*> referred_from_;
-    size_t referred_from_count_;
+	// All the symbols that refer to this symbol.
+	std::vector<symbol*> referred_from_;
+	size_t referred_from_count_;
 
-    symbol* parent_;
-    symbol* child_;
+	symbol* parent_;
+	symbol* child_;
 };
 
 // Values for symbol::usage.
@@ -326,46 +326,46 @@ struct symbol {
 struct methodmap_method_t;
 
 struct value {
-    char ident;      /* iCONSTEXPR, iVARIABLE, iARRAY, iARRAYCELL,
-                         * iEXPRESSION or iREFERENCE */
-    /* symbol in symbol table, NULL for (constant) expression */
-    symbol* sym;
-    cell constval;   /* value of the constant expression (if ident==iCONSTEXPR)
-                         * also used for the size of a literal array */
-    int tag;         /* tag (of the expression) */
+	char ident;      /* iCONSTEXPR, iVARIABLE, iARRAY, iARRAYCELL,
+						 * iEXPRESSION or iREFERENCE */
+	/* symbol in symbol table, NULL for (constant) expression */
+	symbol* sym;
+	cell constval;   /* value of the constant expression (if ident==iCONSTEXPR)
+						 * also used for the size of a literal array */
+	int tag;         /* tag (of the expression) */
 
-    // Returns whether the value can be rematerialized based on static
-    // information, or whether it is the result of an expression.
-    bool canRematerialize() const {
-        switch (ident) {
-            case iVARIABLE:
-            case iCONSTEXPR:
-                return true;
-            case iREFERENCE:
-                return sym->vclass == sLOCAL;
-            default:
-                return false;
-        }
-    }
+	// Returns whether the value can be rematerialized based on static
+	// information, or whether it is the result of an expression.
+	bool canRematerialize() const {
+		switch (ident) {
+			case iVARIABLE:
+			case iCONSTEXPR:
+				return true;
+			case iREFERENCE:
+				return sym->vclass == sLOCAL;
+			default:
+				return false;
+		}
+	}
 
-    /* when ident == iACCESSOR */
-    methodmap_method_t* accessor;
+	/* when ident == iACCESSOR */
+	methodmap_method_t* accessor;
 
-    static value ErrorValue() {
-        value v = {};
-        v.ident = iCONSTEXPR;
-        return v;
-    }
+	static value ErrorValue() {
+		value v = {};
+		v.ident = iCONSTEXPR;
+		return v;
+	}
 };
 
 /* Wrapper around value + l/rvalue bit. */
 struct svalue {
-    value val;
-    int lvalue;
+	value val;
+	int lvalue;
 
-    bool canRematerialize() const {
-        return val.canRematerialize();
-    }
+	bool canRematerialize() const {
+		return val.canRematerialize();
+	}
 };
 
 #define DECLFLAG_ARGUMENT 0x02       // The declaration is for an argument.
@@ -377,31 +377,31 @@ struct svalue {
 #define DECLFLAG_FIELD 0x80          // Struct field.
 #define DECLFLAG_NEW 0x100           // Known new-style declaration.
 #define DECLMASK_NAMED_DECL \
-    (DECLFLAG_ARGUMENT | DECLFLAG_VARIABLE | DECLFLAG_MAYBE_FUNCTION | DECLFLAG_FIELD)
+	(DECLFLAG_ARGUMENT | DECLFLAG_VARIABLE | DECLFLAG_MAYBE_FUNCTION | DECLFLAG_FIELD)
 
 /* For parsing declarations. */
 struct declinfo_t {
-    char name[sNAMEMAX + 1];
-    typeinfo_t type;
-    int opertok; // Operator token, if applicable.
+	char name[sNAMEMAX + 1];
+	typeinfo_t type;
+	int opertok; // Operator token, if applicable.
 };
 
 /*  "while" statement queue (also used for "for" and "do - while" loops) */
 enum {
-    wqBRK,  /* used to restore stack for "break" */
-    wqCONT, /* used to restore stack for "continue" */
-    wqLOOP, /* loop start label number */
-    wqEXIT, /* loop exit label number (jump if false) */
-    /* --- */
-    wqSIZE /* "while queue" size */
+	wqBRK,  /* used to restore stack for "break" */
+	wqCONT, /* used to restore stack for "continue" */
+	wqLOOP, /* loop start label number */
+	wqEXIT, /* loop exit label number (jump if false) */
+	/* --- */
+	wqSIZE /* "while queue" size */
 };
 #define wqTABSZ (24 * wqSIZE) /* 24 nested loop statements */
 
 enum {
-    statIDLE,  /* not compiling yet */
-    statFIRST, /* first pass */
-    statWRITE, /* writing output */
-    statSKIP,  /* skipping output */
+	statIDLE,  /* not compiling yet */
+	statFIRST, /* first pass */
+	statWRITE, /* writing output */
+	statSKIP,  /* skipping output */
 };
 
 /* (reversed) evaluation of staging buffer */
@@ -457,7 +457,7 @@ bool parse_new_typename(const token_t* tok, int* tagp);
 void set_extension(char* filename, const char* extension, int force);
 symbol* fetchfunc(const char* name);
 char* operator_symname(char* symname, const char* opername, int tag1, int tag2, int numtags,
-                       int resulttag);
+					   int resulttag);
 char* funcdisplayname(char* dest, const char* funcname);
 int exprconst(cell* val, int* tag, symbol** symptr);
 constvalue* append_constval(constvalue* table, const char* name, cell val, int index);
@@ -474,17 +474,17 @@ int get_actual_compound(symbol* sym);
 #endif
 
 typedef struct array_info_s {
-    const int* dim_list;          /* Dimension sizes */
-    int dim_count;                /* Number of dimensions */
-    const int* lastdim_list;      /* Sizes of last dimensions, if variable */
-    const cell* dim_offs_precalc; /* Cached calculations into the lastdim_list array */
-    cell* data_offs;              /* Current offset AFTER the indirection vectors (data) */
-    int* cur_dims;                /* Current dimensions the recursion is at */
-    cell* base;                   /* &litq[startlit] */
+	const int* dim_list;          /* Dimension sizes */
+	int dim_count;                /* Number of dimensions */
+	const int* lastdim_list;      /* Sizes of last dimensions, if variable */
+	const cell* dim_offs_precalc; /* Cached calculations into the lastdim_list array */
+	cell* data_offs;              /* Current offset AFTER the indirection vectors (data) */
+	int* cur_dims;                /* Current dimensions the recursion is at */
+	cell* base;                   /* &litq[startlit] */
 } array_info_t;
 
 constexpr cell char_array_cells(cell size) {
-    return (size + sizeof(cell) - 1) / sizeof(cell);
+	return (size + sizeof(cell) - 1) / sizeof(cell);
 }
 
 extern sp::StringPool gAtoms;

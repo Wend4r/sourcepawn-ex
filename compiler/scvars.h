@@ -109,5 +109,5 @@ extern std::vector<char*> gInputFilenameStack;
 static inline bool
 cc_ok()
 {
-    return sc_status == statWRITE && sc_total_errors == 0;
+	return sc_status == statWRITE && sc_total_errors == 0;
 }

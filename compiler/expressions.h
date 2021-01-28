@@ -33,21 +33,21 @@ struct svalue;
 
 class ExpressionParser
 {
-  protected:
-    static int nextop(int* opidx, int* list);
+	protected:
+		static int nextop(int* opidx, int* list);
 
-    // Each of these lists is an operator precedence level, and each list is a
-    // zero-terminated list of operators in that level (in precedence order).
-    static int list3[];
-    static int list4[];
-    static int list5[];
-    static int list6[];
-    static int list7[];
-    static int list8[];
-    static int list9[];
-    static int list10[];
-    static int list11[];
-    static int list12[];
+		// Each of these lists is an operator precedence level, and each list is a
+		// zero-terminated list of operators in that level (in precedence order).
+		static int list3[];
+		static int list4[];
+		static int list5[];
+		static int list6[];
+		static int list7[];
+		static int list8[];
+		static int list9[];
+		static int list10[];
+		static int list11[];
+		static int list12[];
 };
 
 #define MATCHTAG_COERCE 0x1      // allow coercion

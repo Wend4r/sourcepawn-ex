@@ -75,102 +75,102 @@ ke::HashMap<CharsAndLength, int, KeywordTablePolicy> sKeywords;
 int
 plungequalifiedfile(char* name)
 {
-    static const char* extensions[] = {".inc", ".p", ".pawn"};
+	static const char* extensions[] = {".inc", ".p", ".pawn"};
 
-    void* fp;
-    char* ext;
-    size_t ext_idx;
+	void* fp;
+	char* ext;
+	size_t ext_idx;
 
-    ext_idx = 0;
-    do {
-        fp = pc_opensrc(name);
-        ext = strchr(name, '\0'); /* save position */
-        if (fp == NULL) {
-            /* try to push_back an extension */
-            strcpy(ext, extensions[ext_idx]);
-            fp = pc_opensrc(name);
-            if (fp == NULL)
-                *ext = '\0'; /* on failure, restore filename */
-        }
-        ext_idx++;
-    } while (fp == NULL && ext_idx < (sizeof extensions / sizeof extensions[0]));
-    if (fp == NULL) {
-        *ext = '\0'; /* restore filename */
-        return FALSE;
-    }
-    if (sc_showincludes && sc_status == statFIRST) {
-        fprintf(stdout, "Note: including file: %s\n", name);
-    }
-    gInputFileStack.push_back(inpf);
-    gInputFilenameStack.push_back(inpfname);
-    sPreprocIfStack.push_back(iflevel);
-    assert(!SKIPPING);
-    assert(skiplevel == iflevel); /* these two are always the same when "parsing" */
-    sCommentStack.push_back(icomment);
-    gCurrentFileStack.push_back(fcurrent);
-    gCurrentLineStack.push_back(fline);
-    inpfname = strdup(name); /* set name of include file */
-    if (inpfname == NULL)
-        error(FATAL_ERROR_OOM);
-    inpf = fp; /* set input file pointer to include file */
-    fnumber++;
-    fline = 0; /* set current line number to 0 */
-    fcurrent = fnumber;
-    icomment = 0;               /* not in a comment */
-    insert_dbgfile(inpfname);   /* attach to debug information */
-    insert_inputfile(inpfname); /* save for the error system */
-    assert(sc_status == statFIRST || strcmp(get_inputfile(fcurrent), inpfname) == 0);
-    setfiledirect(inpfname); /* (optionally) set in the list file */
-    listline = -1;           /* force a #line directive when changing the file */
-    skip_utf8_bom(inpf);
-    return TRUE;
+	ext_idx = 0;
+	do {
+		fp = pc_opensrc(name);
+		ext = strchr(name, '\0'); /* save position */
+		if (fp == NULL) {
+			/* try to push_back an extension */
+			strcpy(ext, extensions[ext_idx]);
+			fp = pc_opensrc(name);
+			if (fp == NULL)
+				*ext = '\0'; /* on failure, restore filename */
+		}
+		ext_idx++;
+	} while (fp == NULL && ext_idx < (sizeof extensions / sizeof extensions[0]));
+	if (fp == NULL) {
+		*ext = '\0'; /* restore filename */
+		return FALSE;
+	}
+	if (sc_showincludes && sc_status == statFIRST) {
+		fprintf(stdout, "Note: including file: %s\n", name);
+	}
+	gInputFileStack.push_back(inpf);
+	gInputFilenameStack.push_back(inpfname);
+	sPreprocIfStack.push_back(iflevel);
+	assert(!SKIPPING);
+	assert(skiplevel == iflevel); /* these two are always the same when "parsing" */
+	sCommentStack.push_back(icomment);
+	gCurrentFileStack.push_back(fcurrent);
+	gCurrentLineStack.push_back(fline);
+	inpfname = strdup(name); /* set name of include file */
+	if (inpfname == NULL)
+		error(FATAL_ERROR_OOM);
+	inpf = fp; /* set input file pointer to include file */
+	fnumber++;
+	fline = 0; /* set current line number to 0 */
+	fcurrent = fnumber;
+	icomment = 0;               /* not in a comment */
+	insert_dbgfile(inpfname);   /* attach to debug information */
+	insert_inputfile(inpfname); /* save for the error system */
+	assert(sc_status == statFIRST || strcmp(get_inputfile(fcurrent), inpfname) == 0);
+	setfiledirect(inpfname); /* (optionally) set in the list file */
+	listline = -1;           /* force a #line directive when changing the file */
+	skip_utf8_bom(inpf);
+	return TRUE;
 }
 
 int
 plungefile(char* name, int try_currentpath, int try_includepaths)
 {
-    int result = FALSE;
+	int result = FALSE;
 
-    if (try_currentpath) {
-        result = plungequalifiedfile(name);
-        if (!result) {
-            /* failed to open the file in the active directory, try to open the file
-             * in the same directory as the current file --but first check whether
-             * there is a (relative) path for the current file
-             */
-            char* ptr;
-            if ((ptr = strrchr(inpfname, DIRSEP_CHAR)) != 0) {
-                int len = (int)(ptr - inpfname) + 1;
-                if (len + strlen(name) < _MAX_PATH) {
-                    char path[_MAX_PATH];
-                    SafeStrcpyN(path, sizeof(path), inpfname, len);
-                    SafeStrcat(path, sizeof(path), name);
-                    result = plungequalifiedfile(path);
-                }
-            }
-        }
-    }
+	if (try_currentpath) {
+		result = plungequalifiedfile(name);
+		if (!result) {
+			/* failed to open the file in the active directory, try to open the file
+			 * in the same directory as the current file --but first check whether
+			 * there is a (relative) path for the current file
+			 */
+			char* ptr;
+			if ((ptr = strrchr(inpfname, DIRSEP_CHAR)) != 0) {
+				int len = (int)(ptr - inpfname) + 1;
+				if (len + strlen(name) < _MAX_PATH) {
+					char path[_MAX_PATH];
+					SafeStrcpyN(path, sizeof(path), inpfname, len);
+					SafeStrcat(path, sizeof(path), name);
+					result = plungequalifiedfile(path);
+				}
+			}
+		}
+	}
 
-    if (try_includepaths && name[0] != DIRSEP_CHAR) {
-        int i;
-        char* ptr;
-        for (i = 0; !result && (ptr = get_path(i)) != NULL; i++) {
-            char path[_MAX_PATH];
-            SafeSprintf(path, sizeof(path), "%s%s", ptr, name);
-            result = plungequalifiedfile(path);
-        }
-    }
-    return result;
+	if (try_includepaths && name[0] != DIRSEP_CHAR) {
+		int i;
+		char* ptr;
+		for (i = 0; !result && (ptr = get_path(i)) != NULL; i++) {
+			char path[_MAX_PATH];
+			SafeSprintf(path, sizeof(path), "%s%s", ptr, name);
+			result = plungequalifiedfile(path);
+		}
+	}
+	return result;
 }
 
 static void
 check_empty(const unsigned char* lptr)
 {
-    /* verifies that the string contains only whitespace */
-    while (*lptr <= ' ' && *lptr != '\0')
-        lptr++;
-    if (*lptr != '\0')
-        error(38); /* extra characters on line */
+	/* verifies that the string contains only whitespace */
+	while (*lptr <= ' ' && *lptr != '\0')
+		lptr++;
+	if (*lptr != '\0')
+		error(38); /* extra characters on line */
 }
 
 /*  doinclude
@@ -187,40 +187,40 @@ check_empty(const unsigned char* lptr)
 static void
 doinclude(int silent)
 {
-    char name[_MAX_PATH];
-    char c;
-    size_t i;
-    int result;
+	char name[_MAX_PATH];
+	char c;
+	size_t i;
+	int result;
 
-    while (*lptr <= ' ' && *lptr != '\0') /* skip leading whitespace */
-        lptr++;
-    if (*lptr == '<' || *lptr == '\"') {
-        c = (char)((*lptr == '\"') ? '\"' : '>'); /* termination character */
-        lptr++;
-        while (*lptr <= ' ' && *lptr != '\0') /* skip whitespace after quote */
-            lptr++;
-    } else {
-        c = '\0';
-    }
+	while (*lptr <= ' ' && *lptr != '\0') /* skip leading whitespace */
+		lptr++;
+	if (*lptr == '<' || *lptr == '\"') {
+		c = (char)((*lptr == '\"') ? '\"' : '>'); /* termination character */
+		lptr++;
+		while (*lptr <= ' ' && *lptr != '\0') /* skip whitespace after quote */
+			lptr++;
+	} else {
+		c = '\0';
+	}
 
-    i = 0;
-    while (*lptr != c && *lptr != '\0' && i < sizeof name - 1) /* find the end of the string */
-        name[i++] = *lptr++;
-    while (i > 0 && name[i - 1] <= ' ')
-        i--; /* strip trailing whitespace */
-    assert(i < sizeof name);
-    name[i] = '\0'; /* zero-terminate the string */
+	i = 0;
+	while (*lptr != c && *lptr != '\0' && i < sizeof name - 1) /* find the end of the string */
+		name[i++] = *lptr++;
+	while (i > 0 && name[i - 1] <= ' ')
+		i--; /* strip trailing whitespace */
+	assert(i < sizeof name);
+	name[i] = '\0'; /* zero-terminate the string */
 
-    if (*lptr != c) { /* verify correct string termination */
-        error(37);    /* invalid string */
-        return;
-    }
-    if (c != '\0')
-        check_empty(lptr + 1); /* verify that the rest of the line is whitespace */
+	if (*lptr != c) { /* verify correct string termination */
+		error(37);    /* invalid string */
+		return;
+	}
+	if (c != '\0')
+		check_empty(lptr + 1); /* verify that the rest of the line is whitespace */
 
-    result = plungefile(name, (c != '>'), TRUE);
-    if (!result && !silent)
-        error(FATAL_ERROR_READ, name);
+	result = plungefile(name, (c != '>'), TRUE);
+	if (!result && !silent)
+		error(FATAL_ERROR_READ, name);
 }
 
 /*  readline
@@ -235,88 +235,88 @@ doinclude(int silent)
 static void
 readline(unsigned char* line)
 {
-    int num, cont;
-    unsigned char* ptr;
-    symbol* sym;
+	int num, cont;
+	unsigned char* ptr;
+	symbol* sym;
 
-    if (lptr == term_expr)
-        return;
-    num = sLINEMAX;
-    cont = FALSE;
-    do {
-        if (inpf == NULL || pc_eofsrc(inpf)) {
-            if (cont)
-                error(49); /* invalid line continuation */
-            if (inpf != NULL && inpf != inpf_org)
-                pc_closesrc(inpf);
-            if (gCurrentLineStack.empty()) {
-                freading = FALSE;
-                *line = '\0';
-                /* when there is nothing more to read, the #if/#else stack should
-                 * be empty and we should not be in a comment
-                 */
-                assert(iflevel >= 0);
-                if (iflevel > 0)
-                    error(1, "#endif", "-end of file-");
-                else if (icomment != 0)
-                    error(1, "*/", "-end of file-");
-                return;
-            }
-            fline = ke::PopBack(&gCurrentLineStack);
-            fcurrent = ke::PopBack(&gCurrentFileStack);
-            icomment = ke::PopBack(&sCommentStack);
-            iflevel = ke::PopBack(&sPreprocIfStack);
-            skiplevel = iflevel; /* this condition held before including the file */
-            assert(!SKIPPING);   /* idem ditto */
-            free(inpfname);      /* return memory allocated for the include file name */
-            inpfname = ke::PopBack(&gInputFilenameStack);
-            inpf = ke::PopBack(&gInputFileStack);
-            insert_dbgfile(inpfname);
-            setfiledirect(inpfname);
-            assert(sc_status == statFIRST || strcmp(get_inputfile(fcurrent), inpfname) == 0);
-            listline = -1; /* force a #line directive when changing the file */
-        }
+	if (lptr == term_expr)
+		return;
+	num = sLINEMAX;
+	cont = FALSE;
+	do {
+		if (inpf == NULL || pc_eofsrc(inpf)) {
+			if (cont)
+				error(49); /* invalid line continuation */
+			if (inpf != NULL && inpf != inpf_org)
+				pc_closesrc(inpf);
+			if (gCurrentLineStack.empty()) {
+				freading = FALSE;
+				*line = '\0';
+				/* when there is nothing more to read, the #if/#else stack should
+				 * be empty and we should not be in a comment
+				 */
+				assert(iflevel >= 0);
+				if (iflevel > 0)
+					error(1, "#endif", "-end of file-");
+				else if (icomment != 0)
+					error(1, "*/", "-end of file-");
+				return;
+			}
+			fline = ke::PopBack(&gCurrentLineStack);
+			fcurrent = ke::PopBack(&gCurrentFileStack);
+			icomment = ke::PopBack(&sCommentStack);
+			iflevel = ke::PopBack(&sPreprocIfStack);
+			skiplevel = iflevel; /* this condition held before including the file */
+			assert(!SKIPPING);   /* idem ditto */
+			free(inpfname);      /* return memory allocated for the include file name */
+			inpfname = ke::PopBack(&gInputFilenameStack);
+			inpf = ke::PopBack(&gInputFileStack);
+			insert_dbgfile(inpfname);
+			setfiledirect(inpfname);
+			assert(sc_status == statFIRST || strcmp(get_inputfile(fcurrent), inpfname) == 0);
+			listline = -1; /* force a #line directive when changing the file */
+		}
 
-        if (pc_readsrc(inpf, line, num) == NULL) {
-            *line = '\0'; /* delete line */
-            cont = FALSE;
-        } else {
-            /* check whether to erase leading spaces */
-            if (cont) {
-                unsigned char* ptr = line;
-                while (*ptr <= ' ' && *ptr != '\0')
-                    ptr++;
-                if (ptr != line)
-                    memmove(line, ptr, strlen((char*)ptr) + 1);
-            }
-            cont = FALSE;
-            /* check whether a full line was read */
-            if (strchr((char*)line, '\n') == NULL && !pc_eofsrc(inpf))
-                error(75); /* line too long */
-            /* check if the next line must be concatenated to this line */
-            if ((ptr = (unsigned char*)strchr((char*)line, '\n')) == NULL)
-                ptr = (unsigned char*)strchr((char*)line, '\r');
-            if (ptr != NULL && ptr > line) {
-                assert(*(ptr + 1) == '\0'); /* '\n' or '\r' should be last in the string */
-                while (ptr > line && *ptr <= ' ')
-                    ptr--; /* skip trailing whitespace */
-                if (*ptr == '\\') {
-                    cont = TRUE;
-                    /* set '\a' at the position of '\\' to make it possible to check
-                     * for a line continuation in a single line comment (error 49)
-                     */
-                    *ptr++ = '\a';
-                    *ptr = '\0'; /* erase '\n' (and any trailing whitespace) */
-                }
-            }
-            num -= strlen((char*)line);
-            line += strlen((char*)line);
-        }
-        fline += 1;
-        sym = findconst("__LINE__");
-        assert(sym != NULL);
-        sym->setAddr(fline);
-    } while (num >= 0 && cont);
+		if (pc_readsrc(inpf, line, num) == NULL) {
+			*line = '\0'; /* delete line */
+			cont = FALSE;
+		} else {
+			/* check whether to erase leading spaces */
+			if (cont) {
+				unsigned char* ptr = line;
+				while (*ptr <= ' ' && *ptr != '\0')
+					ptr++;
+				if (ptr != line)
+					memmove(line, ptr, strlen((char*)ptr) + 1);
+			}
+			cont = FALSE;
+			/* check whether a full line was read */
+			if (strchr((char*)line, '\n') == NULL && !pc_eofsrc(inpf))
+				error(75); /* line too long */
+			/* check if the next line must be concatenated to this line */
+			if ((ptr = (unsigned char*)strchr((char*)line, '\n')) == NULL)
+				ptr = (unsigned char*)strchr((char*)line, '\r');
+			if (ptr != NULL && ptr > line) {
+				assert(*(ptr + 1) == '\0'); /* '\n' or '\r' should be last in the string */
+				while (ptr > line && *ptr <= ' ')
+					ptr--; /* skip trailing whitespace */
+				if (*ptr == '\\') {
+					cont = TRUE;
+					/* set '\a' at the position of '\\' to make it possible to check
+					 * for a line continuation in a single line comment (error 49)
+					 */
+					*ptr++ = '\a';
+					*ptr = '\0'; /* erase '\n' (and any trailing whitespace) */
+				}
+			}
+			num -= strlen((char*)line);
+			line += strlen((char*)line);
+		}
+		fline += 1;
+		sym = findconst("__LINE__");
+		assert(sym != NULL);
+		sym->setAddr(fline);
+	} while (num >= 0 && cont);
 }
 
 /*  stripcom
@@ -335,91 +335,91 @@ readline(unsigned char* line)
 static void
 stripcom(unsigned char* line)
 {
-    char c;
+	char c;
 #define COMMENT_LIMIT 100
 #define COMMENT_MARGIN 40 /* length of the longest word */
-    char comment[COMMENT_LIMIT + COMMENT_MARGIN];
-    int commentidx = 0;
-    int skipstar = TRUE;
+	char comment[COMMENT_LIMIT + COMMENT_MARGIN];
+	int commentidx = 0;
+	int skipstar = TRUE;
 
-    while (*line) {
-        if (icomment != 0) {
-            if (*line == '*' && *(line + 1) == '/') {
-                if (icomment == 2) {
-                    assert(commentidx < COMMENT_LIMIT + COMMENT_MARGIN);
-                    comment[commentidx] = '\0';
-                }
-                icomment = 0; /* comment has ended */
-                *line = ' ';  /* replace '*' and '/' characters by spaces */
-                *(line + 1) = ' ';
-                line += 2;
-            } else {
-                if (*line == '/' && *(line + 1) == '*')
-                    error(216); /* nested comment */
-                /* collect the comment characters in a string */
-                if (icomment == 2) {
-                    if (skipstar && ((*line != '\0' && *line <= ' ') || *line == '*')) {
-                        /* ignore leading whitespace and '*' characters */
-                    } else if (commentidx < COMMENT_LIMIT + COMMENT_MARGIN - 1) {
-                        comment[commentidx++] = (char)((*line != '\n') ? *line : ' ');
-                        if (commentidx > COMMENT_LIMIT && *line != '\0' && *line <= ' ') {
-                            comment[commentidx] = '\0';
-                            commentidx = 0;
-                        }
-                        skipstar = FALSE;
-                    }
-                }
-                *line = ' '; /* replace comments by spaces */
-                line += 1;
-            }
-        } else {
-            if (*line == '/' && *(line + 1) == '*') {
-                icomment = 1; /* start comment */
-                /* there must be two "*" behind the slash and then white space */
-                if (*(line + 2) == '*' && *(line + 3) <= ' ') {
-                    icomment = 2; /* documentation comment */
-                }
-                commentidx = 0;
-                skipstar = TRUE;
-                *line = ' '; /* replace '/' and '*' characters by spaces */
-                *(line + 1) = ' ';
-                line += 2;
-                if (icomment == 2)
-                    *line++ = ' ';
-            } else if (*line == '/' && *(line + 1) == '/') { /* comment to end of line */
-                if (strchr((char*)line, '\a') != NULL)
-                    error(49); /* invalid line continuation */
-                if (*(line + 2) == '/' && *(line + 3) <= ' ') {
-                    /* documentation comment */
-                    char* str = (char*)line + 3;
-                    char* end;
-                    while (*str <= ' ' && *str != '\0')
-                        str++; /* skip leading whitespace */
-                    if ((end = strrchr(str, '\n')) != NULL)
-                        *end = '\0'; /* erase trailing '\n' */
-                }
-                *line++ = '\n'; /* put "newline" at first slash */
-                *line = '\0';   /* put "zero-terminator" at second slash */
-            } else {
-                if (*line == '\"' || *line == '\'') { /* leave literals unaltered */
-                    c = *line;                        /* ending quote, single or double */
-                    line += 1;
-                    while (*line != c && *line != '\0') {
-                        if (*line == sc_ctrlchar && *(line + 1) != '\0')
-                            line += 1; /* skip escape character (but avoid skipping past '\0' */
-                        line += 1;
-                    }
-                    line += 1; /* skip final quote */
-                } else {
-                    line += 1;
-                }
-            }
-        }
-    }
-    if (icomment == 2) {
-        assert(commentidx < COMMENT_LIMIT + COMMENT_MARGIN);
-        comment[commentidx] = '\0';
-    }
+	while (*line) {
+		if (icomment != 0) {
+			if (*line == '*' && *(line + 1) == '/') {
+				if (icomment == 2) {
+					assert(commentidx < COMMENT_LIMIT + COMMENT_MARGIN);
+					comment[commentidx] = '\0';
+				}
+				icomment = 0; /* comment has ended */
+				*line = ' ';  /* replace '*' and '/' characters by spaces */
+				*(line + 1) = ' ';
+				line += 2;
+			} else {
+				if (*line == '/' && *(line + 1) == '*')
+					error(216); /* nested comment */
+				/* collect the comment characters in a string */
+				if (icomment == 2) {
+					if (skipstar && ((*line != '\0' && *line <= ' ') || *line == '*')) {
+						/* ignore leading whitespace and '*' characters */
+					} else if (commentidx < COMMENT_LIMIT + COMMENT_MARGIN - 1) {
+						comment[commentidx++] = (char)((*line != '\n') ? *line : ' ');
+						if (commentidx > COMMENT_LIMIT && *line != '\0' && *line <= ' ') {
+							comment[commentidx] = '\0';
+							commentidx = 0;
+						}
+						skipstar = FALSE;
+					}
+				}
+				*line = ' '; /* replace comments by spaces */
+				line += 1;
+			}
+		} else {
+			if (*line == '/' && *(line + 1) == '*') {
+				icomment = 1; /* start comment */
+				/* there must be two "*" behind the slash and then white space */
+				if (*(line + 2) == '*' && *(line + 3) <= ' ') {
+					icomment = 2; /* documentation comment */
+				}
+				commentidx = 0;
+				skipstar = TRUE;
+				*line = ' '; /* replace '/' and '*' characters by spaces */
+				*(line + 1) = ' ';
+				line += 2;
+				if (icomment == 2)
+					*line++ = ' ';
+			} else if (*line == '/' && *(line + 1) == '/') { /* comment to end of line */
+				if (strchr((char*)line, '\a') != NULL)
+					error(49); /* invalid line continuation */
+				if (*(line + 2) == '/' && *(line + 3) <= ' ') {
+					/* documentation comment */
+					char* str = (char*)line + 3;
+					char* end;
+					while (*str <= ' ' && *str != '\0')
+						str++; /* skip leading whitespace */
+					if ((end = strrchr(str, '\n')) != NULL)
+						*end = '\0'; /* erase trailing '\n' */
+				}
+				*line++ = '\n'; /* put "newline" at first slash */
+				*line = '\0';   /* put "zero-terminator" at second slash */
+			} else {
+				if (*line == '\"' || *line == '\'') { /* leave literals unaltered */
+					c = *line;                        /* ending quote, single or double */
+					line += 1;
+					while (*line != c && *line != '\0') {
+						if (*line == sc_ctrlchar && *(line + 1) != '\0')
+							line += 1; /* skip escape character (but avoid skipping past '\0' */
+						line += 1;
+					}
+					line += 1; /* skip final quote */
+				} else {
+					line += 1;
+				}
+			}
+		}
+	}
+	if (icomment == 2) {
+		assert(commentidx < COMMENT_LIMIT + COMMENT_MARGIN);
+		comment[commentidx] = '\0';
+	}
 }
 
 /*  btoi
@@ -434,24 +434,24 @@ stripcom(unsigned char* line)
 static int
 btoi(cell* val, const unsigned char* curptr)
 {
-    const unsigned char* ptr;
+	const unsigned char* ptr;
 
-    *val = 0;
-    ptr = curptr;
-    if (*ptr == '0' && *(ptr + 1) == 'b') {
-        ptr += 2;
-        while (*ptr == '0' || *ptr == '1' || *ptr == '_') {
-            if (*ptr != '_')
-                *val = (*val << 1) | (*ptr - '0');
-            ptr++;
-        }
-    } else {
-        return 0;
-    }
-    if (alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
-        return 0;
-    else
-        return (int)(ptr - curptr);
+	*val = 0;
+	ptr = curptr;
+	if (*ptr == '0' && *(ptr + 1) == 'b') {
+		ptr += 2;
+		while (*ptr == '0' || *ptr == '1' || *ptr == '_') {
+			if (*ptr != '_')
+				*val = (*val << 1) | (*ptr - '0');
+			ptr++;
+		}
+	} else {
+		return 0;
+	}
+	if (alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
+		return 0;
+	else
+		return (int)(ptr - curptr);
 }
 
 /*  otoi
@@ -465,28 +465,28 @@ btoi(cell* val, const unsigned char* curptr)
 static int
 otoi(cell* val, const unsigned char* curptr)
 {
-    const unsigned char* ptr;
+	const unsigned char* ptr;
 
-    *val = 0;
-    ptr = curptr;
-    if (!isdigit(*ptr)) /* should start with digit */
-        return 0;
-    if (*ptr == '0' && *(ptr + 1) == 'o') {
-        ptr += 2;
-        while (isoctal(*ptr) || *ptr == '_') {
-            if (*ptr != '_') {
-                assert(isoctal(*ptr));
-                *val = (*val << 3) + (*ptr - '0');
-            }
-            ptr++;
-        }
-    } else {
-        return 0;
-    }
-    if (alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
-        return 0;
-    else
-        return (int)(ptr - curptr);
+	*val = 0;
+	ptr = curptr;
+	if (!isdigit(*ptr)) /* should start with digit */
+		return 0;
+	if (*ptr == '0' && *(ptr + 1) == 'o') {
+		ptr += 2;
+		while (isoctal(*ptr) || *ptr == '_') {
+			if (*ptr != '_') {
+				assert(isoctal(*ptr));
+				*val = (*val << 3) + (*ptr - '0');
+			}
+			ptr++;
+		}
+	} else {
+		return 0;
+	}
+	if (alphanum(*ptr)) /* number must be delimited by non-alphanumeric char */
+		return 0;
+	else
+		return (int)(ptr - curptr);
 }
 
 /*  dtoi
@@ -498,22 +498,22 @@ otoi(cell* val, const unsigned char* curptr)
 static int
 dtoi(cell* val, const unsigned char* curptr)
 {
-    const unsigned char* ptr;
+	const unsigned char* ptr;
 
-    *val = 0;
-    ptr = curptr;
-    if (!isdigit(*ptr)) /* should start with digit */
-        return 0;
-    while (isdigit(*ptr) || *ptr == '_') {
-        if (*ptr != '_')
-            *val = (*val * 10) + (*ptr - '0');
-        ptr++;
-    }
-    if (alphanum(*ptr)) /* number must be delimited by non-alphanumerical */
-        return 0;
-    if (*ptr == '.' && isdigit(*(ptr + 1)))
-        return 0; /* but a fractional part must not be present */
-    return (int)(ptr - curptr);
+	*val = 0;
+	ptr = curptr;
+	if (!isdigit(*ptr)) /* should start with digit */
+		return 0;
+	while (isdigit(*ptr) || *ptr == '_') {
+		if (*ptr != '_')
+			*val = (*val * 10) + (*ptr - '0');
+		ptr++;
+	}
+	if (alphanum(*ptr)) /* number must be delimited by non-alphanumerical */
+		return 0;
+	if (*ptr == '.' && isdigit(*(ptr + 1)))
+		return 0; /* but a fractional part must not be present */
+	return (int)(ptr - curptr);
 }
 
 /*  htoi
@@ -525,32 +525,32 @@ dtoi(cell* val, const unsigned char* curptr)
 static int
 htoi(cell* val, const unsigned char* curptr)
 {
-    const unsigned char* ptr;
+	const unsigned char* ptr;
 
-    *val = 0;
-    ptr = curptr;
-    if (!isdigit(*ptr)) /* should start with digit */
-        return 0;
-    if (*ptr == '0' && *(ptr + 1) == 'x') { /* C style hexadecimal notation */
-        ptr += 2;
-        while (ishex(*ptr) || *ptr == '_') {
-            if (*ptr != '_') {
-                assert(ishex(*ptr));
-                *val = *val << 4;
-                if (isdigit(*ptr))
-                    *val += (*ptr - '0');
-                else
-                    *val += (tolower(*ptr) - 'a' + 10);
-            }
-            ptr++;
-        }
-    } else {
-        return 0;
-    }
-    if (alphanum(*ptr))
-        return 0;
-    else
-        return (int)(ptr - curptr);
+	*val = 0;
+	ptr = curptr;
+	if (!isdigit(*ptr)) /* should start with digit */
+		return 0;
+	if (*ptr == '0' && *(ptr + 1) == 'x') { /* C style hexadecimal notation */
+		ptr += 2;
+		while (ishex(*ptr) || *ptr == '_') {
+			if (*ptr != '_') {
+				assert(ishex(*ptr));
+				*val = *val << 4;
+				if (isdigit(*ptr))
+					*val += (*ptr - '0');
+				else
+					*val += (tolower(*ptr) - 'a' + 10);
+			}
+			ptr++;
+		}
+	} else {
+		return 0;
+	}
+	if (alphanum(*ptr))
+		return 0;
+	else
+		return (int)(ptr - curptr);
 }
 
 /*  ftoi
@@ -571,66 +571,66 @@ htoi(cell* val, const unsigned char* curptr)
 static int
 ftoi(cell* val, const unsigned char* curptr)
 {
-    const unsigned char* ptr;
-    double fnum, ffrac, fmult;
-    unsigned long dnum, dbase = 1;
-    int ignore;
+	const unsigned char* ptr;
+	double fnum, ffrac, fmult;
+	unsigned long dnum, dbase = 1;
+	int ignore;
 
-    fnum = 0.0;
-    dnum = 0L;
-    ptr = curptr;
-    if (!isdigit(*ptr)) /* should start with digit */
-        return 0;
-    while (isdigit(*ptr) || *ptr == '_') {
-        if (*ptr != '_') {
-            fnum = (fnum * 10.0) + (*ptr - '0');
-            dnum = (dnum * 10L) + (*ptr - '0') * dbase;
-        }
-        ptr++;
-    }
-    if (*ptr != '.')
-        return 0; /* there must be a period */
-    ptr++;
-    if (!isdigit(*ptr)) /* there must be at least one digit after the dot */
-        return 0;
-    ffrac = 0.0;
-    fmult = 1.0;
-    ignore = FALSE;
-    while (isdigit(*ptr) || *ptr == '_') {
-        if (*ptr != '_') {
-            ffrac = (ffrac * 10.0) + (*ptr - '0');
-            fmult = fmult / 10.0;
-            dbase /= 10L;
-            dnum += (*ptr - '0') * dbase;
-        }
-        ptr++;
-    }
-    fnum += ffrac * fmult; /* form the number so far */
-    if (*ptr == 'e') {     /* optional fractional part */
-        int exp, sign;
-        ptr++;
-        if (*ptr == '-') {
-            sign = -1;
-            ptr++;
-        } else {
-            sign = 1;
-        }
-        if (!isdigit(*ptr)) /* 'e' should be followed by a digit */
-            return 0;
-        exp = 0;
-        while (isdigit(*ptr)) {
-            exp = (exp * 10) + (*ptr - '0');
-            ptr++;
-        }
-        fmult = pow(10.0, exp * sign);
-        fnum *= fmult;
-        dnum *= (unsigned long)(fmult + 0.5);
-    }
+	fnum = 0.0;
+	dnum = 0L;
+	ptr = curptr;
+	if (!isdigit(*ptr)) /* should start with digit */
+		return 0;
+	while (isdigit(*ptr) || *ptr == '_') {
+		if (*ptr != '_') {
+			fnum = (fnum * 10.0) + (*ptr - '0');
+			dnum = (dnum * 10L) + (*ptr - '0') * dbase;
+		}
+		ptr++;
+	}
+	if (*ptr != '.')
+		return 0; /* there must be a period */
+	ptr++;
+	if (!isdigit(*ptr)) /* there must be at least one digit after the dot */
+		return 0;
+	ffrac = 0.0;
+	fmult = 1.0;
+	ignore = FALSE;
+	while (isdigit(*ptr) || *ptr == '_') {
+		if (*ptr != '_') {
+			ffrac = (ffrac * 10.0) + (*ptr - '0');
+			fmult = fmult / 10.0;
+			dbase /= 10L;
+			dnum += (*ptr - '0') * dbase;
+		}
+		ptr++;
+	}
+	fnum += ffrac * fmult; /* form the number so far */
+	if (*ptr == 'e') {     /* optional fractional part */
+		int exp, sign;
+		ptr++;
+		if (*ptr == '-') {
+			sign = -1;
+			ptr++;
+		} else {
+			sign = 1;
+		}
+		if (!isdigit(*ptr)) /* 'e' should be followed by a digit */
+			return 0;
+		exp = 0;
+		while (isdigit(*ptr)) {
+			exp = (exp * 10) + (*ptr - '0');
+			ptr++;
+		}
+		fmult = pow(10.0, exp * sign);
+		fnum *= fmult;
+		dnum *= (unsigned long)(fmult + 0.5);
+	}
 
-    /* floating point */
-    float value = (float)fnum;
-    *val = sp::FloatCellUnion(value).cell;
-    return (int)(ptr - curptr);
+	/* floating point */
+	float value = (float)fnum;
+	*val = sp::FloatCellUnion(value).cell;
+	return (int)(ptr - curptr);
 }
 
 /*  number
@@ -648,64 +648,64 @@ ftoi(cell* val, const unsigned char* curptr)
 static int
 number(cell* val, const unsigned char* curptr)
 {
-    int i;
-    cell value;
+	int i;
+	cell value;
 
-    if ((i = btoi(&value, curptr)) != 0     /* binary? */
-        || (i = htoi(&value, curptr)) != 0  /* hexadecimal? */
-        || (i = dtoi(&value, curptr)) != 0  /* decimal? */
-        || (i = otoi(&value, curptr)) != 0) /* octal? */
-    {
-        *val = value;
-        return i;
-    } else {
-        return 0; /* else not a number */
-    }
+	if ((i = btoi(&value, curptr)) != 0     /* binary? */
+		|| (i = htoi(&value, curptr)) != 0  /* hexadecimal? */
+		|| (i = dtoi(&value, curptr)) != 0  /* decimal? */
+		|| (i = otoi(&value, curptr)) != 0) /* octal? */
+	{
+		*val = value;
+		return i;
+	} else {
+		return 0; /* else not a number */
+	}
 }
 
 static void
 chrcat(char* str, char chr)
 {
-    str = strchr(str, '\0');
-    *str++ = chr;
-    *str = '\0';
+	str = strchr(str, '\0');
+	*str++ = chr;
+	*str = '\0';
 }
 
 static int
 preproc_expr(cell* val, int* tag)
 {
-    int result;
-    int index;
-    cell code_index;
-    char* term;
+	int result;
+	int index;
+	cell code_index;
+	char* term;
 
-    /* Disable staging; it should be disabled already because
-     * expressions may not be cut off half-way between conditional
-     * compilations. Reset the staging index, but keep the code
-     * index.
-     */
-    if (stgget(&index, &code_index)) {
-        error(57); /* unfinished expression */
-        stgdel(0, code_index);
-        stgset(FALSE);
-    }
-    assert((lptr - pline) < (int)strlen((char*)pline)); /* lptr must point inside the string */
-    /* preprocess the string */
-    substallpatterns(pline, sLINEMAX);
-    assert((lptr - pline) <
-           (int)strlen((char*)pline)); /* lptr must STILL point inside the string */
-    /* push_back a special symbol to the string, so the expression
-     * analyzer won't try to read a next line when it encounters
-     * an end-of-line
-     */
-    assert(strlen((char*)pline) < sLINEMAX);
-    term = strchr((char*)pline, '\0');
-    assert(term != NULL);
-    chrcat((char*)pline, PREPROC_TERM); /* the "DEL" code (see SC.H) */
-    result = exprconst(val, tag, NULL); /* get value (or 0 on error) */
-    *term = '\0';                       /* erase the token (if still present) */
-    lexclr(FALSE);                      /* clear any "pushed" tokens */
-    return result;
+	/* Disable staging; it should be disabled already because
+	 * expressions may not be cut off half-way between conditional
+	 * compilations. Reset the staging index, but keep the code
+	 * index.
+	 */
+	if (stgget(&index, &code_index)) {
+		error(57); /* unfinished expression */
+		stgdel(0, code_index);
+		stgset(FALSE);
+	}
+	assert((lptr - pline) < (int)strlen((char*)pline)); /* lptr must point inside the string */
+	/* preprocess the string */
+	substallpatterns(pline, sLINEMAX);
+	assert((lptr - pline) <
+		   (int)strlen((char*)pline)); /* lptr must STILL point inside the string */
+	/* push_back a special symbol to the string, so the expression
+	 * analyzer won't try to read a next line when it encounters
+	 * an end-of-line
+	 */
+	assert(strlen((char*)pline) < sLINEMAX);
+	term = strchr((char*)pline, '\0');
+	assert(term != NULL);
+	chrcat((char*)pline, PREPROC_TERM); /* the "DEL" code (see SC.H) */
+	result = exprconst(val, tag, NULL); /* get value (or 0 on error) */
+	*term = '\0';                       /* erase the token (if still present) */
+	lexclr(FALSE);                      /* clear any "pushed" tokens */
+	return result;
 }
 
 /* getstring
@@ -715,38 +715,38 @@ preproc_expr(cell* val, int* tag)
 static const unsigned char*
 getstring(unsigned char* dest, int max, const unsigned char* line)
 {
-    assert(dest != NULL && line != NULL);
-    *dest = '\0';
-    while (*line <= ' ' && *line != '\0')
-        line++; /* skip whitespace */
-    if (*line == '"') {
-        int len = 0;
-        line++; /* skip " */
-        while (*line != '"' && *line != '\0') {
-            if (len < max - 1)
-                dest[len++] = *line;
-            line++;
-        }
-        dest[len] = '\0';
-        if (*line == '"')
-            line++; /* skip closing " */
-        else
-            error(37); /* invalid string */
-    } else {
-        error(37); /* invalid string */
-    }
-    return line;
+	assert(dest != NULL && line != NULL);
+	*dest = '\0';
+	while (*line <= ' ' && *line != '\0')
+		line++; /* skip whitespace */
+	if (*line == '"') {
+		int len = 0;
+		line++; /* skip " */
+		while (*line != '"' && *line != '\0') {
+			if (len < max - 1)
+				dest[len++] = *line;
+			line++;
+		}
+		dest[len] = '\0';
+		if (*line == '"')
+			line++; /* skip closing " */
+		else
+			error(37); /* invalid string */
+	} else {
+		error(37); /* invalid string */
+	}
+	return line;
 }
 
 enum {
-    CMD_NONE,
-    CMD_TERM,
-    CMD_EMPTYLINE,
-    CMD_CONDFALSE,
-    CMD_INCLUDE,
-    CMD_DEFINE,
-    CMD_IF,
-    CMD_DIRECTIVE,
+	CMD_NONE,
+	CMD_TERM,
+	CMD_EMPTYLINE,
+	CMD_CONDFALSE,
+	CMD_INCLUDE,
+	CMD_DEFINE,
+	CMD_IF,
+	CMD_DIRECTIVE,
 };
 
 /*  command
@@ -768,681 +768,681 @@ enum {
 static int
 command(void)
 {
-    int tok, ret;
-    cell val;
-    char* str;
-    int index;
-    cell code_index;
+	int tok, ret;
+	cell val;
+	char* str;
+	int index;
+	cell code_index;
 
-    while (*lptr <= ' ' && *lptr != '\0')
-        lptr += 1;
-    if (*lptr == '\0')
-        return CMD_EMPTYLINE; /* empty line */
-    if (*lptr != '#')
-        return SKIPPING ? CMD_CONDFALSE : CMD_NONE; /* it is not a compiler directive */
-    /* compiler directive found */
-    indent_nowarn = TRUE; /* allow loose indentation" */
-    lexclr(FALSE);        /* clear any "pushed" tokens */
-    /* on a pending expression, force to return a silent ';' token and force to
-     * re-read the line
-     */
-    if (!sc_needsemicolon && stgget(&index, &code_index)) {
-        lptr = term_expr;
-        return CMD_TERM;
-    }
-    tok = lex(&val, &str);
-    ret = SKIPPING ? CMD_CONDFALSE
-                   : CMD_DIRECTIVE; /* preset 'ret' to CMD_DIRECTIVE (most common case) */
-    switch (tok) {
-        case tpIF: /* conditional compilation */
-            ret = CMD_IF;
-            assert(iflevel >= 0);
-            if (iflevel >= sCOMP_STACK)
-                error(FATAL_ERROR_ALLOC_OVERFLOW, "Conditional compilation stack");
-            iflevel++;
-            if (SKIPPING)
-                break; /* break out of switch */
-            skiplevel = iflevel;
-            preproc_expr(&val, NULL); /* get value (or 0 on error) */
-            ifstack[iflevel - 1] = (char)(val ? PARSEMODE : SKIPMODE);
-            check_empty(lptr);
-            break;
-        case tpELSE:
-        case tpELSEIF:
-            ret = CMD_IF;
-            assert(iflevel >= 0);
-            if (iflevel == 0) {
-                error(26); /* no matching #if */
-                errorset(sRESET, 0);
-            } else {
-                /* check for earlier #else */
-                if ((ifstack[iflevel - 1] & HANDLED_ELSE) == HANDLED_ELSE) {
-                    if (tok == tpELSEIF)
-                        error(61); /* #elseif directive may not follow an #else */
-                    else
-                        error(60); /* multiple #else directives between #if ... #endif */
-                    errorset(sRESET, 0);
-                } else {
-                    assert(iflevel > 0);
-                    /* if there has been a "parse mode" on this level, set "skip mode",
-                     * otherwise, clear "skip mode"
-                     */
-                    if ((ifstack[iflevel - 1] & PARSEMODE) == PARSEMODE) {
-                        /* there has been a parse mode already on this level, so skip the rest */
-                        ifstack[iflevel - 1] |= (char)SKIPMODE;
-                        /* if we were already skipping this section, allow expressions with
-                         * undefined symbols; otherwise check the expression to catch errors
-                         */
-                        if (tok == tpELSEIF) {
-                            if (skiplevel == iflevel)
-                                preproc_expr(&val, NULL); /* get, but ignore the expression */
-                            else
-                                lptr = (unsigned char*)strchr((char*)lptr, '\0');
-                        }
-                    } else {
-                        /* previous conditions were all FALSE */
-                        if (tok == tpELSEIF) {
-                            /* if we were already skipping this section, allow expressions with
-                             * undefined symbols; otherwise check the expression to catch errors
-                             */
-                            if (skiplevel == iflevel) {
-                                preproc_expr(&val, NULL); /* get value (or 0 on error) */
-                            } else {
-                                lptr = (unsigned char*)strchr((char*)lptr, '\0');
-                                val = 0;
-                            }
-                            ifstack[iflevel - 1] = (char)(val ? PARSEMODE : SKIPMODE);
-                        } else {
-                            /* a simple #else, clear skip mode */
-                            ifstack[iflevel - 1] &= (char)~SKIPMODE;
-                        }
-                    }
-                }
-            }
-            check_empty(lptr);
-            break;
-        case tpENDIF:
-            ret = CMD_IF;
-            if (iflevel == 0) {
-                error(26); /* no matching "#if" */
-                errorset(sRESET, 0);
-            } else {
-                iflevel--;
-                if (iflevel < skiplevel)
-                    skiplevel = iflevel;
-            }
-            check_empty(lptr);
-            break;
-        case tINCLUDE: /* #include directive */
-        case tpTRYINCLUDE:
-            ret = CMD_INCLUDE;
-            if (!SKIPPING)
-                doinclude(tok == tpTRYINCLUDE);
-            break;
-        case tpFILE:
-            if (!SKIPPING) {
-                char pathname[_MAX_PATH];
-                lptr = getstring((unsigned char*)pathname, sizeof pathname, lptr);
-                if (strlen(pathname) > 0) {
-                    free(inpfname);
-                    inpfname = strdup(pathname);
-                    if (inpfname == NULL)
-                        error(FATAL_ERROR_OOM);
-                    fline = 0;
-                }
-            }
-            check_empty(lptr);
-            break;
-        case tpLINE:
-            if (!SKIPPING) {
-                if (lex(&val, &str) != tNUMBER)
-                    error(8); /* invalid/non-constant expression */
-                fline = (int)val;
-            }
-            check_empty(lptr);
-            break;
-        case tpASSERT:
-            if (!SKIPPING && (sc_debug & sCHKBOUNDS) != 0) {
-                for (str = (char*)lptr; *str <= ' ' && *str != '\0'; str++)
-                    /* nothing */;        /* save start of expression */
-                preproc_expr(&val, NULL); /* get constant expression (or 0 on error) */
-                if (!val)
-                    error(FATAL_ERROR_ASSERTION_FAILED, str); /* assertion failed */
-                check_empty(lptr);
-            }
-            break;
-        case tpPRAGMA:
-            if (!SKIPPING) {
-                if (lex(&val, &str) == tSYMBOL) {
-                    if (strcmp(str, "ctrlchar") == 0) {
-                        while (*lptr <= ' ' && *lptr != '\0')
-                            lptr++;
-                        if (*lptr == '\0') {
-                            sc_ctrlchar = sc_ctrlchar_org;
-                        } else {
-                            if (lex(&val, &str) != tNUMBER)
-                                error(27); /* invalid character constant */
-                            sc_ctrlchar = (char)val;
-                        }
-                    } else if (strcmp(str, "deprecated") == 0) {
-                        while (*lptr <= ' ' && *lptr != '\0')
-                            lptr++;
-                        pc_deprecate = (char*)lptr;
-                        lptr = (unsigned char*)strchr(
-                            (char*)lptr,
-                            '\0'); /* skip to end (ignore "extra characters on line") */
-                    } else if (strcmp(str, "dynamic") == 0) {
-                        preproc_expr(&pc_stksize, NULL);
-                    } else if (strcmp(str, "rational") == 0) {
-                        while (*lptr != '\0')
-                            lptr++;
-                    } else if (strcmp(str, "semicolon") == 0) {
-                        cell val;
-                        preproc_expr(&val, NULL);
-                        sc_needsemicolon = (int)val;
-                    } else if (strcmp(str, "newdecls") == 0) {
-                        while (*lptr <= ' ' && *lptr != '\0')
-                            lptr++;
-                        if (strncmp((char*)lptr, "required", 8) == 0)
-                            sc_require_newdecls = 1;
-                        else if (strncmp((char*)lptr, "optional", 8) == 0)
-                            sc_require_newdecls = 0;
-                        else
-                            error(146);
-                        lptr = (unsigned char*)strchr(
-                            (char*)lptr,
-                            '\0'); /* skip to end (ignore "extra characters on line") */
-                    } else if (strcmp(str, "tabsize") == 0) {
-                        cell val;
-                        preproc_expr(&val, NULL);
-                        sc_tabsize = (int)val;
-                    } else if (strcmp(str, "unused") == 0) {
-                        char name[sNAMEMAX + 1];
-                        size_t i;
-                        int comma;
-                        symbol* sym;
-                        do {
-                            /* get the name */
-                            while (*lptr <= ' ' && *lptr != '\0')
-                                lptr++;
-                            for (i = 0; i < sizeof name && alphanum(*lptr); i++, lptr++)
-                                name[i] = *lptr;
-                            name[i] = '\0';
-                            /* get the symbol */
-                            sym = findloc(name);
-                            if (sym == NULL)
-                                sym = findglb(name);
-                            if (sym != NULL) {
-                                sym->usage |= uREAD;
-                                if (sym->ident == iVARIABLE || sym->ident == iREFERENCE ||
-                                    sym->ident == iARRAY || sym->ident == iREFARRAY)
-                                    sym->usage |= uWRITTEN;
-                            } else {
-                                error(17, name); /* undefined symbol */
-                            }
-                            /* see if a comma follows the name */
-                            while (*lptr <= ' ' && *lptr != '\0')
-                                lptr++;
-                            comma = (*lptr == ',');
-                            if (comma)
-                                lptr++;
-                        } while (comma);
-                    } else {
-                        error(207); /* unknown #pragma */
-                    }
-                } else {
-                    error(207); /* unknown #pragma */
-                }
-                check_empty(lptr);
-            }
-            break;
-        case tpENDINPUT:
-        case tpENDSCRPT:
-            if (!SKIPPING) {
-                check_empty(lptr);
-                assert(inpf != NULL);
-                if (inpf != inpf_org)
-                    pc_closesrc(inpf);
-                inpf = NULL;
-            }
-            break;
-        case tpDEFINE: {
-            ret = CMD_DEFINE;
-            if (!SKIPPING) {
-                char *pattern, *substitution;
-                const unsigned char *start, *end;
-                int count, prefixlen;
-                /* find the pattern to match */
-                while (*lptr <= ' ' && *lptr != '\0')
-                    lptr++;
-                start = lptr; /* save starting point of the match pattern */
-                count = 0;
-                while (*lptr > ' ' && *lptr != '\0') {
-                    litchar(&lptr, 0); /* litchar() advances "lptr" and handles escape characters */
-                    count++;
-                }
-                end = lptr;
-                /* check pattern to match */
-                if (!alpha(*start)) {
-                    error(74); /* pattern must start with an alphabetic character */
-                    break;
-                }
-                /* store matched pattern */
-                pattern = (char*)malloc(count + 1);
-                if (pattern == NULL)
-                    error(FATAL_ERROR_OOM);
-                lptr = start;
-                count = 0;
-                while (lptr != end) {
-                    assert(lptr < end);
-                    assert(*lptr != '\0');
-                    pattern[count++] = (char)litchar(&lptr, 0);
-                }
-                pattern[count] = '\0';
-                /* special case, erase trailing variable, because it could match anything */
-                if (count >= 2 && isdigit(pattern[count - 1]) && pattern[count - 2] == '%')
-                    pattern[count - 2] = '\0';
-                /* find substitution string */
-                while (*lptr <= ' ' && *lptr != '\0')
-                    lptr++;
-                start = lptr; /* save starting point of the match pattern */
-                count = 0;
-                end = NULL;
-                while (*lptr != '\0') {
-                    /* keep position of the start of trailing whitespace */
-                    if (*lptr <= ' ') {
-                        if (end == NULL)
-                            end = lptr;
-                    } else {
-                        end = NULL;
-                    }
-                    count++;
-                    lptr++;
-                }
-                if (end == NULL)
-                    end = lptr;
-                /* store matched substitution */
-                substitution = (char*)malloc(count + 1); /* +1 for '\0' */
-                if (substitution == NULL)
-                    error(FATAL_ERROR_OOM);
-                lptr = start;
-                count = 0;
-                while (lptr != end) {
-                    assert(lptr < end);
-                    assert(*lptr != '\0');
-                    substitution[count++] = *lptr++;
-                }
-                substitution[count] = '\0';
-                /* check whether the definition already exists */
-                for (prefixlen = 0, start = (unsigned char*)pattern; alphanum(*start);
-                     prefixlen++, start++)
-                    /* nothing */;
-                assert(prefixlen > 0);
+	while (*lptr <= ' ' && *lptr != '\0')
+		lptr += 1;
+	if (*lptr == '\0')
+		return CMD_EMPTYLINE; /* empty line */
+	if (*lptr != '#')
+		return SKIPPING ? CMD_CONDFALSE : CMD_NONE; /* it is not a compiler directive */
+	/* compiler directive found */
+	indent_nowarn = TRUE; /* allow loose indentation" */
+	lexclr(FALSE);        /* clear any "pushed" tokens */
+	/* on a pending expression, force to return a silent ';' token and force to
+	 * re-read the line
+	 */
+	if (!sc_needsemicolon && stgget(&index, &code_index)) {
+		lptr = term_expr;
+		return CMD_TERM;
+	}
+	tok = lex(&val, &str);
+	ret = SKIPPING ? CMD_CONDFALSE
+				   : CMD_DIRECTIVE; /* preset 'ret' to CMD_DIRECTIVE (most common case) */
+	switch (tok) {
+		case tpIF: /* conditional compilation */
+			ret = CMD_IF;
+			assert(iflevel >= 0);
+			if (iflevel >= sCOMP_STACK)
+				error(FATAL_ERROR_ALLOC_OVERFLOW, "Conditional compilation stack");
+			iflevel++;
+			if (SKIPPING)
+				break; /* break out of switch */
+			skiplevel = iflevel;
+			preproc_expr(&val, NULL); /* get value (or 0 on error) */
+			ifstack[iflevel - 1] = (char)(val ? PARSEMODE : SKIPMODE);
+			check_empty(lptr);
+			break;
+		case tpELSE:
+		case tpELSEIF:
+			ret = CMD_IF;
+			assert(iflevel >= 0);
+			if (iflevel == 0) {
+				error(26); /* no matching #if */
+				errorset(sRESET, 0);
+			} else {
+				/* check for earlier #else */
+				if ((ifstack[iflevel - 1] & HANDLED_ELSE) == HANDLED_ELSE) {
+					if (tok == tpELSEIF)
+						error(61); /* #elseif directive may not follow an #else */
+					else
+						error(60); /* multiple #else directives between #if ... #endif */
+					errorset(sRESET, 0);
+				} else {
+					assert(iflevel > 0);
+					/* if there has been a "parse mode" on this level, set "skip mode",
+					 * otherwise, clear "skip mode"
+					 */
+					if ((ifstack[iflevel - 1] & PARSEMODE) == PARSEMODE) {
+						/* there has been a parse mode already on this level, so skip the rest */
+						ifstack[iflevel - 1] |= (char)SKIPMODE;
+						/* if we were already skipping this section, allow expressions with
+						 * undefined symbols; otherwise check the expression to catch errors
+						 */
+						if (tok == tpELSEIF) {
+							if (skiplevel == iflevel)
+								preproc_expr(&val, NULL); /* get, but ignore the expression */
+							else
+								lptr = (unsigned char*)strchr((char*)lptr, '\0');
+						}
+					} else {
+						/* previous conditions were all FALSE */
+						if (tok == tpELSEIF) {
+							/* if we were already skipping this section, allow expressions with
+							 * undefined symbols; otherwise check the expression to catch errors
+							 */
+							if (skiplevel == iflevel) {
+								preproc_expr(&val, NULL); /* get value (or 0 on error) */
+							} else {
+								lptr = (unsigned char*)strchr((char*)lptr, '\0');
+								val = 0;
+							}
+							ifstack[iflevel - 1] = (char)(val ? PARSEMODE : SKIPMODE);
+						} else {
+							/* a simple #else, clear skip mode */
+							ifstack[iflevel - 1] &= (char)~SKIPMODE;
+						}
+					}
+				}
+			}
+			check_empty(lptr);
+			break;
+		case tpENDIF:
+			ret = CMD_IF;
+			if (iflevel == 0) {
+				error(26); /* no matching "#if" */
+				errorset(sRESET, 0);
+			} else {
+				iflevel--;
+				if (iflevel < skiplevel)
+					skiplevel = iflevel;
+			}
+			check_empty(lptr);
+			break;
+		case tINCLUDE: /* #include directive */
+		case tpTRYINCLUDE:
+			ret = CMD_INCLUDE;
+			if (!SKIPPING)
+				doinclude(tok == tpTRYINCLUDE);
+			break;
+		case tpFILE:
+			if (!SKIPPING) {
+				char pathname[_MAX_PATH];
+				lptr = getstring((unsigned char*)pathname, sizeof pathname, lptr);
+				if (strlen(pathname) > 0) {
+					free(inpfname);
+					inpfname = strdup(pathname);
+					if (inpfname == NULL)
+						error(FATAL_ERROR_OOM);
+					fline = 0;
+				}
+			}
+			check_empty(lptr);
+			break;
+		case tpLINE:
+			if (!SKIPPING) {
+				if (lex(&val, &str) != tNUMBER)
+					error(8); /* invalid/non-constant expression */
+				fline = (int)val;
+			}
+			check_empty(lptr);
+			break;
+		case tpASSERT:
+			if (!SKIPPING && (sc_debug & sCHKBOUNDS) != 0) {
+				for (str = (char*)lptr; *str <= ' ' && *str != '\0'; str++)
+					/* nothing */;        /* save start of expression */
+				preproc_expr(&val, NULL); /* get constant expression (or 0 on error) */
+				if (!val)
+					error(FATAL_ERROR_ASSERTION_FAILED, str); /* assertion failed */
+				check_empty(lptr);
+			}
+			break;
+		case tpPRAGMA:
+			if (!SKIPPING) {
+				if (lex(&val, &str) == tSYMBOL) {
+					if (strcmp(str, "ctrlchar") == 0) {
+						while (*lptr <= ' ' && *lptr != '\0')
+							lptr++;
+						if (*lptr == '\0') {
+							sc_ctrlchar = sc_ctrlchar_org;
+						} else {
+							if (lex(&val, &str) != tNUMBER)
+								error(27); /* invalid character constant */
+							sc_ctrlchar = (char)val;
+						}
+					} else if (strcmp(str, "deprecated") == 0) {
+						while (*lptr <= ' ' && *lptr != '\0')
+							lptr++;
+						pc_deprecate = (char*)lptr;
+						lptr = (unsigned char*)strchr(
+							(char*)lptr,
+							'\0'); /* skip to end (ignore "extra characters on line") */
+					} else if (strcmp(str, "dynamic") == 0) {
+						preproc_expr(&pc_stksize, NULL);
+					} else if (strcmp(str, "rational") == 0) {
+						while (*lptr != '\0')
+							lptr++;
+					} else if (strcmp(str, "semicolon") == 0) {
+						cell val;
+						preproc_expr(&val, NULL);
+						sc_needsemicolon = (int)val;
+					} else if (strcmp(str, "newdecls") == 0) {
+						while (*lptr <= ' ' && *lptr != '\0')
+							lptr++;
+						if (strncmp((char*)lptr, "required", 8) == 0)
+							sc_require_newdecls = 1;
+						else if (strncmp((char*)lptr, "optional", 8) == 0)
+							sc_require_newdecls = 0;
+						else
+							error(146);
+						lptr = (unsigned char*)strchr(
+							(char*)lptr,
+							'\0'); /* skip to end (ignore "extra characters on line") */
+					} else if (strcmp(str, "tabsize") == 0) {
+						cell val;
+						preproc_expr(&val, NULL);
+						sc_tabsize = (int)val;
+					} else if (strcmp(str, "unused") == 0) {
+						char name[sNAMEMAX + 1];
+						size_t i;
+						int comma;
+						symbol* sym;
+						do {
+							/* get the name */
+							while (*lptr <= ' ' && *lptr != '\0')
+								lptr++;
+							for (i = 0; i < sizeof name && alphanum(*lptr); i++, lptr++)
+								name[i] = *lptr;
+							name[i] = '\0';
+							/* get the symbol */
+							sym = findloc(name);
+							if (sym == NULL)
+								sym = findglb(name);
+							if (sym != NULL) {
+								sym->usage |= uREAD;
+								if (sym->ident == iVARIABLE || sym->ident == iREFERENCE ||
+									sym->ident == iARRAY || sym->ident == iREFARRAY)
+									sym->usage |= uWRITTEN;
+							} else {
+								error(17, name); /* undefined symbol */
+							}
+							/* see if a comma follows the name */
+							while (*lptr <= ' ' && *lptr != '\0')
+								lptr++;
+							comma = (*lptr == ',');
+							if (comma)
+								lptr++;
+						} while (comma);
+					} else {
+						error(207); /* unknown #pragma */
+					}
+				} else {
+					error(207); /* unknown #pragma */
+				}
+				check_empty(lptr);
+			}
+			break;
+		case tpENDINPUT:
+		case tpENDSCRPT:
+			if (!SKIPPING) {
+				check_empty(lptr);
+				assert(inpf != NULL);
+				if (inpf != inpf_org)
+					pc_closesrc(inpf);
+				inpf = NULL;
+			}
+			break;
+		case tpDEFINE: {
+			ret = CMD_DEFINE;
+			if (!SKIPPING) {
+				char *pattern, *substitution;
+				const unsigned char *start, *end;
+				int count, prefixlen;
+				/* find the pattern to match */
+				while (*lptr <= ' ' && *lptr != '\0')
+					lptr++;
+				start = lptr; /* save starting point of the match pattern */
+				count = 0;
+				while (*lptr > ' ' && *lptr != '\0') {
+					litchar(&lptr, 0); /* litchar() advances "lptr" and handles escape characters */
+					count++;
+				}
+				end = lptr;
+				/* check pattern to match */
+				if (!alpha(*start)) {
+					error(74); /* pattern must start with an alphabetic character */
+					break;
+				}
+				/* store matched pattern */
+				pattern = (char*)malloc(count + 1);
+				if (pattern == NULL)
+					error(FATAL_ERROR_OOM);
+				lptr = start;
+				count = 0;
+				while (lptr != end) {
+					assert(lptr < end);
+					assert(*lptr != '\0');
+					pattern[count++] = (char)litchar(&lptr, 0);
+				}
+				pattern[count] = '\0';
+				/* special case, erase trailing variable, because it could match anything */
+				if (count >= 2 && isdigit(pattern[count - 1]) && pattern[count - 2] == '%')
+					pattern[count - 2] = '\0';
+				/* find substitution string */
+				while (*lptr <= ' ' && *lptr != '\0')
+					lptr++;
+				start = lptr; /* save starting point of the match pattern */
+				count = 0;
+				end = NULL;
+				while (*lptr != '\0') {
+					/* keep position of the start of trailing whitespace */
+					if (*lptr <= ' ') {
+						if (end == NULL)
+							end = lptr;
+					} else {
+						end = NULL;
+					}
+					count++;
+					lptr++;
+				}
+				if (end == NULL)
+					end = lptr;
+				/* store matched substitution */
+				substitution = (char*)malloc(count + 1); /* +1 for '\0' */
+				if (substitution == NULL)
+					error(FATAL_ERROR_OOM);
+				lptr = start;
+				count = 0;
+				while (lptr != end) {
+					assert(lptr < end);
+					assert(*lptr != '\0');
+					substitution[count++] = *lptr++;
+				}
+				substitution[count] = '\0';
+				/* check whether the definition already exists */
+				for (prefixlen = 0, start = (unsigned char*)pattern; alphanum(*start);
+					 prefixlen++, start++)
+					/* nothing */;
+				assert(prefixlen > 0);
 
-                macro_t def;
-                if (find_subst(pattern, prefixlen, &def)) {
-                    if (strcmp(def.first, pattern) != 0 || strcmp(def.second, substitution) != 0)
-                        error(201, pattern); /* redefinition of macro (non-identical) */
-                    delete_subst(pattern, prefixlen);
-                }
-                /* add the pattern/substitution pair to the list */
-                assert(strlen(pattern) > 0);
-                insert_subst(pattern, prefixlen, substitution);
-                free(pattern);
-                free(substitution);
-            }
-            break;
-        } /* case */
-        case tpUNDEF:
-            if (!SKIPPING) {
-                if (lex(&val, &str) == tSYMBOL) {
-                    if (delete_subst(str, strlen(str))) {
-                        /* also undefine normal constants */
-                        symbol* sym = findconst(str);
-                        if (sym != NULL && !(sym->enumroot && sym->enumfield)) {
-                            delete_symbol(&glbtab, sym);
-                        }
-                    }
-                    if (!ret)
-                        error(17, str); /* undefined symbol */
-                } else {
-                    error(20, str); /* invalid symbol name */
-                }
-                check_empty(lptr);
-            }
-            break;
-        case tpERROR:
-            while (*lptr <= ' ' && *lptr != '\0')
-                lptr++;
-            if (!SKIPPING)
-                error(FATAL_ERROR_USER_ERROR, lptr); /* user error */
-            break;
-        case tpWARNING:
-            while (*lptr <= ' ' && *lptr != '\0')
-                lptr++;
-            if (!SKIPPING)
-                error(224, lptr); /* user warning */
-            break;
-        default:
-            error(31);                                 /* unknown compiler directive */
-            ret = SKIPPING ? CMD_CONDFALSE : CMD_NONE; /* process as normal line */
-    }
-    return ret;
+				macro_t def;
+				if (find_subst(pattern, prefixlen, &def)) {
+					if (strcmp(def.first, pattern) != 0 || strcmp(def.second, substitution) != 0)
+						error(201, pattern); /* redefinition of macro (non-identical) */
+					delete_subst(pattern, prefixlen);
+				}
+				/* add the pattern/substitution pair to the list */
+				assert(strlen(pattern) > 0);
+				insert_subst(pattern, prefixlen, substitution);
+				free(pattern);
+				free(substitution);
+			}
+			break;
+		} /* case */
+		case tpUNDEF:
+			if (!SKIPPING) {
+				if (lex(&val, &str) == tSYMBOL) {
+					if (delete_subst(str, strlen(str))) {
+						/* also undefine normal constants */
+						symbol* sym = findconst(str);
+						if (sym != NULL && !(sym->enumroot && sym->enumfield)) {
+							delete_symbol(&glbtab, sym);
+						}
+					}
+					if (!ret)
+						error(17, str); /* undefined symbol */
+				} else {
+					error(20, str); /* invalid symbol name */
+				}
+				check_empty(lptr);
+			}
+			break;
+		case tpERROR:
+			while (*lptr <= ' ' && *lptr != '\0')
+				lptr++;
+			if (!SKIPPING)
+				error(FATAL_ERROR_USER_ERROR, lptr); /* user error */
+			break;
+		case tpWARNING:
+			while (*lptr <= ' ' && *lptr != '\0')
+				lptr++;
+			if (!SKIPPING)
+				error(224, lptr); /* user warning */
+			break;
+		default:
+			error(31);                                 /* unknown compiler directive */
+			ret = SKIPPING ? CMD_CONDFALSE : CMD_NONE; /* process as normal line */
+	}
+	return ret;
 }
 
 static int
 is_startstring(const unsigned char* string)
 {
-    if (*string == '\"' || *string == '\'')
-        return TRUE; /* "..." */
-    return FALSE;
+	if (*string == '\"' || *string == '\'')
+		return TRUE; /* "..." */
+	return FALSE;
 }
 
 static const unsigned char*
 skipstring(const unsigned char* string)
 {
-    char endquote = *string;
-    assert(endquote == '"' || endquote == '\'');
-    string++; /* skip open quote */
-    while (*string != endquote && *string != '\0')
-        litchar(&string, 0);
-    return string;
+	char endquote = *string;
+	assert(endquote == '"' || endquote == '\'');
+	string++; /* skip open quote */
+	while (*string != endquote && *string != '\0')
+		litchar(&string, 0);
+	return string;
 }
 
 static const unsigned char*
 skippgroup(const unsigned char* string)
 {
-    int nest = 0;
-    char open = *string;
-    char close;
+	int nest = 0;
+	char open = *string;
+	char close;
 
-    switch (open) {
-        case '(':
-            close = ')';
-            break;
-        case '{':
-            close = '}';
-            break;
-        case '[':
-            close = ']';
-            break;
-        case '<':
-            close = '>';
-            break;
-        default:
-            assert(0);
-            close = '\0'; /* only to avoid a compiler warning */
-    }
+	switch (open) {
+		case '(':
+			close = ')';
+			break;
+		case '{':
+			close = '}';
+			break;
+		case '[':
+			close = ']';
+			break;
+		case '<':
+			close = '>';
+			break;
+		default:
+			assert(0);
+			close = '\0'; /* only to avoid a compiler warning */
+	}
 
-    string++;
-    while (*string != close || nest > 0) {
-        if (*string == open)
-            nest++;
-        else if (*string == close)
-            nest--;
-        else if (is_startstring(string))
-            string = skipstring(string);
-        if (*string == '\0')
-            break;
-        string++;
-    }
-    return string;
+	string++;
+	while (*string != close || nest > 0) {
+		if (*string == open)
+			nest++;
+		else if (*string == close)
+			nest--;
+		else if (is_startstring(string))
+			string = skipstring(string);
+		if (*string == '\0')
+			break;
+		string++;
+	}
+	return string;
 }
 
 static char*
 strdel(char* str, size_t len)
 {
-    size_t length = strlen(str);
-    if (len > length)
-        len = length;
-    memmove(str, str + len, length - len + 1); /* include EOS byte */
-    return str;
+	size_t length = strlen(str);
+	if (len > length)
+		len = length;
+	memmove(str, str + len, length - len + 1); /* include EOS byte */
+	return str;
 }
 
 static char*
 strins(char* dest, const char* src, size_t srclen)
 {
-    size_t destlen = strlen(dest);
-    assert(srclen <= strlen(src));
-    memmove(dest + srclen, dest, destlen + 1); /* include EOS byte */
-    memcpy(dest, src, srclen);
-    return dest;
+	size_t destlen = strlen(dest);
+	assert(srclen <= strlen(src));
+	memmove(dest + srclen, dest, destlen + 1); /* include EOS byte */
+	memcpy(dest, src, srclen);
+	return dest;
 }
 
 static int
 substpattern(unsigned char* line, size_t buffersize, const char* pattern,
-             const char* substitution)
+			 const char* substitution)
 {
-    int prefixlen;
-    const unsigned char *p, *s, *e;
-    unsigned char* args[10];
-    int match, arg, len, argsnum = 0;
-    int stringize;
+	int prefixlen;
+	const unsigned char *p, *s, *e;
+	unsigned char* args[10];
+	int match, arg, len, argsnum = 0;
+	int stringize;
 
-    memset(args, 0, sizeof args);
+	memset(args, 0, sizeof args);
 
-    /* check the length of the prefix */
-    for (prefixlen = 0, s = (unsigned char*)pattern; alphanum(*s); prefixlen++, s++)
-        /* nothing */;
-    assert(prefixlen > 0);
-    assert(strncmp((char*)line, pattern, prefixlen) == 0);
+	/* check the length of the prefix */
+	for (prefixlen = 0, s = (unsigned char*)pattern; alphanum(*s); prefixlen++, s++)
+		/* nothing */;
+	assert(prefixlen > 0);
+	assert(strncmp((char*)line, pattern, prefixlen) == 0);
 
-    /* pattern prefix matches; match the rest of the pattern, gather
-     * the parameters
-     */
-    s = line + prefixlen;
-    p = (unsigned char*)pattern + prefixlen;
-    match = TRUE; /* so far, pattern matches */
-    while (match && *s != '\0' && *p != '\0') {
-        if (*p == '%') {
-            p++; /* skip '%' */
-            if (isdigit(*p)) {
-                arg = *p - '0';
-                assert(arg >= 0 && arg <= 9);
-                p++; /* skip parameter id */
-                assert(*p != '\0');
-                /* match the source string up to the character after the digit
-                 * (skipping strings in the process
-                 */
-                e = s;
-                while (*e != *p && *e != '\0' && *e != '\n') {
-                    if (is_startstring(e)) /* skip strings */
-                        e = skipstring(e);
-                    else if (strchr("({[", *e) != NULL) /* skip parenthized groups */
-                        e = skippgroup(e);
-                    if (*e != '\0')
-                        e++; /* skip non-alphapetic character (or closing quote of
-                              * a string, or the closing paranthese of a group) */
-                }
-                /* store the parameter (overrule any earlier) */
-                if (args[arg] != NULL)
-                    free(args[arg]);
-                else
-                    argsnum++;
-                len = (int)(e - s);
-                args[arg] = (unsigned char*)malloc(len + 1);
-                if (args[arg] == NULL)
-                    error(FATAL_ERROR_OOM);
-                SafeStrcpy((char*)args[arg], len + 1, (char*)s);
-                /* character behind the pattern was matched too */
-                if (*e == *p) {
-                    s = e + 1;
-                } else if (*e == '\n' && *p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
-                    s = e; /* allow a trailing ; in the pattern match to end of line */
-                } else {
-                    assert(*e == '\0' || *e == '\n');
-                    match = FALSE;
-                    s = e;
-                }
-                p++;
-            } else {
-                match = FALSE;
-            }
-        } else if (*p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
-            /* source may be ';' or end of the line */
-            while (*s <= ' ' && *s != '\0')
-                s++; /* skip white space */
-            if (*s != ';' && *s != '\0')
-                match = FALSE;
-            p++; /* skip the semicolon in the pattern */
-        } else {
-            cell ch;
-            /* skip whitespace between two non-alphanumeric characters, except
-             * for two identical symbols
-             */
-            assert((char*)p > pattern);
-            if (!alphanum(*p) && *(p - 1) != *p)
-                while (*s <= ' ' && *s != '\0')
-                    s++;         /* skip white space */
-            ch = litchar(&p, 0); /* this increments "p" */
-            if (*s != ch)
-                match = FALSE;
-            else
-                s++; /* this character matches */
-        }
-    }
+	/* pattern prefix matches; match the rest of the pattern, gather
+	 * the parameters
+	 */
+	s = line + prefixlen;
+	p = (unsigned char*)pattern + prefixlen;
+	match = TRUE; /* so far, pattern matches */
+	while (match && *s != '\0' && *p != '\0') {
+		if (*p == '%') {
+			p++; /* skip '%' */
+			if (isdigit(*p)) {
+				arg = *p - '0';
+				assert(arg >= 0 && arg <= 9);
+				p++; /* skip parameter id */
+				assert(*p != '\0');
+				/* match the source string up to the character after the digit
+				 * (skipping strings in the process
+				 */
+				e = s;
+				while (*e != *p && *e != '\0' && *e != '\n') {
+					if (is_startstring(e)) /* skip strings */
+						e = skipstring(e);
+					else if (strchr("({[", *e) != NULL) /* skip parenthized groups */
+						e = skippgroup(e);
+					if (*e != '\0')
+						e++; /* skip non-alphapetic character (or closing quote of
+							  * a string, or the closing paranthese of a group) */
+				}
+				/* store the parameter (overrule any earlier) */
+				if (args[arg] != NULL)
+					free(args[arg]);
+				else
+					argsnum++;
+				len = (int)(e - s);
+				args[arg] = (unsigned char*)malloc(len + 1);
+				if (args[arg] == NULL)
+					error(FATAL_ERROR_OOM);
+				SafeStrcpy((char*)args[arg], len + 1, (char*)s);
+				/* character behind the pattern was matched too */
+				if (*e == *p) {
+					s = e + 1;
+				} else if (*e == '\n' && *p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
+					s = e; /* allow a trailing ; in the pattern match to end of line */
+				} else {
+					assert(*e == '\0' || *e == '\n');
+					match = FALSE;
+					s = e;
+				}
+				p++;
+			} else {
+				match = FALSE;
+			}
+		} else if (*p == ';' && *(p + 1) == '\0' && !sc_needsemicolon) {
+			/* source may be ';' or end of the line */
+			while (*s <= ' ' && *s != '\0')
+				s++; /* skip white space */
+			if (*s != ';' && *s != '\0')
+				match = FALSE;
+			p++; /* skip the semicolon in the pattern */
+		} else {
+			cell ch;
+			/* skip whitespace between two non-alphanumeric characters, except
+			 * for two identical symbols
+			 */
+			assert((char*)p > pattern);
+			if (!alphanum(*p) && *(p - 1) != *p)
+				while (*s <= ' ' && *s != '\0')
+					s++;         /* skip white space */
+			ch = litchar(&p, 0); /* this increments "p" */
+			if (*s != ch)
+				match = FALSE;
+			else
+				s++; /* this character matches */
+		}
+	}
 
-    if (match && *p == '\0') {
-        /* if the last character to match is an alphanumeric character, the
-         * current character in the source may not be alphanumeric
-         */
-        assert(p > (unsigned char*)pattern);
-        if (alphanum(*(p - 1)) && alphanum(*s))
-            match = FALSE;
-    }
+	if (match && *p == '\0') {
+		/* if the last character to match is an alphanumeric character, the
+		 * current character in the source may not be alphanumeric
+		 */
+		assert(p > (unsigned char*)pattern);
+		if (alphanum(*(p - 1)) && alphanum(*s))
+			match = FALSE;
+	}
 
-    if (match) {
-        /* calculate the length of the substituted string */
-        for (e = (unsigned char*)substitution, len = 0; *e != '\0'; e++) {
-            if (*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2)) && argsnum) {
-                stringize = 1;
-                e++; /* skip '#' */
-            } else {
-                stringize = 0;
-            }
-            if (*e == '%' && isdigit(*(e + 1)) && argsnum) {
-                arg = *(e + 1) - '0';
-                assert(arg >= 0 && arg <= 9);
-                assert(stringize == 0 || stringize == 1);
-                if (args[arg] != NULL) {
-                    len += strlen((char*)args[arg]) + 2 * stringize;
-                    e++;
-                } else {
-                    len++;
-                }
-            } else {
-                len++;
-            }
-        }
-        /* check length of the string after substitution */
-        if (strlen((char*)line) + len - (int)(s - line) > buffersize) {
-            error(75); /* line too long */
-        } else {
-            /* substitute pattern */
-            strdel((char*)line, (int)(s - line));
-            for (e = (unsigned char*)substitution, s = line; *e != '\0'; e++) {
-                if (*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2))) {
-                    stringize = 1;
-                    e++; /* skip '#' */
-                } else {
-                    stringize = 0;
-                }
-                if (*e == '%' && isdigit(*(e + 1))) {
-                    arg = *(e + 1) - '0';
-                    assert(arg >= 0 && arg <= 9);
-                    if (args[arg] != NULL) {
-                        if (stringize)
-                            strins((char*)s++, "\"", 1);
-                        strins((char*)s, (char*)args[arg], strlen((char*)args[arg]));
-                        s += strlen((char*)args[arg]);
-                        if (stringize)
-                            strins((char*)s++, "\"", 1);
-                    } else {
-                        error(236); /* parameter does not exist, incorrect #define pattern */
-                        strins((char*)s, (char*)e, 2);
-                        s += 2;
-                    }
-                    e++; /* skip %, digit is skipped later */
-                } else if (*e == '"') {
-                    p = e;
-                    if (is_startstring(e)) {
-                        e = skipstring(e);
-                        strins((char*)s, (char*)p, (e - p + 1));
-                        s += (e - p + 1);
-                    } else {
-                        strins((char*)s, (char*)e, 1);
-                        s++;
-                    }
-                } else {
-                    strins((char*)s, (char*)e, 1);
-                    s++;
-                }
-            }
-        }
-    }
+	if (match) {
+		/* calculate the length of the substituted string */
+		for (e = (unsigned char*)substitution, len = 0; *e != '\0'; e++) {
+			if (*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2)) && argsnum) {
+				stringize = 1;
+				e++; /* skip '#' */
+			} else {
+				stringize = 0;
+			}
+			if (*e == '%' && isdigit(*(e + 1)) && argsnum) {
+				arg = *(e + 1) - '0';
+				assert(arg >= 0 && arg <= 9);
+				assert(stringize == 0 || stringize == 1);
+				if (args[arg] != NULL) {
+					len += strlen((char*)args[arg]) + 2 * stringize;
+					e++;
+				} else {
+					len++;
+				}
+			} else {
+				len++;
+			}
+		}
+		/* check length of the string after substitution */
+		if (strlen((char*)line) + len - (int)(s - line) > buffersize) {
+			error(75); /* line too long */
+		} else {
+			/* substitute pattern */
+			strdel((char*)line, (int)(s - line));
+			for (e = (unsigned char*)substitution, s = line; *e != '\0'; e++) {
+				if (*e == '#' && *(e + 1) == '%' && isdigit(*(e + 2))) {
+					stringize = 1;
+					e++; /* skip '#' */
+				} else {
+					stringize = 0;
+				}
+				if (*e == '%' && isdigit(*(e + 1))) {
+					arg = *(e + 1) - '0';
+					assert(arg >= 0 && arg <= 9);
+					if (args[arg] != NULL) {
+						if (stringize)
+							strins((char*)s++, "\"", 1);
+						strins((char*)s, (char*)args[arg], strlen((char*)args[arg]));
+						s += strlen((char*)args[arg]);
+						if (stringize)
+							strins((char*)s++, "\"", 1);
+					} else {
+						error(236); /* parameter does not exist, incorrect #define pattern */
+						strins((char*)s, (char*)e, 2);
+						s += 2;
+					}
+					e++; /* skip %, digit is skipped later */
+				} else if (*e == '"') {
+					p = e;
+					if (is_startstring(e)) {
+						e = skipstring(e);
+						strins((char*)s, (char*)p, (e - p + 1));
+						s += (e - p + 1);
+					} else {
+						strins((char*)s, (char*)e, 1);
+						s++;
+					}
+				} else {
+					strins((char*)s, (char*)e, 1);
+					s++;
+				}
+			}
+		}
+	}
 
-    for (arg = 0; arg < 10; arg++)
-        if (args[arg] != NULL)
-            free(args[arg]);
+	for (arg = 0; arg < 10; arg++)
+		if (args[arg] != NULL)
+			free(args[arg]);
 
-    return match;
+	return match;
 }
 
 static void
 substallpatterns(unsigned char* line, int buffersize)
 {
-    unsigned char *start, *end;
-    int prefixlen;
+	unsigned char *start, *end;
+	int prefixlen;
 
-    start = line;
-    while (*start != '\0') {
-        /* find the start of a prefix (skip all non-alphabetic characters),
-         * also skip strings
-         */
-        while (!alpha(*start) && *start != '\0') {
-            /* skip strings */
-            if (is_startstring(start)) {
-                start = (unsigned char*)skipstring(start);
-                if (*start == '\0')
-                    break; /* abort loop on error */
-            }
-            start++; /* skip non-alphapetic character (or closing quote of a string) */
-        }
-        if (*start == '\0')
-            break; /* abort loop on error */
-        /* if matching the operator "defined", skip it plus the symbol behind it */
-        if (strncmp((char*)start, "defined", 7) == 0 && !isalpha((char)*(start + 7))) {
-            start += 7; /* skip "defined" */
-            /* skip white space & parantheses */
-            while ((*start <= ' ' && *start != '\0') || *start == '(')
-                start++;
-            /* skip the symbol behind it */
-            while (alphanum(*start))
-                start++;
-            /* drop back into the main loop */
-            continue;
-        }
-        /* get the prefix (length), look for a matching definition */
-        prefixlen = 0;
-        end = start;
-        while (alphanum(*end)) {
-            prefixlen++;
-            end++;
-        }
-        assert(prefixlen > 0);
+	start = line;
+	while (*start != '\0') {
+		/* find the start of a prefix (skip all non-alphabetic characters),
+		 * also skip strings
+		 */
+		while (!alpha(*start) && *start != '\0') {
+			/* skip strings */
+			if (is_startstring(start)) {
+				start = (unsigned char*)skipstring(start);
+				if (*start == '\0')
+					break; /* abort loop on error */
+			}
+			start++; /* skip non-alphapetic character (or closing quote of a string) */
+		}
+		if (*start == '\0')
+			break; /* abort loop on error */
+		/* if matching the operator "defined", skip it plus the symbol behind it */
+		if (strncmp((char*)start, "defined", 7) == 0 && !isalpha((char)*(start + 7))) {
+			start += 7; /* skip "defined" */
+			/* skip white space & parantheses */
+			while ((*start <= ' ' && *start != '\0') || *start == '(')
+				start++;
+			/* skip the symbol behind it */
+			while (alphanum(*start))
+				start++;
+			/* drop back into the main loop */
+			continue;
+		}
+		/* get the prefix (length), look for a matching definition */
+		prefixlen = 0;
+		end = start;
+		while (alphanum(*end)) {
+			prefixlen++;
+			end++;
+		}
+		assert(prefixlen > 0);
 
-        macro_t subst;
-        if (find_subst((const char*)start, prefixlen, &subst)) {
-            /* properly match the pattern and substitute */
-            if (!substpattern(start, buffersize - (int)(start - line), subst.first, subst.second))
-                start = end; /* match failed, skip this prefix */
-            /* match succeeded: do not update "start", because the substitution text
-             * may be matched by other macros
-             */
-        } else {
-            start = end; /* no macro with this prefix, skip this prefix */
-        }
-    }
+		macro_t subst;
+		if (find_subst((const char*)start, prefixlen, &subst)) {
+			/* properly match the pattern and substitute */
+			if (!substpattern(start, buffersize - (int)(start - line), subst.first, subst.second))
+				start = end; /* match failed, skip this prefix */
+			/* match succeeded: do not update "start", because the substitution text
+			 * may be matched by other macros
+			 */
+		} else {
+			start = end; /* no macro with this prefix, skip this prefix */
+		}
+	}
 }
 
 /*  scanellipsis
@@ -1458,47 +1458,47 @@ substallpatterns(unsigned char* line, int buffersize)
 static int
 scanellipsis(const unsigned char* lptr)
 {
-    static void* inpfmark = NULL;
-    unsigned char* localbuf;
-    short localcomment, found;
+	static void* inpfmark = NULL;
+	unsigned char* localbuf;
+	short localcomment, found;
 
-    /* first look for the ellipsis in the remainder of the string */
-    while (*lptr <= ' ' && *lptr != '\0')
-        lptr++;
-    if (lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
-        return 1;
-    if (*lptr != '\0')
-        return 0; /* stumbled on something that is not an ellipsis and not white-space */
+	/* first look for the ellipsis in the remainder of the string */
+	while (*lptr <= ' ' && *lptr != '\0')
+		lptr++;
+	if (lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
+		return 1;
+	if (*lptr != '\0')
+		return 0; /* stumbled on something that is not an ellipsis and not white-space */
 
-    /* the ellipsis was not on the active line, read more lines from the current
-     * file (but save its position first)
-     */
-    if (inpf == NULL || pc_eofsrc(inpf))
-        return 0; /* quick exit: cannot read after EOF */
-    if ((localbuf = (unsigned char*)malloc((sLINEMAX + 1) * sizeof(unsigned char))) == NULL)
-        return 0;
-    inpfmark = pc_getpossrc(inpf);
-    localcomment = icomment;
+	/* the ellipsis was not on the active line, read more lines from the current
+	 * file (but save its position first)
+	 */
+	if (inpf == NULL || pc_eofsrc(inpf))
+		return 0; /* quick exit: cannot read after EOF */
+	if ((localbuf = (unsigned char*)malloc((sLINEMAX + 1) * sizeof(unsigned char))) == NULL)
+		return 0;
+	inpfmark = pc_getpossrc(inpf);
+	localcomment = icomment;
 
-    found = 0;
-    /* read from the file, skip preprocessing, but strip off comments */
-    while (!found && pc_readsrc(inpf, localbuf, sLINEMAX) != NULL) {
-        stripcom(localbuf);
-        lptr = localbuf;
-        /* skip white space */
-        while (*lptr <= ' ' && *lptr != '\0')
-            lptr++;
-        if (lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
-            found = 1;
-        else if (*lptr != '\0')
-            break; /* stumbled on something that is not an ellipsis and not white-space */
-    }
+	found = 0;
+	/* read from the file, skip preprocessing, but strip off comments */
+	while (!found && pc_readsrc(inpf, localbuf, sLINEMAX) != NULL) {
+		stripcom(localbuf);
+		lptr = localbuf;
+		/* skip white space */
+		while (*lptr <= ' ' && *lptr != '\0')
+			lptr++;
+		if (lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.')
+			found = 1;
+		else if (*lptr != '\0')
+			break; /* stumbled on something that is not an ellipsis and not white-space */
+	}
 
-    /* clean up & reset */
-    free(localbuf);
-    pc_resetsrc(inpf, inpfmark);
-    icomment = localcomment;
-    return found;
+	/* clean up & reset */
+	free(localbuf);
+	pc_resetsrc(inpf, inpfmark);
+	icomment = localcomment;
+	return found;
 }
 
 /*  preprocess
@@ -1516,59 +1516,59 @@ scanellipsis(const unsigned char* lptr)
 void
 preprocess(void)
 {
-    int iscommand;
+	int iscommand;
 
-    if (!freading)
-        return;
-    do {
-        readline(pline);
-        stripcom(
-            pline); /* ??? no need for this when reading back from list file (in the second pass) */
-        lptr = pline; /* set "line pointer" to start of the parsing buffer */
-        iscommand = command();
-        if (iscommand != CMD_NONE)
-            errorset(sRESET, 0); /* reset error flag ("panic mode") on empty line or directive */
-        if (iscommand == CMD_NONE) {
-            assert(lptr != term_expr);
-            substallpatterns(pline, sLINEMAX);
-            lptr = pline; /* reset "line pointer" to start of the parsing buffer */
-        }
-        if (sc_status == statFIRST && sc_listing && freading &&
-            (iscommand == CMD_NONE || iscommand == CMD_EMPTYLINE || iscommand == CMD_DIRECTIVE))
-        {
-            listline++;
-            if (fline != listline) {
-                listline = fline;
-                setlinedirect(fline);
-            }
-            if (iscommand == CMD_EMPTYLINE)
-                pc_writeasm(outf, "\n");
-            else
-                pc_writeasm(outf, (char*)pline);
-        }
-    } while (iscommand != CMD_NONE && iscommand != CMD_TERM && freading); /* enddo */
+	if (!freading)
+		return;
+	do {
+		readline(pline);
+		stripcom(
+			pline); /* ??? no need for this when reading back from list file (in the second pass) */
+		lptr = pline; /* set "line pointer" to start of the parsing buffer */
+		iscommand = command();
+		if (iscommand != CMD_NONE)
+			errorset(sRESET, 0); /* reset error flag ("panic mode") on empty line or directive */
+		if (iscommand == CMD_NONE) {
+			assert(lptr != term_expr);
+			substallpatterns(pline, sLINEMAX);
+			lptr = pline; /* reset "line pointer" to start of the parsing buffer */
+		}
+		if (sc_status == statFIRST && sc_listing && freading &&
+			(iscommand == CMD_NONE || iscommand == CMD_EMPTYLINE || iscommand == CMD_DIRECTIVE))
+		{
+			listline++;
+			if (fline != listline) {
+				listline = fline;
+				setlinedirect(fline);
+			}
+			if (iscommand == CMD_EMPTYLINE)
+				pc_writeasm(outf, "\n");
+			else
+				pc_writeasm(outf, (char*)pline);
+		}
+	} while (iscommand != CMD_NONE && iscommand != CMD_TERM && freading); /* enddo */
 }
 
 static void
 packedstring(const unsigned char* lptr, int flags, full_token_t* tok)
 {
-    while (*lptr != '\0') {
-        if (*lptr == '\a') { // ignore '\a' (which was inserted at a line concatenation)
-            lptr++;
-            continue;
-        }
-        ucell c = litchar(&lptr, flags); // litchar() alters "lptr"
-        if (c >= (ucell)(1 << sCHARBITS))
-            error(43); // character constant exceeds range
-        glbstringread++;
-        if (tok->len >= sizeof(tok->str) - 1) {
-            error(75); // line too long
-            continue;
-        }
-        tok->str[tok->len++] = (char)c;
-    }
-    assert(tok->len < sizeof(tok->str));
-    tok->str[tok->len] = '\0';
+	while (*lptr != '\0') {
+		if (*lptr == '\a') { // ignore '\a' (which was inserted at a line concatenation)
+			lptr++;
+			continue;
+		}
+		ucell c = litchar(&lptr, flags); // litchar() alters "lptr"
+		if (c >= (ucell)(1 << sCHARBITS))
+			error(43); // character constant exceeds range
+		glbstringread++;
+		if (tok->len >= sizeof(tok->str) - 1) {
+			error(75); // line too long
+			continue;
+		}
+		tok->str[tok->len++] = (char)c;
+	}
+	assert(tok->len < sizeof(tok->str));
+	tok->str[tok->len] = '\0';
 }
 
 /*  lex(lexvalue,lexsym)        Lexical Analysis
@@ -1616,276 +1616,276 @@ token_buffer_t* sTokenBuffer;
 full_token_t*
 current_token()
 {
-    return &sTokenBuffer->tokens[sTokenBuffer->cursor];
+	return &sTokenBuffer->tokens[sTokenBuffer->cursor];
 }
 
 static full_token_t*
 next_token()
 {
-    assert(sTokenBuffer->depth > 0);
-    int cursor = sTokenBuffer->cursor + 1;
-    if (cursor == MAX_TOKEN_DEPTH)
-        cursor = 0;
-    return &sTokenBuffer->tokens[cursor];
+	assert(sTokenBuffer->depth > 0);
+	int cursor = sTokenBuffer->cursor + 1;
+	if (cursor == MAX_TOKEN_DEPTH)
+		cursor = 0;
+	return &sTokenBuffer->tokens[cursor];
 }
 
 const char* sc_tokens[] = {"*=",
-                           "/=",
-                           "%=",
-                           "+=",
-                           "-=",
-                           "<<=",
-                           ">>>=",
-                           ">>=",
-                           "&=",
-                           "^=",
-                           "|=",
-                           "||",
-                           "&&",
-                           "==",
-                           "!=",
-                           "<=",
-                           ">=",
-                           "<<",
-                           ">>>",
-                           ">>",
-                           "++",
-                           "--",
-                           "...",
-                           "..",
-                           "::",
-                           "acquire",
-                           "as",
-                           "assert",
-                           "break",
-                           "builtin",
-                           "catch",
-                           "case",
-                           "cast_to",
-                           "char",
-                           "const",
-                           "continue",
-                           "decl",
-                           "default",
-                           "defined",
-                           "delete",
-                           "do",
-                           "double",
-                           "else",
-                           "enum",
-                           "exit",
-                           "explicit",
-                           "finally",
-                           "for",
-                           "foreach",
-                           "forward",
-                           "funcenum",
-                           "functag",
-                           "function",
-                           "goto",
-                           "if",
-                           "implicit",
-                           "import",
-                           "in",
-                           "int",
-                           "int8",
-                           "int16",
-                           "int32",
-                           "int64",
-                           "interface",
-                           "intn",
-                           "let",
-                           "methodmap",
-                           "namespace",
-                           "native",
-                           "new",
-                           "null",
-                           "__nullable__",
-                           "object",
-                           "operator",
-                           "package",
-                           "private",
-                           "protected",
-                           "public",
-                           "readonly",
-                           "return",
-                           "sealed",
-                           "sizeof",
-                           "static",
-                           "stock",
-                           "struct",
-                           "switch",
-                           "this",
-                           "throw",
-                           "try",
-                           "typedef",
-                           "typeof",
-                           "typeset",
-                           "uint8",
-                           "uint16",
-                           "uint32",
-                           "uint64",
-                           "uintn",
-                           "union",
-                           "using",
-                           "var",
-                           "variant",
-                           "view_as",
-                           "virtual",
-                           "void",
-                           "volatile",
-                           "while",
-                           "with",
-                           "#assert",
-                           "#define",
-                           "#else",
-                           "#elseif",
-                           "#endif",
-                           "#endinput",
-                           "#endscript",
-                           "#error",
-                           "#warning",
-                           "#file",
-                           "#if",
-                           "#include",
-                           "#line",
-                           "#pragma",
-                           "#tryinclude",
-                           "#undef",
-                           ";",
-                           ";",
-                           "-integer value-",
-                           "-rational value-",
-                           "-identifier-",
-                           "-label-",
-                           "-string-",
-                           "-string-"};
+						   "/=",
+						   "%=",
+						   "+=",
+						   "-=",
+						   "<<=",
+						   ">>>=",
+						   ">>=",
+						   "&=",
+						   "^=",
+						   "|=",
+						   "||",
+						   "&&",
+						   "==",
+						   "!=",
+						   "<=",
+						   ">=",
+						   "<<",
+						   ">>>",
+						   ">>",
+						   "++",
+						   "--",
+						   "...",
+						   "..",
+						   "::",
+						   "acquire",
+						   "as",
+						   "assert",
+						   "break",
+						   "builtin",
+						   "catch",
+						   "case",
+						   "cast_to",
+						   "char",
+						   "const",
+						   "continue",
+						   "decl",
+						   "default",
+						   "defined",
+						   "delete",
+						   "do",
+						   "double",
+						   "else",
+						   "enum",
+						   "exit",
+						   "explicit",
+						   "finally",
+						   "for",
+						   "foreach",
+						   "forward",
+						   "funcenum",
+						   "functag",
+						   "function",
+						   "goto",
+						   "if",
+						   "implicit",
+						   "import",
+						   "in",
+						   "int",
+						   "int8",
+						   "int16",
+						   "int32",
+						   "int64",
+						   "interface",
+						   "intn",
+						   "let",
+						   "methodmap",
+						   "namespace",
+						   "native",
+						   "new",
+						   "null",
+						   "__nullable__",
+						   "object",
+						   "operator",
+						   "package",
+						   "private",
+						   "protected",
+						   "public",
+						   "readonly",
+						   "return",
+						   "sealed",
+						   "sizeof",
+						   "static",
+						   "stock",
+						   "struct",
+						   "switch",
+						   "this",
+						   "throw",
+						   "try",
+						   "typedef",
+						   "typeof",
+						   "typeset",
+						   "uint8",
+						   "uint16",
+						   "uint32",
+						   "uint64",
+						   "uintn",
+						   "union",
+						   "using",
+						   "var",
+						   "variant",
+						   "view_as",
+						   "virtual",
+						   "void",
+						   "volatile",
+						   "while",
+						   "with",
+						   "#assert",
+						   "#define",
+						   "#else",
+						   "#elseif",
+						   "#endif",
+						   "#endinput",
+						   "#endscript",
+						   "#error",
+						   "#warning",
+						   "#file",
+						   "#if",
+						   "#include",
+						   "#line",
+						   "#pragma",
+						   "#tryinclude",
+						   "#undef",
+						   ";",
+						   ";",
+						   "-integer value-",
+						   "-rational value-",
+						   "-identifier-",
+						   "-label-",
+						   "-string-",
+						   "-string-"};
 
 void
 lexinit()
 {
-    iflevel = 0;   /* preprocessor: nesting of "#if" is currently 0 */
-    skiplevel = 0; /* preprocessor: not currently skipping */
-    icomment = 0;  /* currently not in a multiline comment */
-    _lexnewline = FALSE;
-    memset(&sNormalBuffer, 0, sizeof(sNormalBuffer));
-    memset(&sPreprocessBuffer, 0, sizeof(sPreprocessBuffer));
-    sTokenBuffer = &sNormalBuffer;
+	iflevel = 0;   /* preprocessor: nesting of "#if" is currently 0 */
+	skiplevel = 0; /* preprocessor: not currently skipping */
+	icomment = 0;  /* currently not in a multiline comment */
+	_lexnewline = FALSE;
+	memset(&sNormalBuffer, 0, sizeof(sNormalBuffer));
+	memset(&sPreprocessBuffer, 0, sizeof(sPreprocessBuffer));
+	sTokenBuffer = &sNormalBuffer;
 
-    if (!sKeywords.elements()) {
-        sKeywords.init(128);
+	if (!sKeywords.elements()) {
+		sKeywords.init(128);
 
-        const int kStart = tMIDDLE + 1;
-        const char** tokptr = &sc_tokens[kStart - tFIRST];
-        for (int i = kStart; i <= tLAST; i++, tokptr++) {
-            CharsAndLength key(*tokptr, strlen(*tokptr));
-            auto p = sKeywords.findForAdd(key);
-            assert(!p.found());
-            sKeywords.add(p, key, i);
-        }
-    }
+		const int kStart = tMIDDLE + 1;
+		const char** tokptr = &sc_tokens[kStart - tFIRST];
+		for (int i = kStart; i <= tLAST; i++, tokptr++) {
+			CharsAndLength key(*tokptr, strlen(*tokptr));
+			auto p = sKeywords.findForAdd(key);
+			assert(!p.found());
+			sKeywords.add(p, key, i);
+		}
+	}
 }
 
 std::string
 get_token_string(int tok_id)
 {
-    std::string str;
-    if (tok_id < 256)
-        return StringPrintf("%c", tok_id);
-    if (tok_id == tEOL)
-        return "<newline>";
-    assert(tok_id >= tFIRST && tok_id <= tLAST);
-    return StringPrintf("%s", sc_tokens[tok_id - tFIRST]);
+	std::string str;
+	if (tok_id < 256)
+		return StringPrintf("%c", tok_id);
+	if (tok_id == tEOL)
+		return "<newline>";
+	assert(tok_id >= tFIRST && tok_id <= tLAST);
+	return StringPrintf("%s", sc_tokens[tok_id - tFIRST]);
 }
 
 static int
 lex_keyword_impl(const char* match, size_t length)
 {
-    CharsAndLength key(match, length);
-    auto p = sKeywords.find(key);
-    if (!p.found())
-        return 0;
-    return p->value;
+	CharsAndLength key(match, length);
+	auto p = sKeywords.find(key);
+	if (!p.found())
+		return 0;
+	return p->value;
 }
 
 static inline bool
 IsUnimplementedKeyword(int token)
 {
-    switch (token) {
-        case tACQUIRE:
-        case tAS:
-        case tCATCH:
-        case tCAST_TO:
-        case tDOUBLE:
-        case tEXPLICIT:
-        case tFINALLY:
-        case tFOREACH:
-        case tIMPLICIT:
-        case tIMPORT:
-        case tIN:
-        case tINT8:
-        case tINT16:
-        case tINT32:
-        case tINT64:
-        case tINTERFACE:
-        case tINTN:
-        case tLET:
-        case tNAMESPACE:
-        case tPACKAGE:
-        case tPRIVATE:
-        case tPROTECTED:
-        case tREADONLY:
-        case tSEALED:
-        case tTHROW:
-        case tTRY:
-        case tTYPEOF:
-        case tUINT8:
-        case tUINT16:
-        case tUINT32:
-        case tUINT64:
-        case tUINTN:
-        case tUNION:
-        case tVAR:
-        case tVARIANT:
-        case tVIRTUAL:
-        case tVOLATILE:
-        case tWITH:
-            return true;
-        default:
-            return false;
-    }
+	switch (token) {
+		case tACQUIRE:
+		case tAS:
+		case tCATCH:
+		case tCAST_TO:
+		case tDOUBLE:
+		case tEXPLICIT:
+		case tFINALLY:
+		case tFOREACH:
+		case tIMPLICIT:
+		case tIMPORT:
+		case tIN:
+		case tINT8:
+		case tINT16:
+		case tINT32:
+		case tINT64:
+		case tINTERFACE:
+		case tINTN:
+		case tLET:
+		case tNAMESPACE:
+		case tPACKAGE:
+		case tPRIVATE:
+		case tPROTECTED:
+		case tREADONLY:
+		case tSEALED:
+		case tTHROW:
+		case tTRY:
+		case tTYPEOF:
+		case tUINT8:
+		case tUINT16:
+		case tUINT32:
+		case tUINT64:
+		case tUINTN:
+		case tUNION:
+		case tVAR:
+		case tVARIANT:
+		case tVIRTUAL:
+		case tVOLATILE:
+		case tWITH:
+			return true;
+		default:
+			return false;
+	}
 }
 
 static full_token_t*
 advance_token_ptr()
 {
-    assert(sTokenBuffer->depth == 0);
-    sTokenBuffer->num_tokens++;
-    sTokenBuffer->cursor++;
-    if (sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
-        sTokenBuffer->cursor = 0;
+	assert(sTokenBuffer->depth == 0);
+	sTokenBuffer->num_tokens++;
+	sTokenBuffer->cursor++;
+	if (sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
+		sTokenBuffer->cursor = 0;
 
-    return current_token();
+	return current_token();
 }
 
 static void
 preprocess_in_lex()
 {
-    sTokenBuffer = &sPreprocessBuffer;
-    preprocess();
-    sTokenBuffer = &sNormalBuffer;
+	sTokenBuffer = &sPreprocessBuffer;
+	preprocess();
+	sTokenBuffer = &sNormalBuffer;
 }
 
 // Pops a token off the token buffer, making it the current token.
 static void
 lexpop()
 {
-    assert(sTokenBuffer->depth > 0);
+	assert(sTokenBuffer->depth > 0);
 
-    sTokenBuffer->depth--;
-    sTokenBuffer->cursor++;
-    if (sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
-        sTokenBuffer->cursor = 0;
+	sTokenBuffer->depth--;
+	sTokenBuffer->cursor++;
+	if (sTokenBuffer->cursor == MAX_TOKEN_DEPTH)
+		sTokenBuffer->cursor = 0;
 }
 
 static void lex_once(full_token_t* tok, cell* lexvalue);
@@ -1899,467 +1899,467 @@ static bool lex_symbol_or_keyword(full_token_t* tok);
 int
 lex(cell* lexvalue, char** lexsym)
 {
-    int newline;
+	int newline;
 
-    if (sTokenBuffer->depth > 0) {
-        lexpop();
-        *lexvalue = current_token()->value;
-        *lexsym = current_token()->str;
-        return current_token()->id;
-    }
+	if (sTokenBuffer->depth > 0) {
+		lexpop();
+		*lexvalue = current_token()->value;
+		*lexsym = current_token()->str;
+		return current_token()->id;
+	}
 
-    full_token_t* tok = advance_token_ptr();
-    tok->id = 0;
-    tok->value = 0;
-    tok->str[0] = '\0';
-    tok->len = 0;
+	full_token_t* tok = advance_token_ptr();
+	tok->id = 0;
+	tok->value = 0;
+	tok->str[0] = '\0';
+	tok->len = 0;
 
-    *lexvalue = tok->value;
-    *lexsym = tok->str;
+	*lexvalue = tok->value;
+	*lexsym = tok->str;
 
-    _lexnewline = FALSE;
-    if (!freading)
-        return 0;
+	_lexnewline = FALSE;
+	if (!freading)
+		return 0;
 
-    newline = (lptr == pline); /* does lptr point to start of line buffer */
-    while (*lptr <= ' ') {     /* delete leading white space */
-        if (*lptr == '\0') {
-            preprocess_in_lex();
-            if (!freading)
-                return 0;
-            if (lptr == term_expr) /* special sequence to terminate a pending expression */
-                return (tok->id = tENDEXPR);
-            _lexnewline = TRUE; /* set this after preprocess(), because
-                                 * preprocess() calls lex() recursively */
-            newline = TRUE;
-        } else {
-            lptr += 1;
-        }
-    }
-    if (newline) {
-        stmtindent = 0;
-        for (int i = 0; i < (int)(lptr - pline); i++)
-            if (pline[i] == '\t' && sc_tabsize > 0)
-                stmtindent += (int)(sc_tabsize - (stmtindent + sc_tabsize) % sc_tabsize);
-            else
-                stmtindent++;
-    }
+	newline = (lptr == pline); /* does lptr point to start of line buffer */
+	while (*lptr <= ' ') {     /* delete leading white space */
+		if (*lptr == '\0') {
+			preprocess_in_lex();
+			if (!freading)
+				return 0;
+			if (lptr == term_expr) /* special sequence to terminate a pending expression */
+				return (tok->id = tENDEXPR);
+			_lexnewline = TRUE; /* set this after preprocess(), because
+								 * preprocess() calls lex() recursively */
+			newline = TRUE;
+		} else {
+			lptr += 1;
+		}
+	}
+	if (newline) {
+		stmtindent = 0;
+		for (int i = 0; i < (int)(lptr - pline); i++)
+			if (pline[i] == '\t' && sc_tabsize > 0)
+				stmtindent += (int)(sc_tabsize - (stmtindent + sc_tabsize) % sc_tabsize);
+			else
+				stmtindent++;
+	}
 
-    tok->start.line = fline;
-    tok->start.col = (int)(lptr - pline);
-    tok->start.file = fcurrent;
+	tok->start.line = fline;
+	tok->start.col = (int)(lptr - pline);
+	tok->start.file = fcurrent;
 
-    lex_once(tok, lexvalue);
+	lex_once(tok, lexvalue);
 
-    tok->end.line = fline;
-    tok->end.col = (int)(lptr - pline);
-    tok->end.file = tok->start.file;
-    return tok->id;
+	tok->end.line = fline;
+	tok->end.col = (int)(lptr - pline);
+	tok->end.file = tok->start.file;
+	return tok->id;
 }
 
 static void
 lex_once(full_token_t* tok, cell* lexvalue)
 {
-    switch (*lptr) {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9': {
-            if (lex_number(tok, lexvalue))
-                return;
-            break;
-        }
+	switch (*lptr) {
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9': {
+			if (lex_number(tok, lexvalue))
+				return;
+			break;
+		}
 
-        case '*':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taMULT;
-            else
-                tok->id = '*';
-            return;
+		case '*':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taMULT;
+			else
+				tok->id = '*';
+			return;
 
-        case '/':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taDIV;
-            else
-                tok->id = '/';
-            return;
+		case '/':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taDIV;
+			else
+				tok->id = '/';
+			return;
 
-        case '%':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taMOD;
-            else
-                tok->id = '%';
-            return;
+		case '%':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taMOD;
+			else
+				tok->id = '%';
+			return;
 
-        case '+':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taADD;
-            else if (lex_match_char('+'))
-                tok->id = tINC;
-            else
-                tok->id = '+';
-            return;
+		case '+':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taADD;
+			else if (lex_match_char('+'))
+				tok->id = tINC;
+			else
+				tok->id = '+';
+			return;
 
-        case '-':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taSUB;
-            else if (lex_match_char('-'))
-                tok->id = tDEC;
-            else
-                tok->id = '-';
-            return;
+		case '-':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taSUB;
+			else if (lex_match_char('-'))
+				tok->id = tDEC;
+			else
+				tok->id = '-';
+			return;
 
-        case '<':
-            lptr++;
-            if (lex_match_char('<')) {
-                if (lex_match_char('='))
-                    tok->id = taSHL;
-                else
-                    tok->id = tSHL;
-            } else if (lex_match_char('=')) {
-                tok->id = tlLE;
-            } else {
-                tok->id = '<';
-            }
-            return;
+		case '<':
+			lptr++;
+			if (lex_match_char('<')) {
+				if (lex_match_char('='))
+					tok->id = taSHL;
+				else
+					tok->id = tSHL;
+			} else if (lex_match_char('=')) {
+				tok->id = tlLE;
+			} else {
+				tok->id = '<';
+			}
+			return;
 
-        case '>':
-            lptr++;
-            if (lex_match_char('>')) {
-                if (lex_match_char('>')) {
-                    if (lex_match_char('='))
-                        tok->id = taSHRU;
-                    else
-                        tok->id = tSHRU;
-                } else if (lex_match_char('=')) {
-                    tok->id = taSHR;
-                } else {
-                    tok->id = tSHR;
-                }
-            } else if (lex_match_char('=')) {
-                tok->id = tlGE;
-            } else {
-                tok->id = '>';
-            }
-            return;
+		case '>':
+			lptr++;
+			if (lex_match_char('>')) {
+				if (lex_match_char('>')) {
+					if (lex_match_char('='))
+						tok->id = taSHRU;
+					else
+						tok->id = tSHRU;
+				} else if (lex_match_char('=')) {
+					tok->id = taSHR;
+				} else {
+					tok->id = tSHR;
+				}
+			} else if (lex_match_char('=')) {
+				tok->id = tlGE;
+			} else {
+				tok->id = '>';
+			}
+			return;
 
-        case '&':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taAND;
-            else if (lex_match_char('&'))
-                tok->id = tlAND;
-            else
-                tok->id = '&';
-            return;
+		case '&':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taAND;
+			else if (lex_match_char('&'))
+				tok->id = tlAND;
+			else
+				tok->id = '&';
+			return;
 
-        case '^':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taXOR;
-            else
-                tok->id = '^';
-            return;
+		case '^':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taXOR;
+			else
+				tok->id = '^';
+			return;
 
-        case '|':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = taOR;
-            else if (lex_match_char('|'))
-                tok->id = tlOR;
-            else
-                tok->id = '|';
-            return;
+		case '|':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = taOR;
+			else if (lex_match_char('|'))
+				tok->id = tlOR;
+			else
+				tok->id = '|';
+			return;
 
-        case '=':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = tlEQ;
-            else
-                tok->id = '=';
-            return;
+		case '=':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = tlEQ;
+			else
+				tok->id = '=';
+			return;
 
-        case '!':
-            lptr++;
-            if (lex_match_char('='))
-                tok->id = tlNE;
-            else
-                tok->id = '!';
-            return;
+		case '!':
+			lptr++;
+			if (lex_match_char('='))
+				tok->id = tlNE;
+			else
+				tok->id = '!';
+			return;
 
-        case '.':
-            lptr++;
-            if (lex_match_char('.')) {
-                if (lex_match_char('.'))
-                    tok->id = tELLIPS;
-                else
-                    tok->id = tDBLDOT;
-            } else {
-                tok->id = '.';
-            }
-            return;
+		case '.':
+			lptr++;
+			if (lex_match_char('.')) {
+				if (lex_match_char('.'))
+					tok->id = tELLIPS;
+				else
+					tok->id = tDBLDOT;
+			} else {
+				tok->id = '.';
+			}
+			return;
 
-        case ':':
-            lptr++;
-            if (lex_match_char(':'))
-                tok->id = tDBLCOLON;
-            else
-                tok->id = ':';
-            return;
+		case ':':
+			lptr++;
+			if (lex_match_char(':'))
+				tok->id = tDBLCOLON;
+			else
+				tok->id = ':';
+			return;
 
-        case '"':
-            lex_string_literal(tok, lexvalue);
-            return;
+		case '"':
+			lex_string_literal(tok, lexvalue);
+			return;
 
-        case '\'':
-            lptr += 1; /* skip quote */
-            tok->id = tNUMBER;
-            *lexvalue = tok->value = litchar(&lptr, UTF8MODE);
-            if (*lptr == '\'') {
-                lptr += 1; /* skip final quote */
-            } else {
-                error(27); /* invalid character constant (must be one character) */
+		case '\'':
+			lptr += 1; /* skip quote */
+			tok->id = tNUMBER;
+			*lexvalue = tok->value = litchar(&lptr, UTF8MODE);
+			if (*lptr == '\'') {
+				lptr += 1; /* skip final quote */
+			} else {
+				error(27); /* invalid character constant (must be one character) */
 
-                // Eat tokens on the same line until we can close the malformed
-                // string.
-                while (*lptr && *lptr != '\'')
-                    litchar(&lptr, UTF8MODE);
-                if (*lptr && *lptr == '\'')
-                    lptr++;
-            }
-            return;
+				// Eat tokens on the same line until we can close the malformed
+				// string.
+				while (*lptr && *lptr != '\'')
+					litchar(&lptr, UTF8MODE);
+				if (*lptr && *lptr == '\'')
+					lptr++;
+			}
+			return;
 
-        case ';':
-            // semicolon resets the error state.
-            tok->id = ';';
-            lptr++;
-            errorset(sRESET, 0);
-            return;
-    }
+		case ';':
+			// semicolon resets the error state.
+			tok->id = ';';
+			lptr++;
+			errorset(sRESET, 0);
+			return;
+	}
 
-    if (alpha(*lptr) || *lptr == '#') {
-        if (lex_symbol_or_keyword(tok))
-            return;
-    }
+	if (alpha(*lptr) || *lptr == '#') {
+		if (lex_symbol_or_keyword(tok))
+			return;
+	}
 
-    // Unmatched, return the next character.
-    tok->id = *lptr++;
+	// Unmatched, return the next character.
+	tok->id = *lptr++;
 }
 
 static bool
 lex_match_char(char c)
 {
-    if (*lptr != c)
-        return false;
-    lptr++;
-    return true;
+	if (*lptr != c)
+		return false;
+	lptr++;
+	return true;
 }
 
 static bool
 lex_number(full_token_t* tok, cell* lexvalue)
 {
-    if (int i = number(&tok->value, lptr)) {
-        tok->id = tNUMBER;
-        *lexvalue = tok->value;
-        lptr += i;
-        return true;
-    }
-    if (int i = ftoi(&tok->value, lptr)) {
-        tok->id = tRATIONAL;
-        *lexvalue = tok->value;
-        lptr += i;
-        return true;
-    }
-    return false;
+	if (int i = number(&tok->value, lptr)) {
+		tok->id = tNUMBER;
+		*lexvalue = tok->value;
+		lptr += i;
+		return true;
+	}
+	if (int i = ftoi(&tok->value, lptr)) {
+		tok->id = tRATIONAL;
+		*lexvalue = tok->value;
+		lptr += i;
+		return true;
+	}
+	return false;
 }
 
 static void
 lex_string_literal(full_token_t* tok, cell* lexvalue)
 {
-    tok->id = tSTRING;
-    tok->str[0] = '\0';
-    tok->len = 0;
-    tok->value = -1;  // Catch consumers expecting automatic litadd().
+	tok->id = tSTRING;
+	tok->str[0] = '\0';
+	tok->len = 0;
+	tok->value = -1;  // Catch consumers expecting automatic litadd().
 
-    glbstringread = 1;
+	glbstringread = 1;
 
-    for (;;) {
-        assert(*lptr == '\"' || *lptr == '\'');
+	for (;;) {
+		assert(*lptr == '\"' || *lptr == '\'');
 
-        static char buffer[sLINEMAX + 1];
-        char* cat = buffer;
-        if (*lptr == '\"') {
-            lptr += 1;
-            while (*lptr != '\"' && *lptr != '\0' && (cat - buffer) < sLINEMAX) {
-                if (*lptr != '\a') { /* ignore '\a' (which was inserted at a line concatenation) */
-                    *cat++ = *lptr;
-                    if (*lptr == sc_ctrlchar && *(lptr + 1) != '\0')
-                        *cat++ = *++lptr; /* skip escape character plus the escaped character */
-                }
-                lptr++;
-            }
-        } else {
-            lptr += 1;
-            ucell c = litchar(&lptr, UTF8MODE);
-            if (c >= (ucell)(1 << sCHARBITS))
-                error(43); // character constant exceeds range
-            *cat++ = static_cast<char>(c);
-            /* invalid char declaration */
-            if (*lptr != '\'')
-                error(27); /* invalid character constant (must be one character) */
-        }
-        *cat = '\0'; /* terminate string */
+		static char buffer[sLINEMAX + 1];
+		char* cat = buffer;
+		if (*lptr == '\"') {
+			lptr += 1;
+			while (*lptr != '\"' && *lptr != '\0' && (cat - buffer) < sLINEMAX) {
+				if (*lptr != '\a') { /* ignore '\a' (which was inserted at a line concatenation) */
+					*cat++ = *lptr;
+					if (*lptr == sc_ctrlchar && *(lptr + 1) != '\0')
+						*cat++ = *++lptr; /* skip escape character plus the escaped character */
+				}
+				lptr++;
+			}
+		} else {
+			lptr += 1;
+			ucell c = litchar(&lptr, UTF8MODE);
+			if (c >= (ucell)(1 << sCHARBITS))
+				error(43); // character constant exceeds range
+			*cat++ = static_cast<char>(c);
+			/* invalid char declaration */
+			if (*lptr != '\'')
+				error(27); /* invalid character constant (must be one character) */
+		}
+		*cat = '\0'; /* terminate string */
 
-        packedstring((unsigned char*)buffer, 0, tok);
+		packedstring((unsigned char*)buffer, 0, tok);
 
-        if (*lptr == '\"' || *lptr == '\'')
-            lptr += 1; /* skip final quote */
-        else
-            error(37); /* invalid (non-terminated) string */
-        /* see whether an ellipsis is following the string */
-        if (!scanellipsis(lptr))
-            break; /* no concatenation of string literals */
-        /* there is an ellipses, go on parsing (this time with full preprocessing) */
-        while (*lptr <= ' ') {
-            if (*lptr == '\0') {
-                preprocess_in_lex();
-                assert(freading && lptr != term_expr);
-            } else {
-                lptr++;
-            }
-        }
-        assert(freading && lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.');
-        lptr += 3;
-        while (*lptr <= ' ') {
-            if (*lptr == '\0') {
-                preprocess_in_lex();
-                assert(freading && lptr != term_expr);
-            } else {
-                lptr++;
-            }
-        }
-        if (!freading || !((*lptr == '\"') || (*lptr == '\''))) {
-            error(37); /* invalid string concatenation */
-            break;
-        }
-    }
+		if (*lptr == '\"' || *lptr == '\'')
+			lptr += 1; /* skip final quote */
+		else
+			error(37); /* invalid (non-terminated) string */
+		/* see whether an ellipsis is following the string */
+		if (!scanellipsis(lptr))
+			break; /* no concatenation of string literals */
+		/* there is an ellipses, go on parsing (this time with full preprocessing) */
+		while (*lptr <= ' ') {
+			if (*lptr == '\0') {
+				preprocess_in_lex();
+				assert(freading && lptr != term_expr);
+			} else {
+				lptr++;
+			}
+		}
+		assert(freading && lptr[0] == '.' && lptr[1] == '.' && lptr[2] == '.');
+		lptr += 3;
+		while (*lptr <= ' ') {
+			if (*lptr == '\0') {
+				preprocess_in_lex();
+				assert(freading && lptr != term_expr);
+			} else {
+				lptr++;
+			}
+		}
+		if (!freading || !((*lptr == '\"') || (*lptr == '\''))) {
+			error(37); /* invalid string concatenation */
+			break;
+		}
+	}
 }
 
 static bool
 lex_keyword(full_token_t* tok, const char* token_start)
 {
-    int tok_id = lex_keyword_impl(token_start, tok->len);
-    if (!tok_id)
-        return false;
+	int tok_id = lex_keyword_impl(token_start, tok->len);
+	if (!tok_id)
+		return false;
 
-    if (IsUnimplementedKeyword(tok_id)) {
-        // Try to gracefully error.
-        error(173, get_token_string(tok_id).c_str());
-        tok->id = tSYMBOL;
-        strcpy(tok->str, get_token_string(tok_id).c_str());
-        tok->len = strlen(tok->str);
-    } else if (*lptr == ':' && (tok_id == tINT || tok_id == tVOID)) {
-        // Special case 'int:' to its old behavior: an implicit view_as<> cast
-        // with Pawn's awful lowercase coercion semantics.
-        std::string token_str = get_token_string(tok_id);
-        const char* token = token_str.c_str();
-        switch (tok_id) {
-            case tINT:
-                error(238, token, token);
-                break;
-            case tVOID:
-                error(239, token, token);
-                break;
-        }
-        lptr++;
-        tok->id = tLABEL;
-        strcpy(tok->str, token);
-        tok->len = strlen(tok->str);
-    } else {
-        tok->id = tok_id;
-        errorset(sRESET, 0); /* reset error flag (clear the "panic mode")*/
-    }
-    return true;
+	if (IsUnimplementedKeyword(tok_id)) {
+		// Try to gracefully error.
+		error(173, get_token_string(tok_id).c_str());
+		tok->id = tSYMBOL;
+		strcpy(tok->str, get_token_string(tok_id).c_str());
+		tok->len = strlen(tok->str);
+	} else if (*lptr == ':' && (tok_id == tINT || tok_id == tVOID)) {
+		// Special case 'int:' to its old behavior: an implicit view_as<> cast
+		// with Pawn's awful lowercase coercion semantics.
+		std::string token_str = get_token_string(tok_id);
+		const char* token = token_str.c_str();
+		switch (tok_id) {
+			case tINT:
+				error(238, token, token);
+				break;
+			case tVOID:
+				error(239, token, token);
+				break;
+		}
+		lptr++;
+		tok->id = tLABEL;
+		strcpy(tok->str, token);
+		tok->len = strlen(tok->str);
+	} else {
+		tok->id = tok_id;
+		errorset(sRESET, 0); /* reset error flag (clear the "panic mode")*/
+	}
+	return true;
 }
 
 static bool
 lex_symbol_or_keyword(full_token_t* tok)
 {
-    unsigned char const* token_start = lptr;
-    char first_char = *lptr;
-    assert(alpha(first_char) || first_char == '#');
+	unsigned char const* token_start = lptr;
+	char first_char = *lptr;
+	assert(alpha(first_char) || first_char == '#');
 
-    bool maybe_keyword = (first_char != PUBLIC_CHAR);
-    while (true) {
-        char c = *++lptr;
-        if (isdigit(c)) {
-            // Only symbols have numbers, so this terminates a keyword if we
-            // started with '#".
-            if (first_char == '#')
-                break;
-            maybe_keyword = false;
-        } else if (!isalpha(c) && c != '_') {
-            break;
-        }
-    }
+	bool maybe_keyword = (first_char != PUBLIC_CHAR);
+	while (true) {
+		char c = *++lptr;
+		if (isdigit(c)) {
+			// Only symbols have numbers, so this terminates a keyword if we
+			// started with '#".
+			if (first_char == '#')
+				break;
+			maybe_keyword = false;
+		} else if (!isalpha(c) && c != '_') {
+			break;
+		}
+	}
 
-    tok->len = lptr - token_start;
-    if (tok->len == 1 && first_char == PUBLIC_CHAR) {
-        tok->id = PUBLIC_CHAR;
-        return true;
-    }
-    if (maybe_keyword) {
-        if (lex_keyword(tok, (const char*)token_start))
-            return true;
-    }
-    if (first_char != '#') {
-        lex_symbol(tok, (const char*)token_start);
-        return true;
-    }
+	tok->len = lptr - token_start;
+	if (tok->len == 1 && first_char == PUBLIC_CHAR) {
+		tok->id = PUBLIC_CHAR;
+		return true;
+	}
+	if (maybe_keyword) {
+		if (lex_keyword(tok, (const char*)token_start))
+			return true;
+	}
+	if (first_char != '#') {
+		lex_symbol(tok, (const char*)token_start);
+		return true;
+	}
 
-    // Failed to find anything, reset lptr.
-    lptr = token_start;
-    return false;
+	// Failed to find anything, reset lptr.
+	lptr = token_start;
+	return false;
 }
 
 static void
 lex_symbol(full_token_t* tok, const char* token_start)
 {
-    ke::SafeStrcpyN(tok->str, sizeof(tok->str), token_start, tok->len);
-    if (tok->len > sNAMEMAX) {
-        static_assert(sNAMEMAX < sizeof(tok->str), "sLINEMAX should be > sNAMEMAX");
-        tok->str[sNAMEMAX] = '\0';
-        tok->len = sNAMEMAX;
-        error(200, tok->str, sNAMEMAX);
-    }
+	ke::SafeStrcpyN(tok->str, sizeof(tok->str), token_start, tok->len);
+	if (tok->len > sNAMEMAX) {
+		static_assert(sNAMEMAX < sizeof(tok->str), "sLINEMAX should be > sNAMEMAX");
+		tok->str[sNAMEMAX] = '\0';
+		tok->len = sNAMEMAX;
+		error(200, tok->str, sNAMEMAX);
+	}
 
-    tok->id = tSYMBOL;
+	tok->id = tSYMBOL;
 
-    if (*lptr == ':' && *(lptr + 1) != ':') {
-        if (sc_allowtags) {
-            tok->id = tLABEL;
-            lptr++;
-        } else if (gTypes.find(tok->str)) {
-            // This looks like a tag override (a tag with this name exists), but
-            // tags are not allowed right now, so it is probably an error.
-            error(220);
-        }
-    } else if (tok->len == 1 && *token_start == '_') {
-        // By itself, '_' is not a symbol but a placeholder. However, '_:' is
-        // a label which is why we handle this after the label check.
-        tok->id = '_';
-    }
+	if (*lptr == ':' && *(lptr + 1) != ':') {
+		if (sc_allowtags) {
+			tok->id = tLABEL;
+			lptr++;
+		} else if (gTypes.find(tok->str)) {
+			// This looks like a tag override (a tag with this name exists), but
+			// tags are not allowed right now, so it is probably an error.
+			error(220);
+		}
+	} else if (tok->len == 1 && *token_start == '_') {
+		// By itself, '_' is not a symbol but a placeholder. However, '_:' is
+		// a label which is why we handle this after the label check.
+		tok->id = '_';
+	}
 }
 
 /*  lexpush
@@ -2377,13 +2377,13 @@ lex_symbol(full_token_t* tok, const char* token_start)
 void
 lexpush(void)
 {
-    assert(sTokenBuffer->depth < MAX_TOKEN_DEPTH);
-    sTokenBuffer->depth++;
-    if (sTokenBuffer->cursor == 0)
-        sTokenBuffer->cursor = MAX_TOKEN_DEPTH - 1;
-    else
-        sTokenBuffer->cursor--;
-    assert(sTokenBuffer->depth <= sTokenBuffer->num_tokens);
+	assert(sTokenBuffer->depth < MAX_TOKEN_DEPTH);
+	sTokenBuffer->depth++;
+	if (sTokenBuffer->cursor == 0)
+		sTokenBuffer->cursor = MAX_TOKEN_DEPTH - 1;
+	else
+		sTokenBuffer->cursor--;
+	assert(sTokenBuffer->depth <= sTokenBuffer->num_tokens);
 }
 
 /*  lexclr
@@ -2395,27 +2395,27 @@ lexpush(void)
 void
 lexclr(int clreol)
 {
-    sTokenBuffer->depth = 0;
-    if (clreol) {
-        lptr = (unsigned char*)strchr((char*)pline, '\0');
-        assert(lptr != NULL);
-    }
+	sTokenBuffer->depth = 0;
+	if (clreol) {
+		lptr = (unsigned char*)strchr((char*)pline, '\0');
+		assert(lptr != NULL);
+	}
 }
 
 // Return true if the symbol is ahead, false otherwise.
 int
 lexpeek(int id)
 {
-    if (matchtoken(id)) {
-        lexpush();
-        return TRUE;
-    }
-    return FALSE;
+	if (matchtoken(id)) {
+		lexpush();
+		return TRUE;
+	}
+	return FALSE;
 }
 
 const token_pos_t& current_pos()
 {
-    return current_token()->start;
+	return current_token()->start;
 }
 
 /*  matchtoken
@@ -2431,27 +2431,27 @@ const token_pos_t& current_pos()
 int
 matchtoken(int token)
 {
-    cell val;
-    char* str;
-    int tok;
+	cell val;
+	char* str;
+	int tok;
 
-    tok = lex(&val, &str);
+	tok = lex(&val, &str);
 
-    if (token == tok)
-        return 1;
-    if (token == tTERM && (tok == ';' || tok == tENDEXPR))
-        return 1;
+	if (token == tok)
+		return 1;
+	if (token == tTERM && (tok == ';' || tok == tENDEXPR))
+		return 1;
 
-    if (!sc_needsemicolon && token == tTERM && (_lexnewline || !freading)) {
-        /* Push "tok" back, because it is the token following the implicit statement
-         * termination (newline) token.
-         */
-        lexpush();
-        return 2;
-    }
+	if (!sc_needsemicolon && token == tTERM && (_lexnewline || !freading)) {
+		/* Push "tok" back, because it is the token following the implicit statement
+		 * termination (newline) token.
+		 */
+		lexpush();
+		return 2;
+	}
 
-    lexpush();
-    return 0;
+	lexpush();
+	return 0;
 }
 
 /*  tokeninfo
@@ -2465,9 +2465,9 @@ matchtoken(int token)
 int
 tokeninfo(cell* val, char** str)
 {
-    *val = current_token()->value;
-    *str = current_token()->str;
-    return current_token()->id;
+	*val = current_token()->value;
+	*str = current_token()->str;
+	return current_token()->id;
 }
 
 /*  needtoken
@@ -2480,27 +2480,27 @@ tokeninfo(cell* val, char** str)
 int
 needtoken(int token)
 {
-    char s1[20], s2[20];
-    int t;
+	char s1[20], s2[20];
+	int t;
 
-    if ((t = matchtoken(token)) != 0) {
-        return t;
-    } else {
-        /* token already pushed back */
-        assert(sTokenBuffer->depth > 0);
-        if (token < 256)
-            sprintf(s1, "%c", (char)token); /* single character token */
-        else
-            strcpy(s1, sc_tokens[token - tFIRST]); /* multi-character symbol */
-        if (!freading)
-            strcpy(s2, "-end of file-");
-        else if (next_token()->id < 256)
-            sprintf(s2, "%c", (char)next_token()->id);
-        else
-            strcpy(s2, sc_tokens[next_token()->id - tFIRST]);
-        error(1, s1, s2); /* expected ..., but found ... */
-        return FALSE;
-    }
+	if ((t = matchtoken(token)) != 0) {
+		return t;
+	} else {
+		/* token already pushed back */
+		assert(sTokenBuffer->depth > 0);
+		if (token < 256)
+			sprintf(s1, "%c", (char)token); /* single character token */
+		else
+			strcpy(s1, sc_tokens[token - tFIRST]); /* multi-character symbol */
+		if (!freading)
+			strcpy(s2, "-end of file-");
+		else if (next_token()->id < 256)
+			sprintf(s2, "%c", (char)next_token()->id);
+		else
+			strcpy(s2, sc_tokens[next_token()->id - tFIRST]);
+		error(1, s1, s2); /* expected ..., but found ... */
+		return FALSE;
+	}
 }
 
 // If the next token is on the current line, return that token. Otherwise,
@@ -2508,81 +2508,81 @@ needtoken(int token)
 int
 peek_same_line()
 {
-    // We should not call this without having parsed at least one token.
-    assert(sTokenBuffer->num_tokens > 0);
+	// We should not call this without having parsed at least one token.
+	assert(sTokenBuffer->num_tokens > 0);
 
-    // If there's tokens pushed back, then |fline| is the line of the furthest
-    // token parsed. If fline == current token's line, we are guaranteed any
-    // buffered token is still on the same line.
-    if (sTokenBuffer->depth > 0 && current_token()->end.line == fline)
-        return next_token()->id;
+	// If there's tokens pushed back, then |fline| is the line of the furthest
+	// token parsed. If fline == current token's line, we are guaranteed any
+	// buffered token is still on the same line.
+	if (sTokenBuffer->depth > 0 && current_token()->end.line == fline)
+		return next_token()->id;
 
-    // Make sure the next token is lexed by lexing, and then buffering it.
-    full_token_t* next;
-    {
-        token_t tmp;
-        lextok(&tmp);
-        next = current_token();
-        lexpush();
-    }
+	// Make sure the next token is lexed by lexing, and then buffering it.
+	full_token_t* next;
+	{
+		token_t tmp;
+		lextok(&tmp);
+		next = current_token();
+		lexpush();
+	}
 
-    // If the next token starts on the line the last token ends, then the next
-    // token is considered on the same line.
-    if (next->start.line == current_token()->end.line)
-        return next->id;
+	// If the next token starts on the line the last token ends, then the next
+	// token is considered on the same line.
+	if (next->start.line == current_token()->end.line)
+		return next->id;
 
-    return tEOL;
+	return tEOL;
 }
 
 int
 require_newline(TerminatorPolicy policy)
 {
-    if (policy != TerminatorPolicy::Newline) {
-        // Semicolon must be on the same line.
-        auto pos = current_token()->start;
-        int next_tok_id = peek_same_line();
-        if (next_tok_id == ';') {
-            lexpop();
-        } else if (policy == TerminatorPolicy::Semicolon && sc_needsemicolon) {
-            error(pos, 1, ";", get_token_string(next_tok_id).c_str());
-        }
-    }
+	if (policy != TerminatorPolicy::Newline) {
+		// Semicolon must be on the same line.
+		auto pos = current_token()->start;
+		int next_tok_id = peek_same_line();
+		if (next_tok_id == ';') {
+			lexpop();
+		} else if (policy == TerminatorPolicy::Semicolon && sc_needsemicolon) {
+			error(pos, 1, ";", get_token_string(next_tok_id).c_str());
+		}
+	}
 
-    int tokid = peek_same_line();
-    if (tokid == tEOL || tokid == 0)
-        return TRUE;
+	int tokid = peek_same_line();
+	if (tokid == tEOL || tokid == 0)
+		return TRUE;
 
-    char s[20];
-    if (tokid < 256)
-        sprintf(s, "%c", (char)tokid);
-    else
-        strcpy(s, sc_tokens[tokid - tFIRST]);
-    error(155, s);
-    return FALSE;
+	char s[20];
+	if (tokid < 256)
+		sprintf(s, "%c", (char)tokid);
+	else
+		strcpy(s, sc_tokens[tokid - tFIRST]);
+	error(155, s);
+	return FALSE;
 }
 
 void
 litadd(const char* str, size_t len)
 {
-    ucell val = 0;
-    int byte = 0;
-    for (size_t i = 0; i < len; i++) {
-        val |= (unsigned char)str[i] << (8 * byte);
-        if (byte == sizeof(ucell) - 1) {
-            litadd(val);
-            val = 0;
-            byte = 0;
-        } else {
-            byte++;
-        }
-    }
-    if (byte != 0) {
-        // There are zeroes to terminate |val|.
-        litadd(val);
-    } else {
-        // Add a full cell of zeroes.
-        litadd(0);
-    }
+	ucell val = 0;
+	int byte = 0;
+	for (size_t i = 0; i < len; i++) {
+		val |= (unsigned char)str[i] << (8 * byte);
+		if (byte == sizeof(ucell) - 1) {
+			litadd(val);
+			val = 0;
+			byte = 0;
+		} else {
+			byte++;
+		}
+	}
+	if (byte != 0) {
+		// There are zeroes to terminate |val|.
+		litadd(val);
+	} else {
+		// Add a full cell of zeroes.
+		litadd(0);
+	}
 }
 
 /*  litchar
@@ -2597,95 +2597,95 @@ litadd(const char* str, size_t len)
 static cell
 litchar(const unsigned char** lptr, int flags)
 {
-    cell c = 0;
-    const unsigned char* cptr;
+	cell c = 0;
+	const unsigned char* cptr;
 
-    cptr = *lptr;
-    if (*cptr != sc_ctrlchar) { /* no escape character */
-        if ((flags & UTF8MODE) != 0) {
-            c = get_utf8_char(cptr, &cptr);
-            assert(c >= 0); /* file was already scanned for conformance to UTF-8 */
-        } else {
-            c = *cptr;
-            cptr += 1;
-        }
-    } else {
-        cptr += 1;
-        if (*cptr == sc_ctrlchar) {
-            c = *cptr; /* \\ == \ (the escape character itself) */
-            cptr += 1;
-        } else {
-            switch (*cptr) {
-                case 'a': /* \a == audible alarm */
-                    c = 7;
-                    cptr += 1;
-                    break;
-                case 'b': /* \b == backspace */
-                    c = 8;
-                    cptr += 1;
-                    break;
-                case 'e': /* \e == escape */
-                    c = 27;
-                    cptr += 1;
-                    break;
-                case 'f': /* \f == form feed */
-                    c = 12;
-                    cptr += 1;
-                    break;
-                case 'n': /* \n == NewLine character */
-                    c = 10;
-                    cptr += 1;
-                    break;
-                case 'r': /* \r == carriage return */
-                    c = 13;
-                    cptr += 1;
-                    break;
-                case 't': /* \t == horizontal TAB */
-                    c = 9;
-                    cptr += 1;
-                    break;
-                case 'v': /* \v == vertical TAB */
-                    c = 11;
-                    cptr += 1;
-                    break;
-                case 'x': {
-                    int digits = 0;
-                    cptr += 1;
-                    c = 0;
-                    while (ishex(*cptr) && digits < 2) {
-                        if (isdigit(*cptr))
-                            c = (c << 4) + (*cptr - '0');
-                        else
-                            c = (c << 4) + (tolower(*cptr) - 'a' + 10);
-                        cptr++;
-                        digits++;
-                    }
-                    if (*cptr == ';')
-                        cptr++; /* swallow a trailing ';' */
-                    break;
-                }
-                case '\'': /* \' == ' (single quote) */
-                case '"':  /* \" == " (single quote) */
-                case '%':  /* \% == % (percent) */
-                    c = *cptr;
-                    cptr += 1;
-                    break;
-                default:
-                    if (isdigit(*cptr)) { /* \ddd */
-                        c = 0;
-                        while (*cptr >= '0' && *cptr <= '9') /* decimal! */
-                            c = c * 10 + *cptr++ - '0';
-                        if (*cptr == ';')
-                            cptr++; /* swallow a trailing ';' */
-                    } else {
-                        error(27); /* invalid character constant */
-                    }
-            }
-        }
-    }
-    *lptr = cptr;
-    assert(c >= 0);
-    return c;
+	cptr = *lptr;
+	if (*cptr != sc_ctrlchar) { /* no escape character */
+		if ((flags & UTF8MODE) != 0) {
+			c = get_utf8_char(cptr, &cptr);
+			assert(c >= 0); /* file was already scanned for conformance to UTF-8 */
+		} else {
+			c = *cptr;
+			cptr += 1;
+		}
+	} else {
+		cptr += 1;
+		if (*cptr == sc_ctrlchar) {
+			c = *cptr; /* \\ == \ (the escape character itself) */
+			cptr += 1;
+		} else {
+			switch (*cptr) {
+				case 'a': /* \a == audible alarm */
+					c = 7;
+					cptr += 1;
+					break;
+				case 'b': /* \b == backspace */
+					c = 8;
+					cptr += 1;
+					break;
+				case 'e': /* \e == escape */
+					c = 27;
+					cptr += 1;
+					break;
+				case 'f': /* \f == form feed */
+					c = 12;
+					cptr += 1;
+					break;
+				case 'n': /* \n == NewLine character */
+					c = 10;
+					cptr += 1;
+					break;
+				case 'r': /* \r == carriage return */
+					c = 13;
+					cptr += 1;
+					break;
+				case 't': /* \t == horizontal TAB */
+					c = 9;
+					cptr += 1;
+					break;
+				case 'v': /* \v == vertical TAB */
+					c = 11;
+					cptr += 1;
+					break;
+				case 'x': {
+					int digits = 0;
+					cptr += 1;
+					c = 0;
+					while (ishex(*cptr) && digits < 2) {
+						if (isdigit(*cptr))
+							c = (c << 4) + (*cptr - '0');
+						else
+							c = (c << 4) + (tolower(*cptr) - 'a' + 10);
+						cptr++;
+						digits++;
+					}
+					if (*cptr == ';')
+						cptr++; /* swallow a trailing ';' */
+					break;
+				}
+				case '\'': /* \' == ' (single quote) */
+				case '"':  /* \" == " (single quote) */
+				case '%':  /* \% == % (percent) */
+					c = *cptr;
+					cptr += 1;
+					break;
+				default:
+					if (isdigit(*cptr)) { /* \ddd */
+						c = 0;
+						while (*cptr >= '0' && *cptr <= '9') /* decimal! */
+							c = c * 10 + *cptr++ - '0';
+						if (*cptr == ';')
+							cptr++; /* swallow a trailing ';' */
+					} else {
+						error(27); /* invalid character constant */
+					}
+			}
+		}
+	}
+	*lptr = cptr;
+	assert(c >= 0);
+	return c;
 }
 
 /*  alpha
@@ -2696,7 +2696,7 @@ litchar(const unsigned char** lptr, int flags)
 static int
 alpha(char c)
 {
-    return (isalpha(c) || c == '_' || c == PUBLIC_CHAR);
+	return (isalpha(c) || c == '_' || c == PUBLIC_CHAR);
 }
 
 /*  alphanum
@@ -2706,7 +2706,7 @@ alpha(char c)
 int
 alphanum(char c)
 {
-    return (alpha(c) || isdigit(c));
+	return (alpha(c) || isdigit(c));
 }
 
 /*  ishex
@@ -2716,7 +2716,7 @@ alphanum(char c)
 int
 ishex(char c)
 {
-    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
 /*  isoctal
@@ -2726,7 +2726,7 @@ ishex(char c)
 int
 isoctal(char c)
 {
-    return (c >= '0' && c <= '7');
+	return (c >= '0' && c <= '7');
 }
 
 /* The local variable table must be searched backwards, so that the deepest
@@ -2738,160 +2738,160 @@ isoctal(char c)
 static symbol*
 add_symbol(symbol* root, symbol* entry)
 {
-    entry->next = root->next;
-    root->next = entry;
-    if (root == &glbtab)
-        AddToHashTable(sp_Globals, entry);
-    return entry;
+	entry->next = root->next;
+	root->next = entry;
+	if (root == &glbtab)
+		AddToHashTable(sp_Globals, entry);
+	return entry;
 }
 
 static void
 free_symbol(symbol* sym)
 {
-    delete sym;
+	delete sym;
 }
 
 void
 delete_symbol(symbol* root, symbol* sym)
 {
-    symbol* origRoot = root;
-    /* find the symbol and its predecessor
-     * (this function assumes that you will never delete a symbol that is not
-     * in the table pointed at by "root")
-     */
-    assert(root != sym);
-    while (root->next != sym) {
-        root = root->next;
-        assert(root != NULL);
-    }
+	symbol* origRoot = root;
+	/* find the symbol and its predecessor
+	 * (this function assumes that you will never delete a symbol that is not
+	 * in the table pointed at by "root")
+	 */
+	assert(root != sym);
+	while (root->next != sym) {
+		root = root->next;
+		assert(root != NULL);
+	}
 
-    if (origRoot == &glbtab)
-        RemoveFromHashTable(sp_Globals, sym);
+	if (origRoot == &glbtab)
+		RemoveFromHashTable(sp_Globals, sym);
 
-    /* unlink it, then free it */
-    root->next = sym->next;
-    free_symbol(sym);
+	/* unlink it, then free it */
+	root->next = sym->next;
+	free_symbol(sym);
 }
 
 int
 get_actual_compound(symbol* sym)
 {
-    if (sym->ident == iARRAY || sym->ident == iREFARRAY) {
-        while (sym->parent())
-            sym = sym->parent();
-    }
+	if (sym->ident == iARRAY || sym->ident == iREFARRAY) {
+		while (sym->parent())
+			sym = sym->parent();
+	}
 
-    return sym->compound;
+	return sym->compound;
 }
 
 void
 delete_symbols(symbol* root, int level, int delete_functions)
 {
-    symbol* origRoot = root;
-    symbol *sym, *parent_sym;
-    int mustdelete;
+	symbol* origRoot = root;
+	symbol *sym, *parent_sym;
+	int mustdelete;
 
-    /* erase only the symbols with a deeper nesting level than the
-     * specified nesting level */
-    while (root->next != NULL) {
-        sym = root->next;
-        if (get_actual_compound(sym) < level)
-            break;
-        switch (sym->ident) {
-            case iVARIABLE:
-            case iARRAY:
-                /* do not delete global variables if functions are preserved */
-                mustdelete = delete_functions;
-                break;
-            case iREFERENCE:
-                /* always delete references (only exist as function parameters) */
-                mustdelete = TRUE;
-                break;
-            case iREFARRAY:
-                /* a global iREFARRAY symbol is the return value of a function: delete
-                 * this only if "globals" must be deleted; other iREFARRAY instances
-                 * (locals) are also deleted
-                 */
-                mustdelete = delete_functions;
-                for (parent_sym = sym->parent(); parent_sym != NULL && parent_sym->ident != iFUNCTN;
-                     parent_sym = parent_sym->parent())
-                    assert(parent_sym->ident == iREFARRAY);
-                assert(parent_sym == NULL ||
-                       (parent_sym->ident == iFUNCTN && parent_sym->parent() == NULL));
-                if (parent_sym == NULL || parent_sym->ident != iFUNCTN)
-                    mustdelete = TRUE;
-                break;
-            case iCONSTEXPR:
-            case iENUMSTRUCT:
-                /* delete constants, except predefined constants */
-                mustdelete = delete_functions || !sym->predefined;
-                break;
-            case iFUNCTN:
-                /* optionally preserve globals (variables & functions), but
-                 * NOT native functions
-                 */
-                mustdelete = delete_functions || sym->native;
-                assert(sym->parent() == NULL);
-                break;
-            case iMETHODMAP:
-                // We delete methodmap symbols at the end, but since methodmaps
-                // themselves get wiped, we null the pointer.
-                sym->methodmap = nullptr;
-                mustdelete = delete_functions;
-                assert(!sym->parent());
-                break;
-            case iARRAYCELL:
-            case iARRAYCHAR:
-            case iEXPRESSION:
-            case iVARARGS:
-            case iACCESSOR:
-            default:
-                assert(0);
-                break;
-        }
-        if (mustdelete) {
-            if (origRoot == &glbtab)
-                RemoveFromHashTable(sp_Globals, sym);
-            root->next = sym->next;
-            free_symbol(sym);
-        } else {
-            /* if the function was prototyped, but not implemented in this source,
-             * mark it as such, so that its use can be flagged
-             */
-            if (sym->ident == iFUNCTN && !sym->defined)
-                sym->missing = true;
-            if (sym->ident == iFUNCTN || sym->ident == iVARIABLE || sym->ident == iARRAY)
-                sym->defined = false;
-            /* for user defined operators, also remove the "prototyped" flag, as
-             * user-defined operators *must* be declared before use
-             */
-            if (sym->ident == iFUNCTN && !alpha(*sym->name()))
-                sym->prototyped = false;
-            if (origRoot == &glbtab)
-                sym->clear_refers();
-            root = sym; /* skip the symbol */
-        }
-    }
+	/* erase only the symbols with a deeper nesting level than the
+	 * specified nesting level */
+	while (root->next != NULL) {
+		sym = root->next;
+		if (get_actual_compound(sym) < level)
+			break;
+		switch (sym->ident) {
+			case iVARIABLE:
+			case iARRAY:
+				/* do not delete global variables if functions are preserved */
+				mustdelete = delete_functions;
+				break;
+			case iREFERENCE:
+				/* always delete references (only exist as function parameters) */
+				mustdelete = TRUE;
+				break;
+			case iREFARRAY:
+				/* a global iREFARRAY symbol is the return value of a function: delete
+				 * this only if "globals" must be deleted; other iREFARRAY instances
+				 * (locals) are also deleted
+				 */
+				mustdelete = delete_functions;
+				for (parent_sym = sym->parent(); parent_sym != NULL && parent_sym->ident != iFUNCTN;
+					 parent_sym = parent_sym->parent())
+					assert(parent_sym->ident == iREFARRAY);
+				assert(parent_sym == NULL ||
+					   (parent_sym->ident == iFUNCTN && parent_sym->parent() == NULL));
+				if (parent_sym == NULL || parent_sym->ident != iFUNCTN)
+					mustdelete = TRUE;
+				break;
+			case iCONSTEXPR:
+			case iENUMSTRUCT:
+				/* delete constants, except predefined constants */
+				mustdelete = delete_functions || !sym->predefined;
+				break;
+			case iFUNCTN:
+				/* optionally preserve globals (variables & functions), but
+				 * NOT native functions
+				 */
+				mustdelete = delete_functions || sym->native;
+				assert(sym->parent() == NULL);
+				break;
+			case iMETHODMAP:
+				// We delete methodmap symbols at the end, but since methodmaps
+				// themselves get wiped, we null the pointer.
+				sym->methodmap = nullptr;
+				mustdelete = delete_functions;
+				assert(!sym->parent());
+				break;
+			case iARRAYCELL:
+			case iARRAYCHAR:
+			case iEXPRESSION:
+			case iVARARGS:
+			case iACCESSOR:
+			default:
+				assert(0);
+				break;
+		}
+		if (mustdelete) {
+			if (origRoot == &glbtab)
+				RemoveFromHashTable(sp_Globals, sym);
+			root->next = sym->next;
+			free_symbol(sym);
+		} else {
+			/* if the function was prototyped, but not implemented in this source,
+			 * mark it as such, so that its use can be flagged
+			 */
+			if (sym->ident == iFUNCTN && !sym->defined)
+				sym->missing = true;
+			if (sym->ident == iFUNCTN || sym->ident == iVARIABLE || sym->ident == iARRAY)
+				sym->defined = false;
+			/* for user defined operators, also remove the "prototyped" flag, as
+			 * user-defined operators *must* be declared before use
+			 */
+			if (sym->ident == iFUNCTN && !alpha(*sym->name()))
+				sym->prototyped = false;
+			if (origRoot == &glbtab)
+				sym->clear_refers();
+			root = sym; /* skip the symbol */
+		}
+	}
 }
 
 
 void
 markusage(symbol* sym, int usage)
 {
-    // When compiling a skipped function, do not accumulate liveness information
-    // for referenced functions.
-    if (sc_status == statSKIP && sym->ident == iFUNCTN)
-        return;
+	// When compiling a skipped function, do not accumulate liveness information
+	// for referenced functions.
+	if (sc_status == statSKIP && sym->ident == iFUNCTN)
+		return;
 
-    sym->usage |= usage;
-    if ((usage & uWRITTEN) != 0)
-        sym->lnumber = fline;
-    /* check if (global) reference must be added to the symbol */
-    if ((usage & (uREAD | uWRITTEN)) != 0) {
-        /* only do this for global symbols */
-        if (sym->vclass == sGLOBAL && curfunc)
-            curfunc->add_reference_to(sym);
-    }
+	sym->usage |= usage;
+	if ((usage & uWRITTEN) != 0)
+		sym->lnumber = fline;
+	/* check if (global) reference must be added to the symbol */
+	if ((usage & (uREAD | uWRITTEN)) != 0) {
+		/* only do this for global symbols */
+		if (sym->vclass == sGLOBAL && curfunc)
+			curfunc->add_reference_to(sym);
+	}
 }
 
 /*  findglb
@@ -2901,7 +2901,7 @@ markusage(symbol* sym, int usage)
 symbol*
 findglb(const char* name)
 {
-    return FindInHashTable(sp_Globals, name, fcurrent);
+	return FindInHashTable(sp_Globals, name, fcurrent);
 }
 
 /*  findloc
@@ -2912,59 +2912,59 @@ findglb(const char* name)
 symbol*
 findloc(const char* name)
 {
-    symbol* sym = loctab.next;
-    sp::Atom* atom = gAtoms.add(name);
-    while (sym != NULL) {
-        if (atom == sym->nameAtom() &&
-            (sym->parent() == NULL ||
-             sym->ident ==
-                 iCONSTEXPR)) /* sub-types (hierarchical types) are skipped, except for enum fields */
-        {
-            return sym; /* return first match */
-        }
-        sym = sym->next;
-    }
-    return nullptr;
+	symbol* sym = loctab.next;
+	sp::Atom* atom = gAtoms.add(name);
+	while (sym != NULL) {
+		if (atom == sym->nameAtom() &&
+			(sym->parent() == NULL ||
+			 sym->ident ==
+				 iCONSTEXPR)) /* sub-types (hierarchical types) are skipped, except for enum fields */
+		{
+			return sym; /* return first match */
+		}
+		sym = sym->next;
+	}
+	return nullptr;
 }
 
 symbol*
 findconst(const char* name)
 {
-    symbol* sym;
+	symbol* sym;
 
-    sym = findloc(name);          /* try local symbols first */
-    if (sym == NULL || sym->ident != iCONSTEXPR) { /* not found, or not a constant */
-        sym = FindInHashTable(sp_Globals, name, fcurrent);
-    }
-    if (sym == NULL || sym->ident != iCONSTEXPR)
-        return NULL;
-    assert(sym->parent() == NULL || sym->enumfield);
-    /* ^^^ constants have no hierarchy, but enumeration fields may have a parent */
-    return sym;
+	sym = findloc(name);          /* try local symbols first */
+	if (sym == NULL || sym->ident != iCONSTEXPR) { /* not found, or not a constant */
+		sym = FindInHashTable(sp_Globals, name, fcurrent);
+	}
+	if (sym == NULL || sym->ident != iCONSTEXPR)
+		return NULL;
+	assert(sym->parent() == NULL || sym->enumfield);
+	/* ^^^ constants have no hierarchy, but enumeration fields may have a parent */
+	return sym;
 }
 
 FunctionData::FunctionData()
  : funcid(0)
  , dbgstrs(nullptr)
 {
-    resizeArgs(0);
+	resizeArgs(0);
 }
 
 FunctionData::~FunctionData() {
-    if (dbgstrs) {
-        delete_stringtable(dbgstrs);
-        free(dbgstrs);
-    }
+	if (dbgstrs) {
+		delete_stringtable(dbgstrs);
+		free(dbgstrs);
+	}
 }
 
 void
 FunctionData::resizeArgs(size_t nargs)
 {
-    arginfo null_arg;
-    memset(&null_arg, 0, sizeof(null_arg));
+	arginfo null_arg;
+	memset(&null_arg, 0, sizeof(null_arg));
 
-    args.resize(nargs);
-    args.push_back(null_arg);
+	args.resize(nargs);
+	args.push_back(null_arg);
 }
 
 symbol::symbol()
@@ -3008,84 +3008,84 @@ symbol::symbol(const char* symname, cell symaddr, int symident, int symvclass, i
    parent_(nullptr),
    child_(nullptr)
 {
-    if (symname)
-        name_ = gAtoms.add(symname);
-    if (symident == iFUNCTN)
-        data_.reset(new FunctionData);
-    memset(&dim, 0, sizeof(dim));
+	if (symname)
+		name_ = gAtoms.add(symname);
+	if (symident == iFUNCTN)
+		data_.reset(new FunctionData);
+	memset(&dim, 0, sizeof(dim));
 }
 
 symbol::symbol(const symbol& other)
  : symbol(nullptr, other.addr_, other.ident, other.vclass, other.tag)
 {
-    name_ = other.name_;
+	name_ = other.name_;
 
-    usage = other.usage;
-    defined = other.defined;
-    prototyped = other.prototyped;
-    missing = other.missing;
-    enumroot = other.enumroot;
-    enumfield = other.enumfield;
-    predefined = other.predefined;
-    callback = other.callback;
-    skipped = other.skipped;
-    retvalue = other.retvalue;
-    forward = other.forward;
-    native = other.native;
-    stock = other.stock;
-    is_struct = other.is_struct;
-    is_public = other.is_public;
-    is_const = other.is_const;
-    deprecated = other.deprecated;
-    // Note: explicitly don't add queued.
+	usage = other.usage;
+	defined = other.defined;
+	prototyped = other.prototyped;
+	missing = other.missing;
+	enumroot = other.enumroot;
+	enumfield = other.enumfield;
+	predefined = other.predefined;
+	callback = other.callback;
+	skipped = other.skipped;
+	retvalue = other.retvalue;
+	forward = other.forward;
+	native = other.native;
+	stock = other.stock;
+	is_struct = other.is_struct;
+	is_public = other.is_public;
+	is_const = other.is_const;
+	deprecated = other.deprecated;
+	// Note: explicitly don't add queued.
 
-    x = other.x;
+	x = other.x;
 }
 
 symbol::~symbol()
 {
-    if (ident == iFUNCTN) {
-        /* run through the argument list; "default array" arguments
-         * must be freed explicitly; the tag list must also be freed */
-        for (arginfo* arg = &function()->args[0]; arg->ident != 0; arg++) {
-            if (arg->ident == iREFARRAY && arg->hasdefault)
-                free(arg->defvalue.array.data);
-        }
-    } else if (ident == iCONSTEXPR && enumroot) {
-        /* free the constant list of an enum root */
-        assert(dim.enumlist != NULL);
-        delete_consttable(dim.enumlist);
-        free(dim.enumlist);
-    }
+	if (ident == iFUNCTN) {
+		/* run through the argument list; "default array" arguments
+		 * must be freed explicitly; the tag list must also be freed */
+		for (arginfo* arg = &function()->args[0]; arg->ident != 0; arg++) {
+			if (arg->ident == iREFARRAY && arg->hasdefault)
+				free(arg->defvalue.array.data);
+		}
+	} else if (ident == iCONSTEXPR && enumroot) {
+		/* free the constant list of an enum root */
+		assert(dim.enumlist != NULL);
+		delete_consttable(dim.enumlist);
+		free(dim.enumlist);
+	}
 }
 
 void
 symbol::add_reference_to(symbol* other)
 {
-    for (symbol* sym : refers_to_) {
-        if (sym == other)
-            return;
-    }
-    refers_to_.push_back(other);
-    other->referred_from_.push_back(this);
-    other->referred_from_count_++;
+	for (symbol* sym : refers_to_) {
+		if (sym == other)
+			return;
+	}
+	refers_to_.push_back(other);
+	other->referred_from_.push_back(this);
+	other->referred_from_count_++;
 }
 
 void
 symbol::drop_reference_from(symbol* from)
 {
 #if !defined(NDEBUG)
-    bool found = false;
-    for (size_t i = 0; i < referred_from_.size(); i++) {
-        if (referred_from_[i] == from) {
-            referred_from_[i] = nullptr;
-            found = true;
-            break;
-        }
-    }
-    assert(found);
+	bool found = false;
+	for (size_t i = 0; i < referred_from_.size(); i++) {
+		if (referred_from_[i] == from) {
+			referred_from_[i] = nullptr;
+			found = true;
+			break;
+		}
+	}
+	assert(found);
 #endif
-    referred_from_count_--;
+	referred_from_count_--;
 }
 
 /*  addsym
@@ -3096,76 +3096,76 @@ symbol::drop_reference_from(symbol* from)
 symbol*
 addsym(const char* name, cell addr, int ident, int vclass, int tag)
 {
-    /* first fill in the entry */
-    symbol* sym = new symbol(name, addr, ident, vclass, tag);
+	/* first fill in the entry */
+	symbol* sym = new symbol(name, addr, ident, vclass, tag);
 
-    /* then insert it in the list */
-    if (vclass == sGLOBAL)
-        return add_symbol(&glbtab, sym);
-    return add_symbol(&loctab, sym);
+	/* then insert it in the list */
+	if (vclass == sGLOBAL)
+		return add_symbol(&glbtab, sym);
+	return add_symbol(&loctab, sym);
 }
 
 symbol*
 addvariable(const char* name, cell addr, int ident, int vclass, int tag, int dim[], int numdim,
-            int idxtag[])
+			int idxtag[])
 {
-    return addvariable2(name, addr, ident, vclass, tag, dim, numdim, idxtag, 0);
+	return addvariable2(name, addr, ident, vclass, tag, dim, numdim, idxtag, 0);
 }
 
 symbol*
 addvariable3(declinfo_t* decl, cell addr, int vclass, int slength)
 {
-    typeinfo_t* type = &decl->type;
-    return addvariable2(decl->name, addr, type->ident, vclass, type->tag, type->dim, type->numdim,
-                        type->idxtag, slength);
+	typeinfo_t* type = &decl->type;
+	return addvariable2(decl->name, addr, type->ident, vclass, type->tag, type->dim, type->numdim,
+						type->idxtag, slength);
 }
 
 symbol*
 addvariable2(const char* name, cell addr, int ident, int vclass, int tag, int dim[], int numdim,
-             int idxtag[], int slength)
+			 int idxtag[], int slength)
 {
-    symbol* sym;
+	symbol* sym;
 
-    /* global variables may only be defined once
-     * One complication is that functions returning arrays declare an array
-     * with the same name as the function, so the assertion must allow for
-     * this special case. Another complication is that variables may be
-     * "redeclared" if they are local to an automaton (and findglb() will find
-     * the symbol without states if no symbol with states exists).
-     */
-    assert(vclass != sGLOBAL || (sym = findglb(name)) == NULL || !sym->defined ||
-           (sym->ident == iFUNCTN && sym == curfunc));
+	/* global variables may only be defined once
+	 * One complication is that functions returning arrays declare an array
+	 * with the same name as the function, so the assertion must allow for
+	 * this special case. Another complication is that variables may be
+	 * "redeclared" if they are local to an automaton (and findglb() will find
+	 * the symbol without states if no symbol with states exists).
+	 */
+	assert(vclass != sGLOBAL || (sym = findglb(name)) == NULL || !sym->defined ||
+		   (sym->ident == iFUNCTN && sym == curfunc));
 
-    if (ident == iARRAY || ident == iREFARRAY) {
-        symbol *parent = NULL, *top;
-        int level;
-        sym = NULL; /* to avoid a compiler warning */
-        for (level = 0; level < numdim; level++) {
-            top = addsym(name, addr, ident, vclass, tag);
-            top->defined = true;
-            top->dim.array.length = dim[level];
-            top->dim.array.slength = 0;
-            if (level == numdim - 1 && tag == pc_tag_string) {
-                if (slength == 0)
-                    top->dim.array.length = dim[level] * sizeof(cell);
-                else
-                    top->dim.array.slength = slength;
-            }
-            top->dim.array.level = (short)(numdim - level - 1);
-            top->x.tags.index = idxtag[level];
-            top->set_parent(parent);
-            if (parent) {
-                parent->set_array_child(top);
-            }
-            parent = top;
-            if (level == 0)
-                sym = top;
-        }
-    } else {
-        sym = addsym(name, addr, ident, vclass, tag);
-        sym->defined = true;
-    }
-    return sym;
+	if (ident == iARRAY || ident == iREFARRAY) {
+		symbol *parent = NULL, *top;
+		int level;
+		sym = NULL; /* to avoid a compiler warning */
+		for (level = 0; level < numdim; level++) {
+			top = addsym(name, addr, ident, vclass, tag);
+			top->defined = true;
+			top->dim.array.length = dim[level];
+			top->dim.array.slength = 0;
+			if (level == numdim - 1 && tag == pc_tag_string) {
+				if (slength == 0)
+					top->dim.array.length = dim[level] * sizeof(cell);
+				else
+					top->dim.array.slength = slength;
+			}
+			top->dim.array.level = (short)(numdim - level - 1);
+			top->x.tags.index = idxtag[level];
+			top->set_parent(parent);
+			if (parent) {
+				parent->set_array_child(top);
+			}
+			parent = top;
+			if (level == 0)
+				sym = top;
+		}
+	} else {
+		sym = addsym(name, addr, ident, vclass, tag);
+		sym->defined = true;
+	}
+	return sym;
 }
 
 /*  getlabel
@@ -3176,7 +3176,7 @@ addvariable2(const char* name, cell addr, int ident, int vclass, int tag, int di
 int
 getlabel(void)
 {
-    return sc_labnum++;
+	return sc_labnum++;
 }
 
 /*  itoh
@@ -3187,166 +3187,166 @@ getlabel(void)
 char*
 itoh(ucell val)
 {
-    static char itohstr[30];
-    char* ptr;
-    int i, nibble[16]; /* a 64-bit hexadecimal cell has 16 nibbles */
-    int max = 8;
-    ptr = itohstr;
-    for (i = 0; i < max; i += 1) {
-        nibble[i] = (int)(val & 0x0f); /* nibble 0 is lowest nibble */
-        val >>= 4;
-    } /* endfor */
-    i = max - 1;
-    while (nibble[i] == 0 && i > 0) /* search for highest non-zero nibble */
-        i -= 1;
-    while (i >= 0) {
-        if (nibble[i] >= 10)
-            *ptr++ = (char)('a' + (nibble[i] - 10));
-        else
-            *ptr++ = (char)('0' + nibble[i]);
-        i -= 1;
-    }
-    *ptr = '\0'; /* and a zero-terminator */
-    return itohstr;
+	static char itohstr[30];
+	char* ptr;
+	int i, nibble[16]; /* a 64-bit hexadecimal cell has 16 nibbles */
+	int max = 8;
+	ptr = itohstr;
+	for (i = 0; i < max; i += 1) {
+		nibble[i] = (int)(val & 0x0f); /* nibble 0 is lowest nibble */
+		val >>= 4;
+	} /* endfor */
+	i = max - 1;
+	while (nibble[i] == 0 && i > 0) /* search for highest non-zero nibble */
+		i -= 1;
+	while (i >= 0) {
+		if (nibble[i] >= 10)
+			*ptr++ = (char)('a' + (nibble[i] - 10));
+		else
+			*ptr++ = (char)('0' + nibble[i]);
+		i -= 1;
+	}
+	*ptr = '\0'; /* and a zero-terminator */
+	return itohstr;
 }
 
 int
 lextok(token_t* tok)
 {
-    tok->id = lex(&tok->val, &tok->str);
-    return tok->id;
+	tok->id = lex(&tok->val, &tok->str);
+	return tok->id;
 }
 
 int
 expecttoken(int id, token_t* tok)
 {
-    int rval = needtoken(id);
-    if (rval) {
-        tok->val = current_token()->value;
-        tok->id = current_token()->id;
-        tok->str = current_token()->str;
-        return rval;
-    }
-    return FALSE;
+	int rval = needtoken(id);
+	if (rval) {
+		tok->val = current_token()->value;
+		tok->id = current_token()->id;
+		tok->str = current_token()->str;
+		return rval;
+	}
+	return FALSE;
 }
 
 int
 matchtoken2(int id, token_t* tok)
 {
-    if (matchtoken(id)) {
-        tok->id = tokeninfo(&tok->val, &tok->str);
-        return TRUE;
-    }
-    return FALSE;
+	if (matchtoken(id)) {
+		tok->id = tokeninfo(&tok->val, &tok->str);
+		return TRUE;
+	}
+	return FALSE;
 }
 
 int
 matchsymbol(token_ident_t* ident)
 {
-    if (lextok(&ident->tok) != tSYMBOL) {
-        lexpush();
-        return FALSE;
-    }
-    strcpy(ident->name, ident->tok.str);
-    ident->tok.str = ident->name;
-    return TRUE;
+	if (lextok(&ident->tok) != tSYMBOL) {
+		lexpush();
+		return FALSE;
+	}
+	strcpy(ident->name, ident->tok.str);
+	ident->tok.str = ident->name;
+	return TRUE;
 }
 
 int
 needsymbol(token_ident_t* ident)
 {
-    if (!expecttoken(tSYMBOL, &ident->tok))
-        return FALSE;
-    strcpy(ident->name, ident->tok.str);
-    ident->tok.str = ident->name;
-    return TRUE;
+	if (!expecttoken(tSYMBOL, &ident->tok))
+		return FALSE;
+	strcpy(ident->name, ident->tok.str);
+	ident->tok.str = ident->name;
+	return TRUE;
 }
 
 symbol*
 find_enumstruct_field(Type* type, const char* name)
 {
-    assert(type->asEnumStruct());
+	assert(type->asEnumStruct());
 
-    char const_name[METHOD_NAMEMAX + 1];
-    ke::SafeSprintf(const_name, sizeof(const_name), "%s::%s", type->name(), name);
-    if (symbol* sym = findconst(const_name))
-        return sym;
-    return findglb(const_name);
+	char const_name[METHOD_NAMEMAX + 1];
+	ke::SafeSprintf(const_name, sizeof(const_name), "%s::%s", type->name(), name);
+	if (symbol* sym = findconst(const_name))
+		return sym;
+	return findglb(const_name);
 }
 
 void
 declare_methodmap_symbol(methodmap_t* map, bool can_redef)
 {
-    if (!can_redef)
-        return;
+	if (!can_redef)
+		return;
 
-    symbol* sym = findglb(map->name);
-    if (sym && sym->ident != iMETHODMAP) {
-        if (sym->ident == iCONSTEXPR) {
-            // We should only hit this on the first pass. Assert really hard that
-            // we're about to kill an enum definition and not something random.
-            assert(sc_status == statFIRST);
-            assert(sym->ident == iCONSTEXPR);
-            assert(map->tag == sym->tag);
+	symbol* sym = findglb(map->name);
+	if (sym && sym->ident != iMETHODMAP) {
+		if (sym->ident == iCONSTEXPR) {
+			// We should only hit this on the first pass. Assert really hard that
+			// we're about to kill an enum definition and not something random.
+			assert(sc_status == statFIRST);
+			assert(sym->ident == iCONSTEXPR);
+			assert(map->tag == sym->tag);
 
-            sym->ident = iMETHODMAP;
+			sym->ident = iMETHODMAP;
 
-            // Kill previous enumstruct properties, if any.
-            if (sym->enumroot) {
-                for (constvalue* cv = sym->dim.enumlist; cv; cv = cv->next) {
-                    symbol* csym = findglb(cv->name);
-                    if (csym && csym->ident == iCONSTEXPR && csym->parent() == sym &&
-                        csym->enumfield)
-                    {
-                        csym->enumfield = false;
-                        csym->set_parent(nullptr);
-                    }
-                }
-                delete_consttable(sym->dim.enumlist);
-                free(sym->dim.enumlist);
-                sym->dim.enumlist = NULL;
-            }
-        } else {
-            error(11, map->name);
-            sym = nullptr;
-        }
-    }
+			// Kill previous enumstruct properties, if any.
+			if (sym->enumroot) {
+				for (constvalue* cv = sym->dim.enumlist; cv; cv = cv->next) {
+					symbol* csym = findglb(cv->name);
+					if (csym && csym->ident == iCONSTEXPR && csym->parent() == sym &&
+						csym->enumfield)
+					{
+						csym->enumfield = false;
+						csym->set_parent(nullptr);
+					}
+				}
+				delete_consttable(sym->dim.enumlist);
+				free(sym->dim.enumlist);
+				sym->dim.enumlist = NULL;
+			}
+		} else {
+			error(11, map->name);
+			sym = nullptr;
+		}
+	}
 
-    if (!sym) {
-        sym = addsym(map->name,  // name
-                     0,          // addr
-                     iMETHODMAP, // ident
-                     sGLOBAL,    // vclass
-                     map->tag);  // tag
-        sym->defined = true;
-    }
-    sym->methodmap = map;
+	if (!sym) {
+		sym = addsym(map->name,  // name
+					 0,          // addr
+					 iMETHODMAP, // ident
+					 sGLOBAL,    // vclass
+					 map->tag);  // tag
+		sym->defined = true;
+	}
+	sym->methodmap = map;
 }
 
 void
 declare_handle_intrinsics()
 {
-    // Must not have an existing Handle methodmap.
-    if (methodmap_find_by_name("Handle")) {
-        error(156);
-        return;
-    }
+	// Must not have an existing Handle methodmap.
+	if (methodmap_find_by_name("Handle")) {
+		error(156);
+		return;
+	}
 
-    methodmap_t* map = methodmap_add(nullptr, Layout_MethodMap, "Handle");
-    map->nullable = true;
+	methodmap_t* map = methodmap_add(nullptr, Layout_MethodMap, "Handle");
+	map->nullable = true;
 
-    declare_methodmap_symbol(map, true);
+	declare_methodmap_symbol(map, true);
 
-    if (symbol* sym = findglb("CloseHandle")) {
-        auto dtor = std::make_unique<methodmap_method_t>(map);
-        dtor->target = sym;
-        strcpy(dtor->name, "~Handle");
-        map->dtor = dtor.get();
-        map->methods.push_back(std::move(dtor));
+	if (symbol* sym = findglb("CloseHandle")) {
+		auto dtor = std::make_unique<methodmap_method_t>(map);
+		dtor->target = sym;
+		strcpy(dtor->name, "~Handle");
+		map->dtor = dtor.get();
+		map->methods.push_back(std::move(dtor));
 
-        auto close = std::make_unique<methodmap_method_t>(map);
-        close->target = sym;
-        strcpy(close->name, "Close");
-        map->methods.push_back(std::move(close));
-    }
+		auto close = std::make_unique<methodmap_method_t>(map);
+		close->target = sym;
+		strcpy(close->name, "Close");
+		map->methods.push_back(std::move(close));
+	}
 }

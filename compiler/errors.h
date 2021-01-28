@@ -34,51 +34,51 @@
 enum class ErrorType { Suppressed, Warning, Error, Fatal };
 
 struct ErrorReport {
-    static ErrorReport infer_va(int number, va_list ap);
-    static ErrorReport create_va(int number, int fileno, int lineno, va_list ap);
+		static ErrorReport infer_va(int number, va_list ap);
+		static ErrorReport create_va(int number, int fileno, int lineno, va_list ap);
 
-    int number;
-    int fileno;
-    int lineno;
-    const char* filename;
-    std::string message;
-    ErrorType type;
+		int number;
+		int fileno;
+		int lineno;
+		const char* filename;
+		std::string message;
+		ErrorType type;
 };
 
 enum FatalError {
-    FIRST_FATAL_ERROR = 183,
+		FIRST_FATAL_ERROR = 183,
 
-    FATAL_ERROR_READ = FIRST_FATAL_ERROR,
-    FATAL_ERROR_WRITE,
-    FATAL_ERROR_ALLOC_OVERFLOW,
-    FATAL_ERROR_OOM,
-    FATAL_ERROR_INVALID_INSN,
-    FATAL_ERROR_INT_OVERFLOW,
-    FATAL_ERROR_SCRIPT_OVERFLOW,
-    FATAL_ERROR_OVERWHELMED_BY_BAD,
-    FATAL_ERROR_NO_CODEPAGE,
-    FATAL_ERROR_INVALID_PATH,
-    FATAL_ERROR_ASSERTION_FAILED,
-    FATAL_ERROR_USER_ERROR,
-    FATAL_ERROR_NO_GENERATED_CODE,
-    FATAL_ERROR_FUNCENUM,
+		FATAL_ERROR_READ = FIRST_FATAL_ERROR,
+		FATAL_ERROR_WRITE,
+		FATAL_ERROR_ALLOC_OVERFLOW,
+		FATAL_ERROR_OOM,
+		FATAL_ERROR_INVALID_INSN,
+		FATAL_ERROR_INT_OVERFLOW,
+		FATAL_ERROR_SCRIPT_OVERFLOW,
+		FATAL_ERROR_OVERWHELMED_BY_BAD,
+		FATAL_ERROR_NO_CODEPAGE,
+		FATAL_ERROR_INVALID_PATH,
+		FATAL_ERROR_ASSERTION_FAILED,
+		FATAL_ERROR_USER_ERROR,
+		FATAL_ERROR_NO_GENERATED_CODE,
+		FATAL_ERROR_FUNCENUM,
 
-    FATAL_ERRORS_TOTAL
+		FATAL_ERRORS_TOTAL
 };
 
 class AutoErrorPos final
 {
-  public:
-    explicit AutoErrorPos(const token_pos_t& pos);
-    ~AutoErrorPos();
+	public:
+		explicit AutoErrorPos(const token_pos_t& pos);
+		~AutoErrorPos();
 
-    const token_pos_t& pos() const {
-        return pos_;
-    }
+		const token_pos_t& pos() const {
+				return pos_;
+		}
 
-  private:
-    token_pos_t pos_;
-    AutoErrorPos* prev_;
+	private:
+		token_pos_t pos_;
+		AutoErrorPos* prev_;
 };
 
 int error(int number, ...);

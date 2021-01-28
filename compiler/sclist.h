@@ -22,16 +22,16 @@
 #include "sc.h"
 
 struct stringlist {
-    stringlist* next;
-    union {
-        char* line;
-        stringlist* tail;
-    };
+	stringlist* next;
+	union {
+		char* line;
+		stringlist* tail;
+	};
 };
 
 struct macro_t {
-    const char* first;
-    const char* second;
+	const char* first;
+	const char* second;
 };
 
 void insert_alias(const char* name, const char* alias);

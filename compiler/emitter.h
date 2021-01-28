@@ -22,22 +22,22 @@
 #include "sc.h"
 
 enum {
-    sOPTIMIZE_NONE,    /* no optimization */
-    sOPTIMIZE_NOMACRO, /* no macro instructions */
-    sOPTIMIZE_DEFAULT, /* full optimization */
-    /* ----- */
-    sOPTIMIZE_NUMBER
+	sOPTIMIZE_NONE,    /* no optimization */
+	sOPTIMIZE_NOMACRO, /* no macro instructions */
+	sOPTIMIZE_DEFAULT, /* full optimization */
+	/* ----- */
+	sOPTIMIZE_NUMBER
 };
 
 typedef enum s_regid {
-    sPRI, /* indicates the primary register */
-    sALT, /* indicates the secundary register */
+	sPRI, /* indicates the primary register */
+	sALT, /* indicates the secundary register */
 } regid;
 
 typedef enum s_optmark {
-    sEXPR,  /* end of expression (for expressions that form a statement) */
-    sPARM,  /* end of parameter (in a function parameter list) */
-    sLDECL, /* start of local declaration (variable) */
+	sEXPR,  /* end of expression (for expressions that form a statement) */
+	sPARM,  /* end of parameter (in a function parameter list) */
+	sLDECL, /* start of local declaration (variable) */
 } optmark;
 
 void writeleader(symbol* root);

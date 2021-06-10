@@ -51,6 +51,7 @@ binary.sources += [
   'expressions.cpp',
   'lexer.cpp',
   'libpawnc.cpp',
+  'libpawncpp.cpp',
   'memfile.cpp',
   'name-resolution.cpp',
   'new-parser.cpp',

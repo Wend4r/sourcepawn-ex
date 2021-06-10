@@ -57,41 +57,21 @@ typedef enum LayoutSpec_t {
 	Layout_Class
 } LayoutSpec;
 
-struct methodmap_method_t {
-	explicit methodmap_method_t(methodmap_t* parent)
-	 : name(),
-	   parent(parent),
-	   target(nullptr),
-	   getter(nullptr),
-	   setter(nullptr),
-	   is_static(false)
-	{}
 
-	char name[METHOD_NAMEMAX + 1];
-	methodmap_t* parent;
-	symbol* target;
-	symbol* getter;
-	symbol* setter;
-	bool is_static;
+/**
+ * Method maps.
+ */
+methodmap_t* methodmap_add(methodmap_t* parent, LayoutSpec spec, const char* name);
+methodmap_t* methodmap_find_by_name(const char* name);
+methodmap_method_t* methodmap_find_method(methodmap_t* map, const char* name);
+void methodmaps_free();
 
-	int property_tag() const {
-		assert(getter || setter);
-		if(getter)
-			return getter->tag;
-		arginfo* thisp = &setter->function()->args[0];
-		if(thisp->ident == 0)
-			return pc_tag_void;
-		arginfo* valp = &setter->function()->args[1];
-		if(valp->ident != iVARIABLE)
-			return pc_tag_void;
-		return valp->tag;
-	}
-};
+struct methodmap_method_t;
 
 struct methodmap_t {
-	methodmap_t(methodmap_t* parent, LayoutSpec spec, const char* name);
+	methodmap_t(methodmap_t *parent, LayoutSpec spec, const char *name);
 
-	methodmap_t* parent;
+	methodmap_t *parent;
 	int tag;
 	bool nullable;
 	bool keyword_nullable;
@@ -108,6 +88,117 @@ struct methodmap_t {
 	methodmap_method_t* ctor;
 };
 
+struct methodmap_method_t
+{
+	explicit methodmap_method_t(methodmap_t* parent)
+	 : name(),
+	   parent(parent),
+	   target(nullptr),
+	   getter(nullptr),
+	   setter(nullptr),
+	   is_static(false)
+	{}
+
+	char name[METHOD_NAMEMAX + 1];
+	methodmap_t* parent;
+
+	symbol* getter;
+	symbol* setter;
+
+	symbol* target;
+	bool is_static;
+
+	int property_tag() const
+	{
+		// assert(this->getter || this->setter);
+
+		if(this->getter)
+		{
+			return this->getter->tag;
+		}
+
+		arginfo *pThisp = &this->setter->function()->args[0];
+
+		if(!pThisp->ident)
+		{
+			return pc_tag_void;
+		}
+
+		arginfo *pValp = &this->setter->function()->args[1];
+
+		if(pValp->ident != iVARIABLE)
+		{
+			return pc_tag_void;
+		}
+
+		return pValp->tag;
+	}
+
+	symbol *GetGetterFromParents()
+	{
+		symbol *pGetter = this->getter;
+
+		if(!pGetter)
+		{
+			methodmap_t *pParent;
+
+			methodmap_method_t *pParentMethod;
+
+			pParent = this->parent;
+
+			while((pParent = pParent->parent))
+			{
+				pParentMethod = methodmap_find_method(pParent, this->name);
+
+				if(pParentMethod)
+				{
+					pGetter = pParentMethod->getter;
+				}
+			}
+		}
+
+		return pGetter;
+	}
+
+	void SetGetter(symbol *pNewGetter)
+	{
+		this->getter = pNewGetter;
+	}
+
+	symbol *GetSetterFromParents()
+	{
+		symbol *pSetter = this->setter;
+
+		if(!pSetter)
+		{
+			methodmap_t *pParent;
+
+			methodmap_method_t *pParentMethod;
+
+			pParent = this->parent;
+
+			while((pParent = pParent->parent))
+			{
+				pParentMethod = methodmap_find_method(pParent, this->name);
+
+				if(pParentMethod)
+				{
+					pSetter = pParentMethod->setter;
+
+					break;
+				}
+			}
+		}
+
+		return pSetter;
+	}
+
+	void SetSetter(symbol *pNewSetter)
+	{
+		this->setter = pNewSetter;
+	}
+};
+
 /**
  * Pawn Structs
  */
@@ -121,8 +212,8 @@ const structarg_t* pstructs_getarg(const pstruct_t* pstruct, sp::Atom* name);
  * Function enumeration tags
  */
 void funcenums_free();
-funcenum_t* funcenums_add(const char* name);
-void functags_add(funcenum_t* en, functag_t* src);
+funcenum_t* funcenums_add_or_find(const char* name);
+void functags_add_or_find(funcenum_t* en, functag_t* src);
 funcenum_t* funcenum_for_symbol(symbol* sym);
 functag_t* functag_find_intrinsic(int tag);
 
@@ -166,13 +257,5 @@ void genheapfree(int stop_id);
  */
 void resetstacklist();
 void resetheaplist();
-
-/**
- * Method maps.
- */
-methodmap_t* methodmap_add(methodmap_t* parent, LayoutSpec spec, const char* name);
-methodmap_t* methodmap_find_by_name(const char* name);
-methodmap_method_t* methodmap_find_method(methodmap_t* map, const char* name);
-void methodmaps_free();
 
 #endif //_INCLUDE_SOURCEPAWN_COMPILER_TRACKER_H_

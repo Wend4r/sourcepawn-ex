@@ -21,20 +21,26 @@
 
 #include "sc.h"
 
-enum {
-	sOPTIMIZE_NONE,    /* no optimization */
-	sOPTIMIZE_NOMACRO, /* no macro instructions */
-	sOPTIMIZE_DEFAULT, /* full optimization */
-	/* ----- */
-	sOPTIMIZE_NUMBER
+enum
+{
+	sOPTIMIZE_NONE = 0,    /* no optimization */
+	sOPTIMIZE_LEVEL1,
+	sOPTIMIZE_LEVEL2,
+	sOPTIMIZE_LEVEL3,
+
+	sOPTIMIZE_NUMBER,
+
+	sOPTIMIZE_DEFAULT = sOPTIMIZE_LEVEL2,   /* full optimization */
 };
 
-typedef enum s_regid {
+typedef enum s_regid
+{
 	sPRI, /* indicates the primary register */
 	sALT, /* indicates the secundary register */
 } regid;
 
-typedef enum s_optmark {
+typedef enum s_optmark
+{
 	sEXPR,  /* end of expression (for expressions that form a statement) */
 	sPARM,  /* end of parameter (in a function parameter list) */
 	sLDECL, /* start of local declaration (variable) */
@@ -54,7 +60,8 @@ void endfunc(void);
 void rvalue(value* lval);
 void rvalue(svalue* sval);
 void rvalue(const value& val);
-void address(symbol* ptr, regid reg);
+void address(symbol* ptr, regid reg, int iOffset = 0);
+void address_single(symbol *sSymbol, regid iReg, int iOffset = 0);
 void store(const value* lval);
 void loadreg(cell address, regid reg);
 void storereg(cell address, regid reg);
@@ -65,9 +72,10 @@ void ldconst(cell val, regid reg);
 void moveto1(void);
 void move_alt(void);
 void pushreg(regid reg);
+void pushreg_force(regid iReg);
 void pushval(cell val);
 void popreg(regid reg);
-void genarray(int dims, int _autozero);
+void genarray(int dims, bool _autozero);
 void swap1(void);
 void ffswitch(int label);
 void ffcase(cell value, char* labelname, int newtable);
@@ -90,7 +98,7 @@ void addconst(cell value);
 void setheap_save(cell value);
 void stradjust(regid reg);
 void invoke_getter(methodmap_method_t* method);
-void invoke_setter(methodmap_method_t* method, int save);
+void invoke_setter(methodmap_method_t* method, bool bIsSavePri);
 void inc_pri();
 void dec_pri();
 void load_hidden_arg();

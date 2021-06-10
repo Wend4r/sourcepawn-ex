@@ -20,14 +20,15 @@
  *      misrepresented as being the original software.
  *  3.  This notice may not be removed or altered from any source distribution.
  *
- *  Version: $Id$
+ *  Version: $Id$F
  */
 #include <assert.h>
 #if defined __WIN32__ || defined _WIN32 || defined __MSDOS__
-#    include <io.h>
+#	include <io.h>
+#	include <windows.h>
 #endif
 #if defined __linux__ || defined __GNUC__
-#    include <unistd.h>
+#	include <unistd.h>
 #endif
 #include <stdarg.h> /* ANSI standardized variable argument list functions */
 #include <stdio.h>
@@ -36,22 +37,26 @@
 #include "errors.h"
 #include "lexer.h"
 #include "libpawnc.h"
+#include "libpawncpp.h"
 #include "sc.h"
 #include "sclist.h"
 #include "scvars.h"
 
 #if defined _MSC_VER
-#    pragma warning(push)
-#    pragma warning(disable : 4125) /* decimal digit terminates octal escape sequence */
+#	pragma warning(push)
+#	pragma warning(disable : 4125) /* decimal digit terminates octal escape sequence */
 #endif
 
 #include "messages.h"
 
 #if defined _MSC_VER
-#    pragma warning(pop)
+#	pragma warning(pop)
 #endif
 
+CompilerMessages g_ErrorMessages, g_WarningMessages;
+
 #define NUM_WARNINGS (int)(sizeof warnmsg / sizeof warnmsg[0])
+
 static unsigned char warndisable[(NUM_WARNINGS + 7) / 8]; /* 8 flags in a char */
 
 static int errflag;
@@ -59,7 +64,7 @@ static AutoErrorPos* sPosOverride = nullptr;
 
 AutoErrorPos::AutoErrorPos(const token_pos_t& pos)
   : pos_(pos),
-	prev_(sPosOverride)
+    prev_(sPosOverride)
 {
 	sPosOverride = this;
 }
@@ -70,7 +75,9 @@ AutoErrorPos::~AutoErrorPos()
 	sPosOverride = prev_;
 }
 
-/*  error
+
+/**
+ * error
  *
  *  Outputs an error message (note: msg is passed optionally).
  *  If an error is found, the variable "errflag" is set and subsequent
@@ -82,132 +89,211 @@ AutoErrorPos::~AutoErrorPos()
  *                     fcurrent   (reffered to only)
  *                     errflag    (altered)
  */
-int
-error(int number, ...)
+void
+error(int iErrorNumber, ...)
 {
-	if(sPosOverride) {
+	if(sPosOverride)
+	{
 		va_list ap;
-		va_start(ap, number);
-		error_va(sPosOverride->pos(), number, ap);
+
+		va_start(ap, iErrorNumber);
+		error_va(sPosOverride->pos(), iErrorNumber, ap);
 		va_end(ap);
-		return 0;
+
+		return;
 	}
 
 	va_list ap;
-	va_start(ap, number);
-	ErrorReport report = ErrorReport::infer_va(number, ap);
+
+	va_start(ap, iErrorNumber);
+
+	ErrorReport Report = ErrorReport::infer_va(iErrorNumber, ap);
+
 	va_end(ap);
 
-	report_error(&report);
-	return 0;
+	report_error(&Report);
 }
 
-int
-error(const token_pos_t& where, int number, ...)
+void
+error(const token_pos_t &where, int number, ...)
 {
 	va_list ap;
+
 	va_start(ap, number);
-	ErrorReport report = ErrorReport::create_va(number, where.file, where.line, ap);
+
+	ErrorReport report = ErrorReport::create_va(number, where.file, where.line, where.col, ap);
+
 	va_end(ap);
 
 	report.lineno = where.line;
 	report_error(&report);
-	return 0;
 }
 
-int
-error_va(const token_pos_t& where, int number, va_list ap)
+void
+error_once(int iErrorNumber)
 {
-	ErrorReport report = ErrorReport::create_va(number, where.file, where.line, ap);
+	if(sPosOverride)
+	{
+		error_va(sPosOverride->pos(), iErrorNumber, nullptr);
+	}
+	else
+	{
+		ErrorReport Report = ErrorReport::infer_va(iErrorNumber, nullptr);
+
+		report_error(&Report);
+	}
+}
+
+void
+error_va(const token_pos_t &where, int number, va_list ap)
+{
+	ErrorReport report = ErrorReport::create_va(number, where.file, where.line, where.col, ap);
 
 	report.lineno = where.line;
 	report_error(&report);
-	return 0;
 }
 
-int
+void
 error(symbol* sym, int number, ...)
 {
 	va_list ap;
+
 	va_start(ap, number);
-	ErrorReport report = ErrorReport::create_va(number, sym->fnumber, sym->lnumber, ap);
+
+	ErrorReport report = ErrorReport::create_va(number, sym->fnumber, sym->lnumber, sym->colnumber, ap);
+
 	va_end(ap);
 
 	report_error(&report);
-	return 0;
 }
 
 static void
 abort_compiler()
 {
-	if(strlen(errfname) == 0) {
-		fprintf(stdout, "\nCompilation aborted.");
+	if(!errfname[0])
+	{
+		GetGlobalCompilerMessages()->AddMessage("\nCompilation aborted.", -1, false);
 	}
-	if(outf != NULL) {
+
+	if(outf != NULL)
+	{
 		pc_closeasm(outf, TRUE);
 		outf = NULL;
 	}
+
 	longjmp(errbuf, 2); /* fatal error, quit */
 }
 
 ErrorReport
-ErrorReport::create_va(int number, int fileno, int lineno, va_list ap)
+ErrorReport::create_va(int iErrorNumber, int fileno, int lineno, int colno, va_list ap)
 {
 	ErrorReport report;
-	report.number = number;
+
+	report.number = iErrorNumber;
 	report.fileno = fileno;
 	report.lineno = lineno;
-	if(report.fileno >= 0)
-		report.filename = get_inputfile(report.fileno);
-	else
-		report.filename = inpfname;
+	report.colno = colno;
 
-	if(number < FIRST_FATAL_ERROR || (number >= 200 && sc_warnings_are_errors))
-		report.type = ErrorType::Error;
-	else if(number < 200)
-		report.type = ErrorType::Fatal;
+	if(report.fileno >= 0)
+	{
+		report.filename = get_inputfile(report.fileno);
+	}
 	else
+	{
+		report.filename = inpfname;
+	}
+
+	if(iErrorNumber < FIRST_FATAL_ERROR || (iErrorNumber >= 200 && sc_warnings_are_errors))
+	{
+		report.type = ErrorType::Error;
+	}
+	else if(iErrorNumber < 200)
+	{
+		report.type = ErrorType::Fatal;
+	}
+	else
+	{
 		report.type = ErrorType::Warning;
+	}
 
 	/* also check for disabled warnings */
-	if(report.type == ErrorType::Warning) {
+	if(report.type == ErrorType::Warning)
+	{
 		int index = (report.number - 200) / 8;
 		int mask = 1 << ((report.number - 200) % 8);
-		if((warndisable[index] & mask) != 0)
+
+		if(warndisable[index] & mask)
+		{
 			report.type = ErrorType::Suppressed;
+		}
 	}
 
 	const char* prefix = "";
-	switch(report.type) {
+
+	switch(report.type)
+	{
+		case ErrorType::AnalysisError:
+		{
+			prefix = "analysis error";
+			break;
+		}
+
 		case ErrorType::Error:
+		{
 			prefix = "error";
 			break;
+		}
+
 		case ErrorType::Fatal:
+		{
 			prefix = "fatal error";
 			break;
+		}
+
 		case ErrorType::Warning:
 		case ErrorType::Suppressed:
+		{
 			prefix = "warning";
 			break;
+		}
 	}
 
 	const char* format = nullptr;
+
 	if(report.number < FIRST_FATAL_ERROR)
+	{
 		format = errmsg[report.number - 1];
+	}
 	else if(report.number < 200)
+	{
 		format = fatalmsg[report.number - FIRST_FATAL_ERROR];
+	}
 	else
+	{
 		format = warnmsg[report.number - 200];
+	}
 
 	char msg[1024];
+
 	ke::SafeVsprintf(msg, sizeof(msg), format, ap);
 
-	char base[1024];
-	ke::SafeSprintf(base, sizeof(base), "%s(%d) : %s %03d: ", report.filename, report.lineno,
-					prefix, report.number);
-
 	char full[2048];
-	ke::SafeSprintf(full, sizeof(full), "%s%s", base, msg);
+
+	ke::SafeSprintf(full, sizeof(full), "%s(%d) : %s %03d: %s", report.filename, report.lineno, prefix, report.number, msg);		// Is MS style (Old).
+
+	/**
+	 * "pattern":
+	 * {
+	 * 	"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+	 * 	"file": 1,
+	 * 	"line": 2,
+	 * 	"column": 3,
+	 * 	"severity": 4,
+	 * 	"message": 5
+	 * }
+	 */
+	// ke::SafeSprintf(full, sizeof(full), "%s:%d:%d: %s %03d: %s", report.filename, report.lineno, report.colno + 1 /* Started by 0 */, prefix, report.number, msg);
+
 	report.message = full;
 
 	return report;
@@ -216,11 +302,11 @@ ErrorReport::create_va(int number, int fileno, int lineno, va_list ap)
 ErrorReport
 ErrorReport::infer_va(int number, va_list ap)
 {
-	return create_va(number, -1, fline, ap);
+	return create_va(number, -1, fline, pline[0] ? (int)(g_sLinePtr - pline) : -1, ap);
 }
 
 void
-report_error(ErrorReport* report)
+report_error(ErrorReport *pReport)
 {
 	static int lastline, errorcount;
 	static short lastfile;
@@ -230,68 +316,132 @@ report_error(ErrorReport* report)
 	 * the error reporting is enabled only in the second pass (and only when
 	 * actually producing output). Fatal errors may never be ignored.
 	 */
-	if(report->type != ErrorType::Fatal) {
+	if(pReport->type != ErrorType::Fatal)
+	{
 		if(errflag)
+		{
 			return;
+		}
+
 		if(sc_status != statWRITE && !sc_err_status)
+		{
 			return;
+		}
 	}
 
-	switch(report->type) {
+	switch(pReport->type)
+	{
 		case ErrorType::Suppressed:
+		{
 			return;
+		}
+
 		case ErrorType::Warning:
+		{
 			warnnum++;
 			break;
+		}
+
 		case ErrorType::Error:
 		case ErrorType::Fatal:
+		{
 			errnum++;
 			sc_total_errors++;
 			errflag = TRUE;
+
 			break;
+		}
 	}
 
 	FILE* fp = nullptr;
-	if(strlen(errfname) > 0)
+
+	if(errfname[0])
+	{
 		fp = fopen(errfname, "a");
-	if(!fp)
-		fp = stdout;
+	}
 
-	fprintf(fp, "%s", report->message.c_str());
-	fflush(fp);
+	std::string sError = pReport->message;
 
-	if(fp != stdout)
+	int iErrorLength = static_cast<int>(sError.size());
+
+	if(fp)
+	{
+		fwrite(sError.c_str(), sizeof(char), iErrorLength, fp);
+		fflush(fp);
 		fclose(fp);
+	}
+	else
+	{
+		if(pReport->type == ErrorType::Warning)
+		{
+			g_WarningMessages.AddMessage(sError.c_str(), iErrorLength, true);
+		}
+		else
+		{
+			g_ErrorMessages.AddMessage(sError.c_str(), iErrorLength, true);
+		}
+	}
 
-	if(report->type == ErrorType::Fatal || errnum > 25) {
+	if(pReport->type == ErrorType::Fatal || errnum > 25)
+	{
 		abort_compiler();
+
 		return;
 	}
 
 	// Count messages per line, reset if not the same line.
-	if(lastline != report->lineno || report->fileno != lastfile)
+	if(lastline != pReport->lineno || pReport->fileno != lastfile)
+	{
 		errorcount = 0;
+	}
 
-	lastline = report->lineno;
-	lastfile = report->fileno;
+	lastline = pReport->lineno;
+	lastfile = pReport->fileno;
 
-	if(report->type != ErrorType::Warning)
+	if(pReport->type != ErrorType::Warning)
+	{
 		errorcount++;
+	}
+
 	if(errorcount >= 3)
+	{
 		error(FATAL_ERROR_OVERWHELMED_BY_BAD);
+	}
 }
 
 void
 errorset(int code, int line)
 {
-	switch(code) {
+	switch(code)
+	{
 		case sRESET:
+		{
 			errflag = FALSE; /* start reporting errors */
 			break;
+		}
 		case sFORCESET:
+		{
 			errflag = TRUE; /* stop reporting errors */
 			break;
+		}
 	}
+}
+
+int print_errors()
+{
+	int iErrorsOutput;
+
+#if defined __WIN32__ || defined _WIN32  || defined _Windows
+	iErrorsOutput = g_ErrorMessages.Print(FOREGROUND_RED);
+
+	g_WarningMessages.Print(FOREGROUND_RED | FOREGROUND_GREEN);
+#else
+	iErrorsOutput = g_ErrorMessages.Print();
+
+	g_WarningMessages.Print();
+#endif
+
+	return iErrorsOutput;
 }
 
 /* sc_enablewarning()

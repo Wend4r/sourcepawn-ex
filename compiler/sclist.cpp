@@ -78,16 +78,30 @@ insert_string(stringlist* root, const char* string)
 	stringlist* cur;
 
 	assert(string != NULL);
+
 	if((cur = (stringlist*)malloc(sizeof(stringlist))) == NULL)
-		error(103); /* insufficient memory (fatal error) */
+	{
+		error_once(103); /* insufficient memory (fatal error) */
+	}
+
 	if((cur->line = strdup(string)) == NULL)
-		error(103); /* insufficient memory (fatal error) */
+	{
+		error_once(103); /* insufficient memory (fatal error) */
+	}
+
 	cur->next = NULL;
+
 	if(root->tail)
+	{
 		root->tail->next = cur;
+	}
 	else
+	{
 		root->next = cur;
+	}
+
 	root->tail = cur;
+
 	return cur;
 }
 
@@ -98,12 +112,19 @@ get_string(stringlist* root, int index)
 
 	assert(root != NULL);
 	cur = root->next;
+
 	while(cur != NULL && index-- > 0)
+	{
 		cur = cur->next;
-	if(cur != NULL) {
+	}
+
+	if(cur != NULL)
+	{
 		assert(cur->line != NULL);
+
 		return cur->line;
 	}
+
 	return NULL;
 }
 
@@ -214,21 +235,29 @@ insert_subst(const char* pattern, size_t pattern_length, const char* substitutio
 }
 
 bool
-find_subst(const char* name, size_t length, macro_t* macro)
+find_subst(const char *name, size_t length, macro_t *macro)
 {
 	sp::CharsAndLength key(name, length);
 	auto p = sMacros.find(key);
+
 	if(!p.found())
+	{
 		return false;
+	}
 
-	MacroEntry& entry = p->value;
+	MacroEntry &entry = p->value;
+
 	if(entry.deprecated)
+	{
 		error(234, p->key.c_str(), entry.documentation.c_str());
+	}
 
-	if(macro) {
+	if(macro)
+	{
 		macro->first = entry.first.c_str();
 		macro->second = entry.second.c_str();
 	}
+
 	return true;
 }
 
@@ -272,15 +301,100 @@ delete_sourcefiletable(void)
 	assert(sourcefiles.next == NULL);
 }
 
+void restore_for_os_path(char *sFilePath)
+{
+	size_t iLength = 0;
+
+#if defined __WIN32__ || defined _WIN32 || defined __MSDOS__
+
+	// bool bIsFoundSpace = false;
+
+	while(sFilePath[iLength])
+	{
+		if(sFilePath[iLength] == '/')
+		{
+			sFilePath[iLength++] = '\\';
+
+			continue;
+		}
+		// else if(sFilePath[iLength] == ' ')
+		// {
+		// 	bIsFoundSpace = true;
+		// }
+
+		iLength++;
+	}
+
+	// if(bIsFoundSpace)
+	// {
+	// 	iLength += 2;
+
+	// 	sFilePath[0] = '"';
+
+	// 	strncpy(&sFilePath[1], sFilePath, iLength - 1);
+
+	// 	sFilePath[iLength - 1] = '"';
+	// }
+
+	sFilePath[iLength] = '\0';
+
+#else // Unix systems
+
+	size_t iCountSpaces = 0;
+
+	while(sFilePath[iLength])
+	{
+		if(sFilePath[iLength] == '\\')
+		{
+			sFilePath[iLength++] = '/';
+
+			continue;
+		}
+		else if(sFilePath[iLength] == ' ')
+		{
+			iCountSpaces++;
+		}
+
+		iLength++;
+	}
+
+	if(iCountSpaces)
+	{
+		iLength += iCountSpaces;
+
+		size_t i = 0;
+
+		while(i != iLength)
+		{
+			if(sFilePath[i] == ' ')
+			{
+				char sCopyBuffer[_MAX_PATH];
+
+				// iLength++;
+
+				strncpy(sCopyBuffer, &sFilePath[i], sizeof(sCopyBuffer) - i);
+
+				sFilePath[i++] = '\\';
+				iLength++;
+
+				strncpy(&sFilePath[i], sCopyBuffer, iLength - i);
+			}
+
+			i++;
+		}
+
+		sFilePath[i] = '\0';
+	}
+
+#endif
+}
+
 /* ----- parsed file list (explicit + included files) ------------ */
 static stringlist inputfiles;
 
-stringlist*
-insert_inputfile(char* string)
+stringlist *insert_inputfile(const char *sFilePath)
 {
-	if(sc_status != statFIRST)
-		return insert_string(&inputfiles, string);
-	return NULL;
+	return sc_status != statFIRST ? insert_string(&inputfiles, sFilePath) : NULL;
 }
 
 char*

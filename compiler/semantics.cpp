@@ -32,19 +32,22 @@
 void
 Stmt::Process()
 {
-	if(!Bind())
-		return;
-	if(!Analyze())
-		return;
-	Emit();
+	if(Bind() && Analyze())
+	{
+		Emit();
+	}
 }
 
 bool
 StmtList::Analyze()
 {
 	bool ok = true;
+
 	for(const auto& stmt : stmts_)
+	{
 		ok &= stmt->Analyze();
+	}
+
 	return ok;
 }
 
@@ -52,7 +55,9 @@ void
 StmtList::Emit()
 {
 	for(const auto& stmt : stmts_)
+	{
 		stmt->Emit();
+	}
 }
 
 bool
@@ -111,31 +116,43 @@ VarDecl::AnalyzePstruct()
 }
 
 bool
-VarDecl::AnalyzePstructArg(const pstruct_t* ps, const StructInitField& field,
-						   std::vector<bool>* visited)
+VarDecl::AnalyzePstructArg(const pstruct_t* ps, const StructInitField& field, std::vector<bool>* visited)
 {
-	auto arg = pstructs_getarg(ps, field.name);
-	if(!arg) {
+	auto pArg = pstructs_getarg(ps, field.name);
+
+	if(!pArg)
+	{
 		error(pos_, 96, field.name->chars(), name_->chars());
+
 		return false;
 	}
 
-	if(visited->at(arg->index)) {
+	if(visited->at(pArg->index))
+	{
 		error(field.value->pos(), 58);
+
 		return false;
 	}
 
-	visited->at(arg->index) = true;
+	visited->at(pArg->index) = true;
 
-	if(auto expr = field.value->AsStringExpr()) {
-		if(arg->ident != iREFARRAY) {
+	if(auto expr = field.value->AsStringExpr())
+	{
+		if(pArg->ident != iREFARRAY)
+		{
 			error(expr->pos(), 48);
 			return false;
 		}
-		if(arg->tag != pc_tag_string)
-			error(expr->pos(), 213, type_to_name(pc_tag_string), type_to_name(arg->tag));
-	} else if(auto expr = field.value->AsTaggedValueExpr()) {
-		if(arg->ident != iVARIABLE) {
+
+		if(pArg->tag != pc_tag_string)
+		{
+			error(expr->pos(), 213, type_to_name(pc_tag_string), type_to_name(pArg->tag));
+		}
+	}
+	else if(auto expr = field.value->AsTaggedValueExpr())
+	{
+		if(pArg->ident != iVARIABLE)
+		{
 			error(expr->pos(), 23);
 			return false;
 		}
@@ -143,15 +160,17 @@ VarDecl::AnalyzePstructArg(const pstruct_t* ps, const StructInitField& field,
 		// Proper tag checks were missing in the old parser, and unfortunately
 		// adding them breaks older code. As a special case, we allow implicit
 		// coercion of constants 0 or 1 to bool.
-		if(!(arg->tag == pc_tag_bool && expr->tag() == 0 &&
-			(expr->value() == 0 || expr->value() == 1)))
+		if(!(pArg->tag == pc_tag_bool && expr->tag() == 0 && (expr->value() == 0 || expr->value() == 1)))
 		{
-			matchtag(arg->tag, expr->tag(), MATCHTAG_COERCE);
+			matchtag(pArg->tag, expr->tag(), MATCHTAG_COERCE);
 		}
-	} else {
+	}
+	else
+	{
 		assert(false);
 		return false;
 	}
+
 	return true;
 }
 
@@ -164,8 +183,10 @@ ConstDecl::Analyze()
 	return true;
 }
 
-static inline OpFunc TokenToOpFunc(int token) {
-	switch(token) {
+static inline OpFunc TokenToOpFunc(int token)
+{
+	switch(token)
+	{
 		case '*':
 		case taMULT:
 			return os_mult;
@@ -221,8 +242,8 @@ static inline OpFunc TokenToOpFunc(int token) {
 	}
 }
 
-CompareOp::CompareOp(const token_pos_t& pos, int token, Expr* expr)
-  : pos(pos),
+CompareOp::CompareOp(const token_pos_t& iPosition, int token, Expr* expr)
+  : pos(iPosition),
 	token(token),
 	expr(expr),
 	oper(TokenToOpFunc(token))
@@ -230,11 +251,12 @@ CompareOp::CompareOp(const token_pos_t& pos, int token, Expr* expr)
 }
 
 void
-ParseNode::error(const token_pos_t& pos, int number, ...)
+ParseNode::error(const token_pos_t& iPosition, int number, ...)
 {
 	va_list ap;
+
 	va_start(ap, number);
-	error_va(pos, number, ap);
+	error_va(iPosition, number, ap);
 	va_end(ap);
 }
 
@@ -247,14 +269,19 @@ Expr::FlattenLogical(int token, std::vector<Expr*>* out)
 
 RvalueExpr::RvalueExpr(Expr* expr)
   : EmitOnlyExpr(expr->pos()),
-	expr_(expr)
+    expr_(expr)
 {
 	assert(expr_->lvalue());
 
-	val_ = expr_->val();
-	if(val_.ident == iACCESSOR) {
-		if(val_.accessor->getter)
-			markusage(val_.accessor->getter, uREAD);
+	if((val_ = expr_->val()).ident == iACCESSOR)
+	{
+		symbol *pGetter = val_.accessor->GetGetterFromParents();
+
+		if(pGetter)
+		{
+			markusage(pGetter, uREAD);
+		}
+
 		val_.ident = iEXPRESSION;
 	}
 }
@@ -271,6 +298,7 @@ IsDefinedExpr::Analyze()
 	val_.ident = iCONSTEXPR;
 	val_.constval = value_;
 	val_.tag = 0;
+
 	return true;
 }
 
@@ -280,49 +308,83 @@ UnaryExpr::Analyze()
 	AutoErrorPos aep(pos_);
 
 	if(!expr_->Analyze())
+	{
 		return false;
+	}
 
 	if(expr_->lvalue())
+	{
 		expr_ = new RvalueExpr(expr_);
+	}
+
 	val_ = expr_->val();
 
 	// :TODO: check for invalid types
 
 	UserOperation userop;
-	switch(token_) {
+
+	switch(token_)
+	{
 		case '~':
+		{
 			if(val_.ident == iCONSTEXPR)
+			{
 				val_.constval = ~val_.constval;
+			}
+
 			break;
+		}
 		case '!':
-			if(find_userop(lneg, val_.tag, 0, 1, &val_, &userop)) {
+		{
+			if(find_userop(lneg, val_.tag, 0, 1, &val_, &userop))
+			{
 				expr_ = new CallUserOpExpr(userop, expr_);
 				val_ = expr_->val();
 				userop_ = true;
-			} else if(val_.ident == iCONSTEXPR) {
+			}
+			else if(val_.ident == iCONSTEXPR)
+			{
 				val_.constval = !val_.constval;
 			}
+
 			val_.tag = pc_addtag("bool");
+
 			break;
+		}
 		case '-':
-			if(val_.ident == iCONSTEXPR && val_.tag == sc_rationaltag) {
+		{
+			if(val_.ident == iCONSTEXPR && val_.tag == sc_rationaltag)
+			{
 				float f = sp::FloatCellUnion(val_.constval).f32;
+
 				val_.constval = sp::FloatCellUnion(-f).cell;
-			} else if(find_userop(neg, val_.tag, 0, 1, &val_, &userop)) {
+			}
+			else if(find_userop(neg, val_.tag, 0, 1, &val_, &userop))
+			{
 				expr_ = new CallUserOpExpr(userop, expr_);
+
 				val_ = expr_->val();
 				userop_ = true;
-			} else if(val_.ident == iCONSTEXPR) {
+			}
+			else if(val_.ident == iCONSTEXPR)
+			{
 				/* the negation of a fixed point number is just an integer negation */
 				val_.constval = -val_.constval;
 			}
 			break;
+		}
+
 		default:
+		{
 			assert(false);
+		}
 	}
 
 	if(val_.ident != iCONSTEXPR)
+	{
 		val_.ident = iEXPRESSION;
+	}
+
 	return true;
 }
 
@@ -344,37 +406,59 @@ IncDecExpr::Analyze()
 	AutoErrorPos aep(pos_);
 
 	if(!expr_->Analyze())
+	{
 		return false;
-	if(!expr_->lvalue()) {
+	}
+
+	if(!expr_->lvalue())
+	{
 		error(pos_, 22);
 		return false;
 	}
 
 	const auto& expr_val = expr_->val();
-	if(expr_val.ident != iACCESSOR) {
-		if(expr_val.sym->is_const) {
+
+	if(expr_val.ident != iACCESSOR)
+	{
+		if(expr_val.sym->is_const)
+		{
 			error(pos_, 22); /* assignment to const argument */
+
 			return false;
 		}
-	} else {
-		if(!expr_val.accessor->setter) {
+	}
+	else
+	{
+		symbol *pSetter = expr_val.accessor->GetSetterFromParents();
+
+		if(!pSetter)
+		{
 			error(pos_, 152, expr_val.accessor->name);
+
 			return false;
 		}
-		if(!expr_val.accessor->getter) {
+
+		symbol *pGetter = expr_val.accessor->GetGetterFromParents();
+
+		if(!pGetter)
+		{
 			error(pos_, 149, expr_val.accessor->name);
+
 			return false;
 		}
-		markusage(expr_val.accessor->getter, uREAD);
-		markusage(expr_val.accessor->setter, uREAD);
+	
+		markusage(pSetter, uREAD);
+		markusage(pGetter, uREAD);
 	}
 
 	auto op = (token_ == tINC) ? user_inc : user_dec;
+
 	find_userop(op, expr_val.tag, 0, 1, &expr_val, &userop_);
 
 	// :TODO: more type checks
 	val_.ident = iEXPRESSION;
 	val_.tag = expr_val.tag;
+
 	return true;
 }
 
@@ -384,8 +468,8 @@ IncDecExpr::ProcessUses()
 	expr_->MarkAndProcessUses();
 }
 
-BinaryExprBase::BinaryExprBase(const token_pos_t& pos, int token, Expr* left, Expr* right)
-  : Expr(pos),
+BinaryExprBase::BinaryExprBase(const token_pos_t& iPosition, int token, Expr* left, Expr* right)
+  : Expr(iPosition),
 	token_(token),
 	left_(left),
 	right_(right)
@@ -408,8 +492,8 @@ BinaryExprBase::ProcessUses()
 	right_->MarkAndProcessUses();
 }
 
-BinaryExpr::BinaryExpr(const token_pos_t& pos, int token, Expr* left, Expr* right)
-  : BinaryExprBase(pos, token, left, right)
+BinaryExpr::BinaryExpr(const token_pos_t& iPosition, int token, Expr* left, Expr* right)
+  : BinaryExprBase(iPosition, token, left, right)
 {
 	oper_ = TokenToOpFunc(token_);
 }
@@ -428,78 +512,116 @@ BinaryExpr::Analyze()
 	AutoErrorPos aep(pos_);
 
 	if(!left_->Analyze() || !right_->Analyze())
+	{
 		return false;
+	}
 
-	if(IsAssignOp(token_)) {
+	if(IsAssignOp(token_))
+	{
 		// Mark the left-hand side as written as soon as we can.
-		if(symbol* sym = left_->val().sym) {
+		if(symbol* sym = left_->val().sym)
+		{
 			markusage(sym, uWRITTEN);
-		} else if(auto* accessor = left_->val().accessor) {
-			if(!accessor->setter) {
+		}
+		else if(auto* accessor = left_->val().accessor)
+		{
+			symbol *pSetter = accessor->GetSetterFromParents();
+
+			if(!pSetter)
+			{
 				error(pos_, 152, accessor->name);
+
 				return false;
 			}
-			markusage(accessor->setter, uREAD);
+
+			markusage(pSetter, uREAD);
 		}
 
 		if(!ValidateAssignmentLHS())
+		{
 			return false;
-	} else if(left_->lvalue()) {
+		}
+	}
+	else if(left_->lvalue())
+	{
 		left_ = new RvalueExpr(left_);
 	}
 
 	// RHS is always loaded. Note we do this after validating the left-hand side,
 	// so ValidateAssignment has an original view of RHS.
 	if(right_->lvalue())
+	{
 		right_ = new RvalueExpr(right_);
+	}
 
 	const auto& left_val = left_->val();
 	const auto& right_val = right_->val();
 
-	if(oper_) {
+	if(oper_)
+	{
 		assert(token_ != '=');
 
-		if(left_val.ident == iARRAY || left_val.ident == iREFARRAY) {
-			const char* ptr = (left_val.sym != NULL) ? left_val.sym->name() : "-unknown-";
+		if(left_val.ident == iARRAY || left_val.ident == iREFARRAY)
+		{
+			const char* ptr = (left_val.sym != NULL) ? left_val.sym->name() : "<unknown>";
+
 			error(pos_, 33, ptr); /* array must be indexed */
+
 			return false;
 		}
-		if(right_val.ident == iARRAY || right_val.ident == iREFARRAY) {
-			const char* ptr = (right_val.sym != NULL) ? right_val.sym->name() : "-unknown-";
+
+		if(right_val.ident == iARRAY || right_val.ident == iREFARRAY)
+		{
+			const char* ptr = (right_val.sym != NULL) ? right_val.sym->name() : "<unknown>";
+	
 			error(pos_, 33, ptr); /* array must be indexed */
+	
 			return false;
 		}
+
 		/* ??? ^^^ should do same kind of error checking with functions */
 	}
 
 	// The assignment operator is overloaded separately.
-	if(IsAssignOp(token_)) {
-		if(!ValidateAssignmentRHS())
-			return false;
+	if(IsAssignOp(token_) && !ValidateAssignmentRHS())
+	{
+		return false;
 	}
 
 	val_.ident = iEXPRESSION;
 	val_.tag = left_val.tag;
 
 	if(assignop_.sym)
+	{
 		val_.tag = assignop_.sym->tag;
+	}
 
-	if(oper_) {
-		if(find_userop(oper_, left_val.tag, right_val.tag, 2, nullptr, &userop_)) {
+	if(oper_)
+	{
+		if(find_userop(oper_, left_val.tag, right_val.tag, 2, nullptr, &userop_))
+		{
 			val_.tag = userop_.sym->tag;
-		} else if(left_val.ident == iCONSTEXPR && right_val.ident == iCONSTEXPR) {
+		}
+		else if(left_val.ident == iCONSTEXPR && right_val.ident == iCONSTEXPR)
+		{
 			char boolresult = FALSE;
+
 			matchtag(left_val.tag, right_val.tag, FALSE);
+
 			val_.ident = iCONSTEXPR;
 			val_.constval = calc(left_val.constval, oper_, right_val.constval, &boolresult);
-		} else {
+		}
+		else
+		{
 			// For the purposes of tag matching, we consider the order to be irrelevant.
 			if(!checkval_string(&left_val, &right_val))
 				matchtag_commutative(left_val.tag, right_val.tag, MATCHTAG_DEDUCE);
 		}
 
 		if(IsChainedOp(token_) || token_ == tlEQ || token_ == tlNE)
+		{
 			val_.tag = pc_addtag("bool");
+		}
 	}
 
 	return true;
@@ -573,9 +695,12 @@ BinaryExpr::ValidateAssignmentRHS()
 					   left_val.sym->dim.array.level == 0 &&
 					   !oper_ &&
 					   (right_val.ident == iARRAY || right_val.ident == iREFARRAY));
-	if(leftarray) {
-		if(right_val.ident != iARRAY && right_val.ident != iREFARRAY) {
+	if(leftarray)
+	{
+		if(right_val.ident != iARRAY && right_val.ident != iREFARRAY)
+		{
 			error(pos_, 47);
+
 			return false;
 		}
 
@@ -583,54 +708,72 @@ BinaryExpr::ValidateAssignmentRHS()
 		cell right_length = 0;
 		int right_idxtag = 0;
 		int left_length = left_val.sym->dim.array.length;
-		if(right_val.sym) {
+
+		if(right_val.sym)
+		{
 			// Change from the old logic - we immediately reject multi-dimensional
 			// arrays in assignment and don't bother validating subarray assignment.
-			if(right_val.sym->dim.array.level > 0) {
+			if(right_val.sym->dim.array.level > 0)
+			{
 				error(pos_, 23);
+
 				return false;
 			}
 
-			if(right_val.constval == 0)
-				right_length = right_val.sym->dim.array.length; // array variable
-			else
-				right_length = right_val.constval;
-
+			right_length = right_val.constval ? right_val.constval : right_val.sym->dim.array.length; // Array variable.
 			right_idxtag = right_val.sym->x.tags.index;
-			if(right_idxtag == 0 && left_val.sym->x.tags.index == 0)
+
+			if(!right_idxtag && !left_val.sym->x.tags.index)
+			{
 				exact_match = false;
-		} else {
+			}
+		}
+		else
+		{
 			right_length = right_val.constval; // literal array
 
 			// If val is negative, it means that lval2 is a literal string.
 			// The string array size may be smaller than the destination
 			// array, provided that the destination array does not have an
 			// index tag.
-			if(right_length < 0) {
+			if(right_length < 0)
+			{
 				right_length = -right_length;
-				if(left_val.sym->x.tags.index == 0)
+
+				if(!left_val.sym->x.tags.index)
+				{
 					exact_match = false;
+				}
 			}
 		}
-		if(left_val.sym->dim.array.level != 0) {
+	
+		if(left_val.sym->dim.array.level != 0)
+		{
 			error(pos_, 47); // array dimensions must match
+
 			return false;
 		}
-		if(left_length < right_length || (exact_match && left_length > right_length) ||
-			right_length == 0)
+	
+		if(left_length < right_length || (exact_match && left_length > right_length) || right_length == 0)
 		{
 			error(pos_, 47); // array sizes must match
+
 			return false;
 		}
-		if(left_val.ident != iARRAYCELL &&
-			!matchtag(left_val.sym->x.tags.index, right_idxtag, MATCHTAG_COERCE | MATCHTAG_SILENT))
+
+		if(left_val.ident != iARRAYCELL && !matchtag(left_val.sym->x.tags.index, right_idxtag, MATCHTAG_COERCE | MATCHTAG_SILENT))
 		{
 			error(pos_, 229, right_val.sym ? right_val.sym->name() : left_val.sym->name());
 		}
+
 		array_copy_length_ = right_length;
-	} else {
-		if(right_val.ident == iARRAY || right_val.ident == iREFARRAY) {
+	}
+	else
+	{
+		if(right_val.ident == iARRAY || right_val.ident == iREFARRAY)
+		{
 			error(pos_, 6); // must be assigned to an array
+
 			return false;
 		}
 
@@ -638,25 +781,31 @@ BinaryExpr::ValidateAssignmentRHS()
 		find_userop(nullptr, left_val.tag, right_val.tag, 2, &left_val, &assignop_);
 	}
 
-	if(!oper_ && !checkval_string(&left_val, &right_val)) {
-		if((left_val.tag == pc_tag_string && right_val.tag != pc_tag_string) ||
-			(left_val.tag != pc_tag_string && right_val.tag == pc_tag_string))
+	if(!oper_ && !checkval_string(&left_val, &right_val))
+	{
+		if((left_val.tag == pc_tag_string && right_val.tag != pc_tag_string) || (left_val.tag != pc_tag_string && right_val.tag == pc_tag_string))
 		{
 			error(pos_, 179, type_to_name(left_val.tag), type_to_name(right_val.tag));
+
 			return false;
 		}
+
 		matchtag(left_val.tag, right_val.tag, TRUE);
 	}
+	
 	return true;
 }
 
 void
 LogicalExpr::FlattenLogical(int token, std::vector<Expr*>* out)
 {
-	if(token_ == token) {
+	if(token_ == token)
+	{
 		left_->FlattenLogical(token, out);
 		right_->FlattenLogical(token, out);
-	} else {
+	}
+	else
+	{
 		Expr::FlattenLogical(token, out);
 	}
 }
@@ -667,28 +816,48 @@ LogicalExpr::Analyze()
 	AutoErrorPos aep(pos_);
 
 	if(!left_->Analyze() || !right_->Analyze())
+	{
 		return false;
+	}
 
 	if(left_->lvalue())
+	{
 		left_ = new RvalueExpr(left_);
+	}
+
 	if(right_->lvalue())
+	{
 		right_ = new RvalueExpr(right_);
+	}
 
 	const auto& left_val = left_->val();
 	const auto& right_val = right_->val();
-	if(left_val.ident == iCONSTEXPR && right_val.ident == iCONSTEXPR) {
+
+	if(left_val.ident == iCONSTEXPR && right_val.ident == iCONSTEXPR)
+	{
 		val_.ident = iCONSTEXPR;
+
 		if(token_ == tlOR)
+		{
 			val_.constval = (left_val.constval || right_val.constval);
+		}
 		else if(token_ == tlAND)
+		{
 			val_.constval = (left_val.constval && right_val.constval);
+		}
 		else
+		{
 			assert(false);
-	} else {
+		}
+	}
+	else
+	{
 		val_.ident = iEXPRESSION;
 	}
+
 	val_.sym = nullptr;
 	val_.tag = pc_addtag("bool");
+
 	return true;
 }
 
@@ -696,11 +865,18 @@ bool
 ChainedCompareExpr::HasSideEffects()
 {
 	if(first_->HasSideEffects())
+	{
 		return true;
-	for(const auto& op : ops_) {
-		if(op.userop.sym || op.expr->HasSideEffects())
-			return true;
 	}
+
+	for(const auto& op : ops_)
+	{
+		if(op.userop.sym || op.expr->HasSideEffects())
+		{
+			return true;
+		}
+	}
+
 	return false;
 }
 
@@ -708,37 +884,58 @@ bool
 ChainedCompareExpr::Analyze()
 {
 	if(!first_->Analyze())
+	{
 		return false;
-	if(first_->lvalue())
-		first_ = new RvalueExpr(first_);
+	}
 
-	for(auto& op : ops_) {
+	if(first_->lvalue())
+	{
+		first_ = new RvalueExpr(first_);
+	}
+
+	for(auto& op : ops_)
+	{
 		if(!op.expr->Analyze())
+		{
 			return false;
+		}
+
 		if(op.expr->lvalue())
+		{
 			op.expr = new RvalueExpr(op.expr);
+		}
 	}
 
 	Expr* left = first_;
+
 	bool all_const = (left->val().ident == iCONSTEXPR);
 	bool constval = true;
 
 	val_.ident = iEXPRESSION;
 	val_.tag = pc_tag_bool;
 
-	for(auto& op : ops_) {
+	for(auto& op : ops_)
+	{
 		Expr* right = op.expr;
+
 		const auto& left_val = left->val();
 		const auto& right_val = right->val();
 
-		if(left_val.ident == iARRAY || left_val.ident == iREFARRAY) {
-			const char* ptr = (left_val.sym != NULL) ? left_val.sym->name() : "-unknown-";
+		if(left_val.ident == iARRAY || left_val.ident == iREFARRAY)
+		{
+			const char* ptr = (left_val.sym != NULL) ? left_val.sym->name() : "<unknown>";
+
 			error(pos_, 33, ptr); /* array must be indexed */
+
 			return false;
 		}
-		if(right_val.ident == iARRAY || right_val.ident == iREFARRAY) {
-			const char* ptr = (right_val.sym != NULL) ? right_val.sym->name() : "-unknown-";
+
+		if(right_val.ident == iARRAY || right_val.ident == iREFARRAY)
+		{
+			const char* ptr = (right_val.sym != NULL) ? right_val.sym->name() : "<unknown>";
+
 			error(pos_, 33, ptr); /* array must be indexed */
+
 			return false;
 		}
 
@@ -819,13 +1016,13 @@ TernaryExpr::Analyze()
 	bool left_array = (left.ident == iARRAY || right.ident == iREFARRAY);
 	bool right_array = (left.ident == iARRAY || right.ident == iREFARRAY);
 	if(!left_array && right_array) {
-		const char* ptr = "-unknown-";
+		const char* ptr = "<unknown>";
 		if(left.sym != NULL)
 			ptr = left.sym->name();
 		error(pos_, 33, ptr); /* array must be indexed */
 		return false;
 	} else if(left_array && !right_array) {
-		const char* ptr = "-unknown-";
+		const char* ptr = "<unknown>";
 		if(right.sym != NULL)
 			ptr = right.sym->name();
 		error(pos_, 33, ptr); /* array must be indexed */
@@ -874,19 +1071,30 @@ CastExpr::Analyze()
 	val_ = expr_->val();
 	lvalue_ = expr_->lvalue();
 
-	Type* ltype = gTypes.find(val_.tag);
-	Type* atype = gTypes.find(tag_);
-	if(ltype->isObject() || atype->isObject()) {
+	Type *ltype = gTypes.find(val_.tag);
+	Type *atype = gTypes.find(tag_);
+
+	if(ltype->isObject() || atype->isObject())
+	{
+
 		matchtag(tag_, val_.tag, MATCHTAG_COERCE);
-	} else if(ltype->isFunction() != atype->isFunction()) {
+	}
+	else if(ltype->isFunction() != atype->isFunction())
+	{
 		// Warn: unsupported cast.
 		error(pos_, 237);
-	} else if(val_.sym && val_.sym->tag == pc_tag_void) {
+	}
+	else if(val_.sym && val_.sym->tag == pc_tag_void)
+	{
 		error(pos_, 89);
-	} else if(atype->isEnumStruct()) {
+	}
+	else if(atype->isEnumStruct())
+	{
 		error(pos_, 95, atype->name());
 	}
+
 	val_.tag = tag_;
+
 	return true;
 }
 
@@ -915,22 +1123,24 @@ SymbolExpr::AnalyzeWithOptions(bool allow_types)
 	val_.sym = sym_;
 	val_.tag = sym_->tag;
 
-	if(sym_->ident == iCONSTEXPR) {
+	if(sym_->ident == iCONSTEXPR)
+	{
 		// Hack: __LINE__ is updated by the lexer, so we have to special case
 		// it here.
 		static symbol* sLineConst = findconst("__LINE__");
-		if(sym_ == sLineConst)
-			val_.constval = pos_.line;
-		else
-			val_.constval = sym_->addr();
+
+		val_.constval = sym_ == sLineConst ? pos_.line : sym_->addr();
 	}
 
-	if(sym_->vclass == sGLOBAL && sym_->ident != iFUNCTN) {
-		if(!sym_->defined) {
+	if(sym_->vclass == sGLOBAL && sym_->ident != iFUNCTN)
+	{
+		if(!sym_->defined)
+		{
 			error(pos_, 17, sym_->name());
 			return false;
 		}
 	}
+
 	if(sym_->ident == iFUNCTN) {
 		// If the function is only in the table because it was inserted as
 		// a stub in the first pass (used but never declared or implemented),
@@ -1020,24 +1230,36 @@ ArrayExpr::Analyze()
 	AutoErrorPos aep(pos_);
 
 	int lasttag = -1;
-	for(const auto& expr : exprs_) {
+	for(const auto& expr : exprs_)
+	{
 		if(!expr->Analyze())
-			return false;
-
-		const auto& val = expr->val();
-		if(val.ident != iCONSTEXPR) {
-			error(pos_, 8);
+		{
 			return false;
 		}
+
+		const auto& val = expr->val();
+
+		if(val.ident != iCONSTEXPR)
+		{
+			error(pos_, 8);
+
+			return false;
+		}
+
 		if(lasttag < 0)
+		{
 			lasttag = val.tag;
+		}
 		else
+		{
 			matchtag(lasttag, val.tag, FALSE);
+		}
 	}
 
 	val_.ident = iARRAY;
-	val_.constval = exprs_.size();
+	val_.constval = static_cast<cell>(exprs_.size());
 	val_.tag = lasttag;
+
 	return true;
 }
 
@@ -1047,63 +1269,81 @@ IndexExpr::Analyze()
 	AutoErrorPos aep(pos_);
 
 	if(!base_->Analyze() || !expr_->Analyze())
+	{
 		return false;
+	}
+
 	if(base_->lvalue() && base_->val().ident == iACCESSOR)
+	{
 		base_ = new RvalueExpr(base_);
+	}
+
 	if(expr_->lvalue())
+	{
 		expr_ = new RvalueExpr(expr_);
+	}
 
 	const auto& base = base_->val();
-	if(!base.sym) {
+
+	if(!base.sym)
+	{
 		error(pos_, 29);
+
 		return false;
 	}
-	if(base.sym->ident != iARRAY && base.sym->ident != iREFARRAY) {
+
+	if(base.sym->ident != iARRAY && base.sym->ident != iREFARRAY)
+	{
 		error(pos_, 28, base.sym->name());
+
 		return false;
 	}
 
-	if(base.sym->enumroot) {
-		if(!matchtag(base.sym->x.tags.index, expr_->val().tag, TRUE))
-			return false;
-	}
-
-	const auto& expr = expr_->val();
-	if(expr.ident == iARRAY || expr.ident == iREFARRAY) {
-		error(pos_, 33, expr.sym ? expr.sym->name() : "-unknown-"); /* array must be indexed */
+	if(base.sym->enumroot && !matchtag(base.sym->x.tags.index, expr_->val().tag, TRUE))
+	{
 		return false;
 	}
 
-	if(gTypes.find(base.sym->x.tags.index)->isEnumStruct()) {
-		error(pos_, 117);
+	const value& expr = expr_->val();
+
+	if(expr.ident == iARRAY || expr.ident == iREFARRAY)
+	{
+		error(pos_, 33, expr.sym ? expr.sym->name() : "<unknown>"); /* array must be indexed */
+
 		return false;
 	}
 
-	int idx_tag = expr_->val().tag;
-	if(!is_valid_index_tag(idx_tag)) {
-		error(pos_, 77, gTypes.find(idx_tag)->prettyName());
+	int iTag = expr.tag;
+
+	if(!is_valid_index_tag(iTag))
+	{
+		// error(pos_, 213, "int", gTypes.find(iTag)->prettyName());
+		error(pos_, 77, gTypes.find(iTag)->prettyName());
+
 		return false;
 	}
 
 	val_ = base_->val();
 
-	if(expr.ident == iCONSTEXPR) {
-		if(!(base.sym->tag == pc_tag_string && base.sym->dim.array.level == 0)) {
+	if(expr.ident == iCONSTEXPR || base.sym->is_public)
+	{
+		if(!(base.sym->tag == pc_tag_string && !base.sym->dim.array.level))
+		{
 			/* normal array index */
-			if(expr.constval < 0 ||
-				(base.sym->dim.array.length != 0 && base.sym->dim.array.length <= expr.constval))
+			if(expr.constval < 0 || (base.sym->dim.array.length && base.sym->dim.array.length <= expr.constval))
 			{
 				error(pos_, 32, base.sym->name()); /* array index out of bounds */
+
 				return false;
 			}
-		} else {
-			/* character index */
-			if(expr.constval < 0 ||
-				(base.sym->dim.array.length != 0 &&
-				 base.sym->dim.array.length * ((8 * sizeof(cell)) / sCHARBITS) <=
-					 (ucell)expr.constval))
+		}
+		else
+		{
+			/* Character index */
+			if(expr.constval < 0 || (base.sym->dim.array.length && base.sym->dim.array.length * ((8 * sizeof(cell)) / sCHARBITS) <= (ucell)expr.constval))
 			{
-				error(pos_, 32, base.sym->name()); /* array index out of bounds */
+				error(pos_, 32, base.sym->name()); // Array index out of bounds.
+
 				return false;
 			}
 		}
@@ -1113,26 +1353,38 @@ IndexExpr::Analyze()
 		assert(expr.sym == NULL || expr.sym->dim.array.level == 0);
 	}
 
-	if(base.sym->dim.array.level > 0) {
+	Type *pEnumStructType = gTypes.find(base.sym->x.tags.index);
+
+	if(pEnumStructType && pEnumStructType->isEnumStruct() && base.sym->dim.array.level != val_.sym->dim.array.level)
+	{
+		error(pos_, 117);
+
+		return false;
+	}
+
+
+	if(base.sym->dim.array.level > 0)
+	{
 		// Note: Intermediate arrays are not l-values.
 		val_.ident = iREFARRAY;
 		val_.sym = base.sym->array_child();
 
 		assert(val_.sym != NULL);
 		assert(val_.sym->dim.array.level == base.sym->dim.array.level - 1);
+		// printf("base.sym->dim = \"%s\", base.sym->dim.array.length = %i\n", base.sym->name(), base.sym->dim.array.length);
+
 		return true;
 	}
 
 	/* set type to fetch... INDIRECTLY */
-	if(base.sym->tag == pc_tag_string)
-		val_.ident = iARRAYCHAR;
-	else
-		val_.ident = iARRAYCELL;
+	val_.ident = base.sym->tag == pc_tag_string ? iARRAYCHAR : iARRAYCELL;
 
 	val_.tag = base.sym->tag;
+
 	val_.constval = 0;
 
 	lvalue_ = true;
+
 	return true;
 }
 
@@ -1152,6 +1404,7 @@ ThisExpr::Analyze()
 	val_.sym = sym_;
 	val_.tag = sym_->tag;
 	lvalue_ = (sym_->ident != iREFARRAY);
+
 	return true;
 }
 
@@ -1161,6 +1414,7 @@ NullExpr::Analyze()
 	val_.ident = iCONSTEXPR;
 	val_.constval = 0;
 	val_.tag = pc_tag_null_t;
+
 	return true;
 }
 
@@ -1170,6 +1424,7 @@ TaggedValueExpr::Analyze()
 	val_.ident = iCONSTEXPR;
 	val_.tag = tag_;
 	val_.constval = value_;
+
 	return true;
 }
 
@@ -1179,10 +1434,12 @@ StringExpr::Analyze()
 	val_.ident = iARRAY;
 	val_.constval = -char_array_cells((cell)text_->length() + 1);
 	val_.tag = pc_tag_string;
+
 	return true;
 }
 
-bool FieldAccessExpr::Analyze() {
+bool FieldAccessExpr::Analyze()
+{
 	return AnalyzeWithOptions(false);
 }
 
@@ -1191,83 +1448,153 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 {
 	AutoErrorPos aep(pos_);
 
-	if(SymbolExpr* expr = base_->AsSymbolExpr()) {
+	if(SymbolExpr *expr = base_->AsSymbolExpr())
+	{
 		if(!expr->AnalyzeWithOptions(true))
+		{
 			return false;
-	} else {
+		}
+	}
+	else
+	{
 		if(!base_->Analyze())
+		{
 			return false;
+		}
 	}
 
 	if(token_ == tDBLCOLON)
+	{
 		return AnalyzeStaticAccess();
+	}
 
-	const auto& base_val = base_->val();
-	switch(base_val.ident) {
+	const auto &base_val = base_->val();
+
+	switch(base_val.ident)
+	{
 		case iARRAY:
 		case iREFARRAY:
-			if(base_val.sym && base_val.sym->dim.array.level == 0) {
-				Type* type = gTypes.find(base_val.sym->x.tags.index);
-				if(symbol* root = type->asEnumStruct())
-					return AnalyzeEnumStructAccess(type, root, from_call);
+		{
+			if(base_val.sym && !base_val.sym->dim.array.level)
+			{
+				Type *pType = gTypes.find(base_val.sym->x.tags.index);
+
+				if(symbol *pRoot = pType->asEnumStruct())
+				{
+					return AnalyzeEnumStructAccess(pType, pRoot, from_call);
+				}
 			}
+
 			error(pos_, 106);
+
 			return false;
+		}
+
+		case iARRAYCELL:
+		{
+			if(base_val.sym && base_val.sym->dim.array.level)
+			{
+				Type *pType = gTypes.find(base_val.sym->x.tags.index);
+
+				if(symbol *pRoot = pType->asEnumStruct())
+				{
+					return AnalyzeEnumStructAccess(pType, pRoot, from_call);
+				}
+			}
+
+			break;
+		}
+
 		case iFUNCTN:
+		{
 			error(pos_, 107);
+
 			return false;
+		}
 	}
 
-	if(base_val.ident == iMETHODMAP) {
+	if(base_val.ident == iMETHODMAP)
+	{
 		methodmap_t* map = base_val.sym->methodmap;
+
 		method_ = methodmap_find_method(map, name_->chars());
-		if(!method_) {
-			error(pos_, 105, map->name, field_->name());
-			return false;
+
+		if(method_->target)
+		{
+			if(!method_)
+			{
+				error(pos_, 105, map->name, field_->name());
+
+				return false;
+			}
+
+			if(!method_->is_static)
+			{
+				error(pos_, 176, method_->name, map->name);
+
+				return false;
+			}
+
+			val_.ident = iFUNCTN;
+			val_.sym = method_->target;
+
+			markusage(method_->target, uREAD);
+
+			return true;
 		}
-		if(!method_->is_static) {
-			error(pos_, 176, method_->name, map->name);
-			return false;
-		}
-		val_.ident = iFUNCTN;
-		val_.sym = method_->target;
-		markusage(method_->target, uREAD);
-		return true;
 	}
 
-	Type* base_type = gTypes.find(base_val.tag);
-	methodmap_t* map = base_type->asMethodmap();
-	if(!map) {
+	Type *pBaseType = gTypes.find(base_val.tag);
+
+	methodmap_t* map = pBaseType->asMethodmap();
+
+	if(!map)
+	{
+		// printf("pBaseType->name() = %s, type_to_name(base_val.tag) = \"%s\"; base_val.ident = %i\n", pBaseType->name(), type_to_name(base_val.tag), base_val.ident);
+
 		error(pos_, 104, type_to_name(base_val.tag));
+	
 		return false;
 	}
 
 	method_ = methodmap_find_method(map, name_->chars());
-	if(!method_) {
+
+	if(!method_)
+	{
 		error(pos_, 105, map->name, name_->chars());
+
 		return false;
 	}
 
-	if(method_->getter || method_->setter) {
+	if(method_->GetGetterFromParents() || method_->GetSetterFromParents())
+	{
 		// This is the only scenario in which we need to compute a load of the
 		// base address. Otherwise, we're only accessing the type.
 		if(base_->lvalue())
+		{
 			base_ = new RvalueExpr(base_);
+		}
+
 		val_.ident = iACCESSOR;
 		val_.tag = method_->property_tag();
 		val_.accessor = method_;
 		lvalue_ = true;
+
 		return true;
 	}
 
-	if(method_->is_static) {
+	if(method_->is_static)
+	{
 		error(pos_, 177, method_->name, map->name, method_->name);
+
 		return false;
 	}
 
 	val_.ident = iFUNCTN;
 	val_.sym = method_->target;
+
 	markusage(method_->target, uREAD);
+
 	return true;
 }
 
@@ -1280,48 +1607,81 @@ FieldAccessExpr::ProcessUses()
 symbol*
 FieldAccessExpr::BindCallTarget(int token, Expr** implicit_this)
 {
-	if(!AnalyzeWithOptions(true))
-		return nullptr;
-	if(val_.ident != iFUNCTN)
-		return nullptr;
+	if(AnalyzeWithOptions(true) && val_.ident == iFUNCTN)
+	{
+		// The static accessor (::) is offsetof(), so it can't return functions.
+		assert(token_ == '.');
 
-	// The static accessor (::) is offsetof(), so it can't return functions.
-	assert(token_ == '.');
+		if(method_ && method_->parent->ctor == method_)
+		{
+			error(pos_, 84, method_->parent->name);
 
-	if(method_ && method_->parent->ctor == method_) {
-		error(pos_, 84, method_->parent->name);
-		return nullptr;
+			return nullptr;
+		}
+
+		if(base_->lvalue())
+		{
+			base_ = new RvalueExpr(base_);
+		}
+
+		if(field_ || !method_->is_static)
+		{
+			*implicit_this = base_;
+		}
+
+		return val_.sym;
 	}
 
-	if(base_->lvalue())
-		base_ = new RvalueExpr(base_);
-	if(field_ || !method_->is_static)
-		*implicit_this = base_;
-	return val_.sym;
+	return nullptr;
 }
 
 symbol*
-SymbolExpr::BindCallTarget(int token, Expr** implicit_this)
+SymbolExpr::BindCallTarget(int token, Expr **pImplicitThis)
 {
 	AutoErrorPos aep(pos_);
 
-	*implicit_this = nullptr;
+	methodmap_t *pMethodmap = sym_->methodmap;
 
-	if(token != tNEW && sym_->ident == iMETHODMAP && sym_->methodmap) {
-		if(!sym_->methodmap->ctor) {
-			// Immediately fatal - no function to call.
-			error(pos_, 172, sym_->name());
-			return nullptr;
+	*pImplicitThis = nullptr;
+
+	if(token != tNEW && sym_->ident == iMETHODMAP && pMethodmap)
+	{
+		if(!pMethodmap->ctor)
+		{
+			methodmap_t *pParent = pMethodmap->parent;
+
+			if(!pParent)
+			{
+				// Immediately fatal - no function to call.
+				error(pos_, 172, sym_->name());
+
+				return nullptr;
+			}
+
+			pMethodmap = pParent;
+
+			// // Immediately fatal - no function to call.
+			// error(pos_, 172, sym_->name());
+
+			// return nullptr;
 		}
-		if(sym_->methodmap->must_construct_with_new()) {
+
+		if(pMethodmap->must_construct_with_new())
+		{
 			// Keep going, this is basically a style thing.
-			error(pos_, 170, sym_->methodmap->name);
+			error(pos_, 170, pMethodmap->name);
+
 			return nullptr;
 		}
-		return sym_->methodmap->ctor->target;
+
+		return pMethodmap->ctor->target;
 	}
+
 	if(sym_->ident != iFUNCTN)
+	{
 		return nullptr;
+	}
+
 	return sym_;
 }
 
@@ -1330,20 +1690,29 @@ SymbolExpr::BindNewTarget()
 {
 	AutoErrorPos aep(pos_);
 
-	if(sym_->ident != iMETHODMAP) {
+	if(sym_->ident != iMETHODMAP)
+	{
 		error(pos_, 116, sym_->name());
+
 		return nullptr;
 	}
 
 	methodmap_t* methodmap = sym_->methodmap;
-	if(!methodmap->must_construct_with_new()) {
+
+	if(!methodmap->must_construct_with_new())
+	{
 		error(pos_, 171, methodmap->name);
+
 		return nullptr;
 	}
-	if(!methodmap->ctor) {
+
+	if(!methodmap->ctor)
+	{
 		error(pos_, 172, methodmap->name);
+
 		return nullptr;
 	}
+
 	return methodmap->ctor->target;
 }
 
@@ -1351,62 +1720,86 @@ bool
 FieldAccessExpr::AnalyzeEnumStructAccess(Type* type, symbol* root, bool from_call)
 {
 	// Enum structs are always arrays, so they're never l-values.
-	assert(!base_->lvalue());
+	// assert(!base_->lvalue());
 
 	field_ = find_enumstruct_field(type, name_->chars());
-	if(!field_) {
+
+	if(!field_)
+	{
 		error(pos_, 105, type->name(), name_->chars());
+
 		return false;
 	}
-	if(field_->ident == iFUNCTN) {
-		if(!from_call) {
+
+	if(field_->ident == iFUNCTN)
+	{
+		if(!from_call)
+		{
 			error(pos_, 76);
+
 			return false;
 		}
 
 		val_.ident = iFUNCTN;
 		val_.sym = field_;
+
 		markusage(val_.sym, uREAD);
+
 		return true;
 	}
+
 	assert(field_->parent() == root);
 
 	int tag = field_->x.tags.index;
 
 	symbol* var = base_->val().sym;
+
 	if(!var->data())
+	{
 		var->set_data(std::make_unique<EnumStructVarData>());
+	}
 
 	EnumStructVarData* es_var = var->data()->asEnumStructVar();
+
 	es_var->children.push_back(std::make_unique<symbol>(*field_));
 
 	symbol* child = es_var->children.back().get();
+
 	child->setName(name_);
 	child->vclass = var->vclass;
 
-	if(gTypes.find(tag)->isEnumStruct()) {
+	if(gTypes.find(tag)->isEnumStruct())
+	{
 		val_.tag = 0;
 		child->tag = 0;
 		child->x.tags.index = tag;
-	} else {
+	}
+	else
+	{
 		val_.tag = tag;
 		child->tag = tag;
 		child->x.tags.index = 0;
 	}
 
-	if(field_->dim.array.length > 0) {
+	if(field_->dim.array.length > 0)
+	{
 		child->dim.array.length = field_->dim.array.length;
 		child->dim.array.slength = field_->dim.array.slength;
 		child->dim.array.level = 0;
 		child->ident = iREFARRAY;
+
 		val_.constval = field_->dim.array.length;
-	} else {
+	}
+	else
+	{
 		child->ident = (tag == pc_tag_string) ? iARRAYCHAR : iARRAYCELL;
 		val_.constval = 0;
 		lvalue_ = true;
 	}
+
 	val_.ident = child->ident;
 	val_.sym = child;
+
 	return true;
 }
 
@@ -1416,23 +1809,32 @@ FieldAccessExpr::AnalyzeStaticAccess()
 	AutoErrorPos aep(pos_);
 
 	const auto& base_val = base_->val();
-	if(base_val.ident != iENUMSTRUCT) {
+
+	if(base_val.ident != iENUMSTRUCT)
+	{
 		error(pos_, 108);
+
 		return false;
 	}
 
-	Type* type = gTypes.find(base_val.tag);
-	symbol* field = find_enumstruct_field(type, name_->chars());
-	if(!field) {
+	Type *type = gTypes.find(base_val.tag);
+
+	symbol *field = find_enumstruct_field(type, name_->chars());
+
+	if(!field)
+	{
 		error(pos_, 105, type->name(), field_->name());
-		return FALSE;
+
+		return false;
 	}
+
 	assert(field->parent() == type->asEnumStruct());
 
 	val_.ident = iCONSTEXPR;
 	val_.sym = nullptr;
 	val_.constval = field->addr();
 	val_.tag = 0;
+
 	return true;
 }
 
@@ -1451,83 +1853,130 @@ SizeofExpr::Analyze()
 
 	markusage(sym, uREAD);
 
-	if(sym->ident == iCONSTEXPR) {
+	if(sym->ident == iCONSTEXPR)
+	{
 		error(pos_, 39); // constant symbol has no size
+
 		return false;
-	} else if(sym->ident == iFUNCTN) {
+	}
+	else if(sym->ident == iFUNCTN)
+	{
 		error(pos_, 72); // "function" symbol has no size
+
 		return false;
-	} else if(!sym->defined) {
+	}
+	else if(!sym->defined)
+	{
 		error(pos_, 17, ident_->chars());
+
 		return false;
 	}
 
 	val_.ident = iCONSTEXPR;
 	val_.constval = 1;
 
-	if(sym->ident == iARRAY || sym->ident == iREFARRAY || sym->ident == iENUMSTRUCT) {
+	if(sym->ident == iARRAY || sym->ident == iREFARRAY || sym->ident == iENUMSTRUCT)
+	{
 		symbol* subsym = sym;
-		for(int level = 0; level < array_levels_; level++) {
+
+		for(int level = 0; level < array_levels_; level++)
+		{
 			// Forbid index operations on enum structs.
-			if(sym->ident == iENUMSTRUCT || gTypes.find(sym->x.tags.index)->isEnumStruct()) {
+			if(sym->ident == iENUMSTRUCT || gTypes.find(sym->x.tags.index)->isEnumStruct())
+			{
 				error(pos_, 111, sym->name());
+
 				return false;
 			}
+
 			if(subsym)
+			{
 				subsym = subsym->array_child();
+			}
 		}
 
 		Type* enum_type = nullptr;
-		if(suffix_token_ == tDBLCOLON) {
-			if(subsym->ident != iENUMSTRUCT) {
+
+		if(suffix_token_ == tDBLCOLON)
+		{
+			if(subsym->ident != iENUMSTRUCT)
+			{
 				error(pos_, 112, subsym->name());
+
 				return false;
 			}
+
 			enum_type = gTypes.find(subsym->tag);
-		} else if(suffix_token_ == '.') {
+		}
+		else if(suffix_token_ == '.')
+		{
 			enum_type = gTypes.find(subsym->x.tags.index);
-			if(!enum_type->asEnumStruct()) {
+
+			if(!enum_type->asEnumStruct())
+			{
 				error(pos_, 116, sym->name());
+
 				return false;
 			}
 		}
 
-		if(enum_type) {
+		if(enum_type)
+		{
 			assert(enum_type->asEnumStruct());
 
 			symbol* field = find_enumstruct_field(enum_type, field_->chars());
-			if(!field) {
+
+			if(!field)
+			{
 				error(pos_, 105, enum_type->name(), field_->chars());
+
 				return false;
 			}
-			if(int string_size = field->dim.array.slength) {
+
+			if(int string_size = field->dim.array.slength)
+			{
 				val_.constval = string_size;
+
 				return true;
 			}
-			if(int array_size = field->dim.array.length) {
+
+			if(int array_size = field->dim.array.length)
+			{
 				val_.constval = array_size;
+
 				return true;
 			}
+
 			return true;
 		}
 
-		if(sym->ident == iENUMSTRUCT) {
+		if(sym->ident == iENUMSTRUCT)
+		{
 			val_.constval = sym->addr();
+
 			return true;
 		}
 
-		if(array_levels_ > sym->dim.array.level + 1) {
+		if(array_levels_ > sym->dim.array.level + 1)
+		{
 			error(pos_, 28, sym->name()); // invalid subscript
+
 			return false;
 		}
-		if(array_levels_ != sym->dim.array.level + 1) {
+
+		if(array_levels_ != sym->dim.array.level + 1)
+		{
 			val_.constval = array_levelsize(sym, array_levels_);
-			if(val_.constval == 0) {
+
+			if(!val_.constval)
+			{
 				error(pos_, 163, sym->name()); // indeterminate array size in "sizeof"
+
 				return false;
 			}
 		}
 	}
+
 	return true;
 }
 
@@ -1546,9 +1995,9 @@ CallUserOpExpr::ProcessUses()
 	expr_->MarkAndProcessUses();
 }
 
-DefaultArgExpr::DefaultArgExpr(const token_pos_t& pos, arginfo* arg)
-  : EmitOnlyExpr(pos),
-	arg_(arg)
+DefaultArgExpr::DefaultArgExpr(const token_pos_t& iPosition, arginfo* pArg)
+  : EmitOnlyExpr(iPosition),
+	arg_(pArg)
 {
 	// Leave val bogus, it doesn't participate in anything, and we can't
 	// accurately construct it.
@@ -1561,12 +2010,13 @@ CallExpr::Analyze()
 
 	// Note: we do not Analyze the call target. We leave this to the
 	// implementation of BindCallTarget.
-	if(token_ == tNEW)
-		sym_ = target_->BindNewTarget();
-	else
-		sym_ = target_->BindCallTarget(token_, &implicit_this_);
-	if(!sym_) {
+
+	sym_ = token_ == tNEW ? target_->BindNewTarget() : target_->BindCallTarget(token_, &implicit_this_);
+
+	if(!sym_)
+	{
 		error(pos_, 12);
+
 		return false;
 	}
 
@@ -1576,104 +2026,155 @@ CallExpr::Analyze()
 	// read, then we're encountering some kind of compiler bug. If we're not
 	// supposed to emit this code than the status should be statSKIP - so
 	// we're generating code that will jump to the wrong address.
-	if(sym_->stock && !(sym_->usage & uREAD) && sc_status == statWRITE) {
+	if(sym_->stock && !(sym_->usage & uREAD) && sc_status == statWRITE)
+	{
 		error(pos_, 195, sym_->name());
+
 		return false;
 	}
 
 	val_.ident = iEXPRESSION;
 	val_.tag = sym_->tag;
-	if(sym_->array_return()) {
+
+	if(sym_->array_return())
+	{
 		val_.ident = iREFARRAY;
 		val_.sym = sym_->array_return();
 	}
 
-	if(sym_->deprecated) {
-		const char* ptr = sym_->documentation.c_str();
-		error(pos_, 234, sym_->name(), ptr); /* deprecated (probably a native function) */
+	if(sym_->deprecated)
+	{
+		error(pos_, 234, sym_->name(), sym_->documentation.c_str()); /* deprecated (probably a native function) */
 	}
 
-	unsigned int nargs = 0;
-	unsigned int argidx = 0;
+	unsigned int nargs = 0, 
+	             argidx = 0;
+
 	arginfo* arglist = &sym_->function()->args[0];
-	if(implicit_this_) {
+
+	if(implicit_this_)
+	{
 		if(!ProcessArg(&arglist[0], implicit_this_, 0))
+		{
 			return false;
+		}
+
 		nargs++;
 		argidx++;
 	}
 
 	bool namedparams = false;
-	for(const auto& param : args_) {
+
+	for(const auto& pParam : args_)
+	{
 		unsigned int argpos;
-		if(param.name) {
-			int pos = findnamedarg(arglist, param.name->chars());
-			if(pos < 0) {
-				error(pos_, 17, param.name->chars());
+
+		if(pParam.name)
+		{
+			int iPosition = findnamedarg(arglist, pParam.name->chars());
+
+			if(iPosition < 0)
+			{
+				error(pos_, 17, pParam.name->chars());
+
 				break;
 			}
-			argpos = pos;
-			argidx = pos;
-		} else {
-			if(namedparams) {
+
+			argpos = iPosition;
+			argidx = iPosition;
+		}
+		else
+		{
+			if(namedparams)
+			{
 				error(pos_, 44); // positional parameters must precede named parameters
+
 				return false;
 			}
+
 			argpos = nargs;
 		}
 
-		if(argpos >= SP_MAX_CALL_ARGUMENTS) {
+		if(argpos >= SP_MAX_CALL_ARGUMENTS)
+		{
 			error(pos_, 45); // too many function arguments
+
 			return false;
 		}
-		if(argpos < argv_.size() && argv_[argpos].expr) {
+
+		if(argpos < argv_.size() && argv_[argpos].expr)
+		{
 			error(pos_, 58); // argument already set
+
 			return false;
 		}
 		// Note: we don't do this in ProcessArg, since we don't want to double-call
 		// analyze on implicit_this (Analyze is not idempotent).
-		if(param.expr && !param.expr->Analyze())
+		if(pParam.expr && !pParam.expr->Analyze())
+		{
 			return false;
+		}
 
 		// Add the argument to |argv_| and perform type checks.
-		if(!ProcessArg(&arglist[argidx], param.expr, argpos))
+		if(!ProcessArg(&arglist[argidx], pParam.expr, argpos))
+		{
 			return false;
+		}
 
 		assert(argv_[argpos].expr != nullptr);
 		nargs++;
 
 		// Don't iterate past terminators (0 or varargs).
-		switch(arglist[argidx].ident) {
+		switch(arglist[argidx].ident)
+		{
 			case 0:
 			case iVARARGS:
+			{
 				break;
+			}
+
 			default:
+			{
 				argidx++;
+
 				break;
+			}
 		}
 	}
 
-	if(!curfunc) {
+	if(!curfunc)
+	{
 		error(pos_, 10);
+
 		return false;
 	}
 
 	// Check for missing or invalid extra arguments, and fill in default
 	// arguments.
-	for(unsigned int argidx = 0; ; argidx++) {
-		auto& arg = arglist[argidx];
-		if(arg.ident == 0 || arg.ident == iVARARGS)
+	for(unsigned int argidx = 0; ; argidx++)
+	{
+		auto& pArg = arglist[argidx];
+
+		if(!pArg.ident || pArg.ident == iVARARGS)
+		{
 			break;
-		if(argidx >= argv_.size() || !argv_[argidx].expr) {
-			if(!ProcessArg(&arg, nullptr, argidx))
-				return false;
 		}
 
-		Expr* expr = argv_[argidx].expr;
-		if(expr->AsDefaultArgExpr() && arg.ident == iVARIABLE) {
+		if((argidx >= argv_.size() || !argv_[argidx].expr) && !ProcessArg(&pArg, nullptr, argidx))
+		{
+			return false;
+		}
+
+		Expr* pExpr = argv_[argidx].expr;
+
+		if(pExpr->AsDefaultArgExpr() && pArg.ident == iVARIABLE)
+		{
 			UserOperation userop;
-			if(find_userop(nullptr, arg.defvalue_tag, arg.tag, 2, nullptr, &userop))
-				argv_[argidx].expr = new CallUserOpExpr(userop, expr);
+
+			if(find_userop(nullptr, pArg.defvalue_tag, pArg.tag, 2, nullptr, &userop))
+			{
+				argv_[argidx].expr = new CallUserOpExpr(userop, pExpr);
+			}
 		}
 	}
 
@@ -1681,208 +2182,323 @@ CallExpr::Analyze()
 }
 
 bool
-CallExpr::ProcessArg(arginfo* arg, Expr* param, unsigned int pos)
+CallExpr::ProcessArg(arginfo *pArg, Expr *pParam, unsigned int iPosition)
 {
-	while(pos >= argv_.size())
+	while(iPosition >= argv_.size())
+	{
 		argv_.push_back(ComputedArg{});
+	}
 
-	unsigned int visual_pos = implicit_this_ ? pos : pos + 1;
+	unsigned int visual_pos = implicit_this_ ? iPosition : iPosition + 1;
 
-	if(!param) {
-		if(arg->ident == 0 || arg->ident == iVARARGS) {
+	if(!pParam)
+	{
+		if(pArg->ident == 0 || pArg->ident == iVARARGS)
+		{
 			error(pos_, 92); // argument count mismatch
+
 			return false;
 		}
-		if(!arg->hasdefault) {
+		if(!pArg->hasdefault)
+		{
 			error(pos_, 34, visual_pos); // argument has no default value
+
 			return false;
 		}
 
 		// The rest of the code to handle default values is in DoEmit.
-		argv_[pos].expr = new DefaultArgExpr(pos_, arg);
-		argv_[pos].arg = arg;
+		argv_[iPosition].expr = new DefaultArgExpr(pos_, pArg);
+		argv_[iPosition].arg = pArg;
+
 		return true;
 	}
 
-	bool handling_this = implicit_this_ && (pos == 0);
+	bool handling_this = implicit_this_ && (iPosition == 0);
 
-	if(param->val().ident == iACCESSOR) {
+	if(pParam->val().ident == iACCESSOR)
+	{
 		// We must always compute r-values for accessors.
-		if(!param->val().accessor->getter) {
-			error(param->pos(), 149, param->val().accessor->name);
+		if(!pParam->val().accessor->GetGetterFromParents())
+		{
+			error(pParam->pos(), 149, pParam->val().accessor->name);
+
 			return false;
 		}
-		param = new RvalueExpr(param);
+
+		pParam = new RvalueExpr(pParam);
 	}
 
-	const auto* val = &param->val();
-	bool lvalue = param->lvalue();
-	switch(arg->ident) {
+	const auto* val = &pParam->val();
+
+	bool lvalue = pParam->lvalue();
+
+	char sArgTypeName[sNAMEMAX + 1],
+	     sValueTypeName[sNAMEMAX + 1];
+
+	switch(pArg->ident)
+	{
 		case 0:
+		{
 			// On the first pass, we don't have all of the parameter info.
 			// However, use information must be marked anyway, otherwise
 			// vars declared previously will be omitted in the second pass.
 			// See SourceMod bug 4643.
 			error(pos_, 92); // argument count mismatch
+
 			break;
+		}
+
 		case iVARARGS:
+		{
 			assert(!handling_this);
 
 			// Always pass by reference.
-			if(val->ident == iVARIABLE || val->ident == iREFERENCE) {
-				if(val->sym->is_const && !arg->is_const) {
+			if(val->ident == iVARIABLE || val->ident == iREFERENCE)
+			{
+				if(val->sym->is_const && !pArg->is_const)
+				{
 					// Treat a "const" variable passed to a function with a
 					// non-const "variable argument list" as a constant here.
-					if(!lvalue) {
+					if(!lvalue)
+					{
 						error(pos_, 22); // need lvalue
+
 						return false;
 					}
 				}
 			}
-			if(!checktag_string(arg->tag, val) && !checktag(arg->tag, val->tag))
-				error(pos_, 213, type_to_name(arg->tag), type_to_name(val->tag));
+
+			if(!checktag_string(pArg->tag, val) && !checktag(pArg->tag, val->tag))
+			{
+				error(pos_, 213, type_to_name(pArg->tag), type_to_name(val->tag));
+			}
+
 			break;
+		}
+
 		case iVARIABLE:
 		{
-			if(val->ident == iFUNCTN || val->ident == iARRAY || val->ident == iREFARRAY) {
-				error(pos_, 35, visual_pos); // argument type mismatch
+			if(val->ident == iFUNCTN || val->ident == iARRAY || val->ident == iREFARRAY)
+			{
+				arginfo_to_type_name(pArg, sArgTypeName);
+				value_to_type_name(val, sValueTypeName);
+
+				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
+	
 				return false;
 			}
 
-			if(lvalue) {
-				param = new RvalueExpr(param);
-				val = &param->val();
+			if(lvalue)
+			{
+				pParam = new RvalueExpr(pParam);
+				val = &pParam->val();
 			}
 
 			// Do not allow user operators to transform |this|.
 			UserOperation userop;
-			if(!handling_this && find_userop(nullptr, val->tag, arg->tag, 2, nullptr, &userop)) {
-				param = new CallUserOpExpr(userop, param);
-				val = &param->val();
+
+			if(!handling_this && find_userop(nullptr, val->tag, pArg->tag, 2, nullptr, &userop))
+			{
+				pParam = new CallUserOpExpr(userop, pParam);
+				val = &pParam->val();
 			}
-			if(!checktag_string(arg->tag, val))
-				checktag(arg->tag, val->tag);
+
+			if(!checktag_string(pArg->tag, val))
+			{
+				checktag(pArg->tag, val->tag);
+			}
+
 			break;
 		}
+
 		case iREFERENCE:
+		{
 			assert(!handling_this);
 
-			if(!lvalue || val->ident == iARRAYCHAR) {
-				error(pos_, 35, visual_pos); // argument type mismatch
-				return false;
-			}
-			if(val->sym && val->sym->is_const && !arg->is_const) {
-				error(pos_, 35, visual_pos); // argument type mismatch
-				return false;
-			}
-			checktag(arg->tag, val->tag);
-			break;
-		case iREFARRAY:
-			if(val->ident != iARRAY && val->ident != iREFARRAY && val->ident != iARRAYCELL &&
-				val->ident != iARRAYCHAR)
+			if((!lvalue || val->ident == iARRAYCHAR) || (val->sym && val->sym->is_const && !pArg->is_const))
 			{
-				error(pos_, 35, visual_pos); // argument type mismatch
+				arginfo_to_type_name(pArg, sArgTypeName);
+				value_to_type_name(val, sValueTypeName);
+
+				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
+
 				return false;
 			}
-			if(val->sym && val->sym->is_const && !arg->is_const) {
-				error(pos_, 35, visual_pos); // argument type mismatch
+
+			checktag(pArg->tag, val->tag);
+
+			break;
+		}
+
+		case iREFARRAY:
+		{
+			if((val->ident != iARRAY && val->ident != iREFARRAY && val->ident != iARRAYCELL && val->ident != iARRAYCHAR) || (val->sym && val->sym->is_const && !pArg->is_const))
+			{
+				arginfo_to_type_name(pArg, sArgTypeName);
+				value_to_type_name(val, sValueTypeName);
+
+				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
+
 				return false;
 			}
-			// Verify that the dimensions match those in |arg|. A literal array
+
+			// Verify that the dimensions match those in |pArg|. A literal array
 			// always has a single dimension. An iARRAYCELL parameter is also
 			// assumed to have a single dimension.
-			if(!val->sym || val->ident == iARRAYCELL || val->ident == iARRAYCHAR) {
-				if(arg->numdim != 1) {
-					error(pos_, 48); // array dimensions must match
+			if(!val->sym || val->ident == iARRAYCELL || val->ident == iARRAYCHAR)
+			{
+				if(pArg->numdim != 1)
+				{
+					arginfo_to_type_name(pArg, sArgTypeName);
+					value_to_type_name(val, sValueTypeName);
+
+					error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
+
+					// error(pos_, 48); // array dimensions must match
+
 					return false;
 				}
-				if(arg->dim[0] != 0) {
-					assert(arg->dim[0] > 0);
-					if(val->ident == iARRAYCELL) {
-						if(val->constval == 0 || arg->dim[0] != val->constval) {
-							error(pos_, 47); // array sizes must match
-							return false;
-						}
-					} else {
-						assert(val->constval != 0); // literal array must have a size
-						if((val->constval > 0 && arg->dim[0] != val->constval) ||
-							(val->constval < 0 && arg->dim[0] < -val->constval))
+
+				if(pArg->dim[0] != 0)
+				{
+					assert(pArg->dim[0] > 0);
+
+					if(val->ident == iARRAYCELL)
+					{
+						if(val->constval == 0 || pArg->dim[0] != val->constval)
 						{
 							error(pos_, 47); // array sizes must match
+
+							return false;
+						}
+					}
+					else
+					{
+						assert(val->constval != 0); // literal array must have a size
+
+						if((val->constval > 0 && pArg->dim[0] != val->constval) || (val->constval < 0 && pArg->dim[0] < -val->constval))
+						{
+							error(pos_, 47); // array sizes must match
+
 							return false;
 						}
 					}
 				}
-			} else {
+			}
+			else
+			{
 				symbol* sym = val->sym;
-				if(sym->dim.array.level + 1 != arg->numdim) {
-					error(pos_, 48); // array dimensions must match
+
+				if(sym->dim.array.level + 1 != pArg->numdim)
+				{
+					arginfo_to_type_name(pArg, sArgTypeName);
+					value_to_type_name(val, sValueTypeName);
+
+					error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
+
+					// error(pos_, 48); // array dimensions must match
 					return false;
 				}
+
 				// The lengths for all dimensions must match, unless the dimension
 				// length was defined at zero (which means "undefined").
 				short level = 0;
-				while(sym->dim.array.level > 0) {
+
+				while(sym->dim.array.level > 0)
+				{
 					assert(level < sDIMEN_MAX);
-					if(arg->dim[level] != 0 && sym->dim.array.length != arg->dim[level]) {
+
+					if(pArg->dim[level] != 0 && sym->dim.array.length != pArg->dim[level])
+					{
 						error(pos_, 47); // array sizes must match
+
 						return false;
 					}
-					if(!matchtag(arg->idxtag[level], sym->x.tags.index, MATCHTAG_SILENT))
+
+					if(!matchtag(pArg->idxtag[level], sym->x.tags.index, MATCHTAG_SILENT))
+					{
 						error(pos_, 229, sym->name()); // index tag mismatch
+					}
+
 					sym = sym->array_child();
 					level++;
 				}
+
 				// The last dimension is checked too, again, unless it is zero.
 				assert(level < sDIMEN_MAX);
-				if(arg->dim[level] != 0 && sym->dim.array.length != arg->dim[level]) {
+
+				if(pArg->dim[level] != 0 && sym->dim.array.length != pArg->dim[level])
+				{
 					error(pos_, 47); // array sizes must match
+
 					return false;
 				}
-				if(!matchtag(arg->idxtag[level], sym->x.tags.index, MATCHTAG_SILENT)) {
+
+				if(!matchtag(pArg->idxtag[level], sym->x.tags.index, MATCHTAG_SILENT))
+				{
 					// We allow enumstruct -> any[].
-					if(arg->tag != pc_anytag || !gTypes.find(sym->x.tags.index)->asEnumStruct())
+					if(pArg->tag != pc_anytag || !gTypes.find(sym->x.tags.index)->asEnumStruct())
+					{
 						error(pos_, 229, sym->name());
+					}
 				}
 			}
 
-			checktag(arg->tag, val->tag);
-			if((arg->tag != pc_tag_string && val->tag == pc_tag_string) ||
-				(arg->tag == pc_tag_string && val->tag != pc_tag_string))
+			checktag(pArg->tag, val->tag);
+
+			if((pArg->tag != pc_tag_string && val->tag == pc_tag_string) || (pArg->tag == pc_tag_string && val->tag != pc_tag_string))
 			{
-				error(pos_, 178, type_to_name(val->tag), type_to_name(arg->tag));
+				arginfo_to_type_name(pArg, sArgTypeName);
+				value_to_type_name(val, sValueTypeName);
+
+				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
+
+				// error(pos_, 178, type_to_name(val->tag), type_to_name(pArg->tag));
+
 				return false;
 			}
+
 			break;
+		}
+
 		default:
+		{
 			assert(false);
+
 			break;
+		}
 	}
 
-	argv_[pos].expr = param;
-	argv_[pos].arg = arg;
+	argv_[iPosition].expr = pParam;
+	argv_[iPosition].arg = pArg;
+
 	return true;
 }
 
 void
 CallExpr::ProcessUses()
 {
-	for(const auto& arg : argv_) {
-		if(!arg.expr)
-			continue;
-		arg.expr->MarkAndProcessUses();
+	for(const auto& pArg : argv_)
+	{
+		if(pArg.expr)
+		{
+			pArg.expr->MarkAndProcessUses();
+		}
 	}
 }
 
 void
 CallExpr::MarkUsed()
 {
-	if(sym_->defined) {
+	if(sym_->defined)
+	{
 		/* function is defined, can now check the return value (but make an
 		 * exception for directly recursive functions)
 		 */
-		if(sym_ != curfunc && !sym_->retvalue) {
+		if(sym_ != curfunc && !sym_->retvalue)
+		{
 			char symname[2 * sNAMEMAX + 16]; /* allow space for user defined operators */
+
 			funcdisplayname(symname, sym_->name());
 			error(pos_, 209, symname); /* function should return a value */
 		}

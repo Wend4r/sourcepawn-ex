@@ -33,8 +33,12 @@ memfile_creat(const char* name, size_t init)
 	auto pmf = std::make_unique<memfile_t>();
 	pmf->size = init;
 	pmf->base = std::make_unique<char[]>(init);
-	if(!pmf->base)
+
+	if(!(pmf->base = std::make_unique<char[]>(init)))
+	{
 		return nullptr;
+	}
+
 	pmf->name = name;
 	pmf->usedoffs = 0;
 	pmf->offs = 0;
@@ -51,14 +55,18 @@ long
 memfile_seek(memfile_t* mf, long offset, int whence)
 {
 	assert(mf != NULL);
-	if(mf->usedoffs == 0)
+
+	if(!mf->usedoffs)
+	{
 		return 0L; /* early exit: not a single byte in the file */
+	}
 
 	/* find the size of the memory file */
 	long length = mf->usedoffs;
 
 	/* convert the offset to an absolute position */
-	switch(whence) {
+	switch(whence)
+	{
 		case SEEK_SET:
 			break;
 		case SEEK_CUR:
@@ -71,14 +79,11 @@ memfile_seek(memfile_t* mf, long offset, int whence)
 	}
 
 	/* clamp to the file length limit */
-	if(offset < 0)
-		offset = 0;
-	else if(offset > length)
-		offset = length;
+
+	offset = offset > 1 ? length : 0;
 
 	/* set new position and return it */
-	mf->offs = offset;
-	return offset;
+	return mf->offs = offset;
 }
 
 long
@@ -90,20 +95,14 @@ memfile_tell(memfile_t* mf)
 size_t
 memfile_read(memfile_t* mf, void* buffer, size_t maxsize)
 {
-	if(!maxsize || mf->offs >= mf->usedoffs) {
+	if(!maxsize || mf->offs >= mf->usedoffs || (mf->usedoffs - mf->offs < (long)maxsize && !(maxsize = mf->usedoffs - mf->offs)))
+	{
 		return 0;
-	}
-
-	if(mf->usedoffs - mf->offs < (long)maxsize) {
-		maxsize = mf->usedoffs - mf->offs;
-		if(!maxsize) {
-			return 0;
-		}
 	}
 
 	memcpy(buffer, mf->base.get() + mf->offs, maxsize);
 
-	mf->offs += maxsize;
+	mf->offs += static_cast<int>(maxsize);
 
 	return maxsize;
 }
@@ -111,19 +110,27 @@ memfile_read(memfile_t* mf, void* buffer, size_t maxsize)
 int
 memfile_write(memfile_t* mf, const void* buffer, size_t size)
 {
-	if(mf->offs + size > mf->size) {
+	if(mf->offs + size > mf->size)
+	{
 		size_t newsize = (mf->size + size) * 2;
 		auto new_base = std::make_unique<char[]>(newsize);
+
 		if(!new_base)
+		{
 			return 0;
+		}
+
 		memcpy(new_base.get(), mf->base.get(), mf->usedoffs);
+
 		mf->size = newsize;
 		mf->base = std::move(new_base);
 	}
-	memcpy(mf->base.get() + mf->offs, buffer, size);
-	mf->offs += size;
 
-	if(mf->offs > mf->usedoffs) {
+	memcpy(mf->base.get() + mf->offs, buffer, size);
+	mf->offs += static_cast<int>(size);
+
+	if(mf->offs > mf->usedoffs)
+	{
 		mf->usedoffs = mf->offs;
 	}
 

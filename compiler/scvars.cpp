@@ -38,7 +38,8 @@ symbol loctab;                             /* local symbol table */
 symbol glbtab;                             /* global symbol table */
 cell* litq;                                /* the literal queue */
 unsigned char pline[sLINEMAX + 1];         /* the line read from the input file */
-const unsigned char* lptr;                 /* points to the current position in "pline" */
+const unsigned char *g_sLinePtr;           /* points to the current position in "pline" */
+// const unsigned char* g_sLinePtr;        /* points to the current position in "pline" */
 constvalue tagname_tab = {NULL, "", 0, 0}; /* tagname table */
 constvalue libname_tab = {NULL, "", 0, 0}; /* library table (#pragma library "..." syntax) */
 constvalue* curlibrary = NULL;             /* current library */
@@ -58,6 +59,8 @@ int staging = 0;                           /* true if staging output */
 cell declared = 0;                         /* number of local cells declared */
 cell glb_declared = 0;                     /* number of global cells declared */
 cell code_idx = 0;                         /* number of bytes with generated code */
+cell opt_code_count = 0;                     /* number of bytes with optimize code */
+cell opt_data_count = 0;                     /* number of bytes with optimize data */
 int errnum = 0;                            /* number of errors */
 int warnnum = 0;                           /* number of warnings */
 int sc_debug = sCHKBOUNDS;                 /* by default: bounds checking+assertions */
@@ -67,6 +70,7 @@ int sc_needsemicolon = TRUE;               /* semicolon required to terminate ex
 int sc_dataalign = sizeof(cell);           /* data alignment value */
 int curseg = 0;                            /* 1 if currently parsing CODE, 2 if parsing DATA */
 cell pc_stksize = sDEF_AMXSTACK;           /* default stack size */
+cell pc_stksize_counter = 0;               /* Stack size counter */
 int freading = FALSE;                      /* Is there an input file ready for reading? */
 int fline = 0;                             /* the line number in the current file */
 short fnumber = 0;                         /* the file number in the file table (debugging) */
@@ -76,14 +80,19 @@ int indent_nowarn = FALSE;                 /* skip warning "217 loose indentatio
 int sc_tabsize = 8;                        /* number of spaces that a TAB represents */
 int sc_status;                             /* read/write status */
 int sc_err_status;
-int sc_rationaltag = 0;              /* tag for rational numbers */
-int sc_allowproccall = 0;            /* allow/detect tagnames in lex() */
-short sc_is_utf8 = FALSE;            /* is this source file in UTF-8 encoding */
-std::string pc_deprecate;            /* if non-empty, mark next declaration as deprecated */
-int pc_optimize = sOPTIMIZE_NOMACRO; /* (peephole) optimization level */
-int pc_memflags = 0;                 /* special flags for the stack/heap usage */
-int sc_showincludes = 0;             /* show include files */
-int sc_require_newdecls = 0;         /* Require new-style declarations */
+int sc_rationaltag = 0;                    /* tag for rational numbers */
+int sc_allowproccall = 0;                  /* allow/detect tagnames in lex() */
+short sc_is_utf8 = FALSE;                  /* is this source file in UTF-8 encoding */
+std::string pc_deprecate;                  /* if non-empty, mark next declaration as deprecated */
+int pc_debug_level = 0;                    /* Debug level. */
+bool pc_no_optional = false;               /* Is without optional sourcemod functions. */
+int pc_break_level = 0;                    /* Not insert breaks op-code for debugger. */
+bool pc_developer_mode = false;            /* Developer mode. */
+bool pc_auto_dynamic = false;              /* Automatically to allocated the size of stack/heap size. */
+int pc_optimize = sOPTIMIZE_DEFAULT;       /* (peephole) optimization level */
+int pc_memflags = 0;                       /* special flags for the stack/heap usage */
+int sc_showincludes = 0;                   /* show include files */
+int sc_require_newdecls = 0;               /* Require new-style declarations */
 bool sc_warnings_are_errors = false;
 int sc_compression_level = 9;
 bool sc_use_new_parser = false;

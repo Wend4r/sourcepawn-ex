@@ -24,29 +24,29 @@ PRODUCTVERSION SM_VERSION_FILE
 FILEFLAGSMASK  0x0000003FL
 FILEFLAGS      0
 #if defined(WIN32)
-	FILEOS       VOS__WINDOWS32
+  FILEOS       VOS__WINDOWS32
 #else
-	FILEOS       VOS__WINDOWS16
+  FILEOS       VOS__WINDOWS16
 #endif
 FILETYPE       VFT_DLL
 BEGIN
-		BLOCK "StringFileInfo"
-		BEGIN
-				BLOCK "040904E4"
-				BEGIN
-						VALUE "CompanyName",      "(C)1998-2006 ITB CompuPhase, AlliedModders LLC\0"
-						VALUE "FileDescription",  VERSIONDESCRIPTION
-						VALUE "FileVersion",      SM_VERSION_STRING
-						VALUE "InternalName",     VERSIONNAME
-						VALUE "LegalCopyright",   "(C)1998-2006 ITB CompuPhase, AlliedModders LLC\0"
-						VALUE "OriginalFilename", VERSIONNAME
-						VALUE "ProductName",      VERSIONPRODUCTNAME
-						VALUE "ProductVersion",   SM_VERSION_STRING
-				END
-		END
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",      "(C)1998-2006 ITB CompuPhase, AlliedModders LLC\0"
+            VALUE "FileDescription",  VERSIONDESCRIPTION
+            VALUE "FileVersion",      SM_VERSION_STRING
+            VALUE "InternalName",     VERSIONNAME
+            VALUE "LegalCopyright",   "(C)1998-2006 ITB CompuPhase, AlliedModders LLC\0"
+            VALUE "OriginalFilename", VERSIONNAME
+            VALUE "ProductName",      VERSIONPRODUCTNAME
+            VALUE "ProductVersion",   SM_VERSION_STRING
+        END
+    END
 
-		BLOCK "VarFileInfo"
-		BEGIN
-				VALUE "Translation", 0x409, 1252
-		END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
 END

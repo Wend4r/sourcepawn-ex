@@ -30,25 +30,29 @@
 
 class Type;
 
-struct token_pos_t {
+struct token_pos_t
+{
 	int file;
 	int line;
 	int col;
 };
 
 // Helper for token info.
-struct token_t {
+struct token_t
+{
 	int id;
 	cell val;
 	char* str;
 };
 
-struct token_ident_t {
+struct token_ident_t
+{
 	token_t tok;
 	char name[METHOD_NAMEMAX + 1];
 };
 
-struct full_token_t {
+struct full_token_t
+{
 	int id;
 	int value;
 	char str[sLINEMAX + 1];
@@ -59,7 +63,8 @@ struct full_token_t {
 
 #define MAX_TOKEN_DEPTH 4
 
-struct token_buffer_t {
+struct token_buffer_t
+{
 	// Total number of tokens parsed.
 	int num_tokens;
 
@@ -76,7 +81,8 @@ struct token_buffer_t {
 /*  Tokens recognized by lex()
  *  Some of these constants are assigned as well to the variable "lastst" (see SC1.C)
  */
-enum TokenKind {
+enum TokenKind
+{
 	/* value of first multi-character operator */
 	tFIRST = 256,
 	/* multi-character operators */
@@ -195,6 +201,7 @@ enum TokenKind {
 	tpDEFINE,
 	tpELSE,   /* #else */
 	tpELSEIF, /* #elseif */
+	tpEMIT, /* #emit */
 	tpENDIF,
 	tpENDINPUT,
 	tpENDSCRPT,
@@ -228,7 +235,8 @@ enum TokenKind {
 static inline bool
 IsChainedOp(int token)
 {
-	switch(token) {
+	switch(token)
+	{
 		case tlGE:
 		case tlLE:
 		case '>':
@@ -266,13 +274,14 @@ int plungefile(char* name, int try_currentpath,
 			   int try_includepaths); /* search through "include" paths */
 void preprocess(void);
 void lexinit(void);
-int lex(cell* lexvalue, char** lexsym);
+int lex(cell* lexvalue = nullptr, char** lexsym = nullptr);
 int lextok(token_t* tok);
 int lexpeek(int id);
 void lexpush(void);
 void lexclr(int clreol);
 const token_pos_t& current_pos();
 int matchtoken(int token);
+void gototoken(int token);
 int tokeninfo(cell* val, char** str);
 full_token_t* current_token();
 int needtoken(int token);
@@ -299,7 +308,7 @@ symbol* addvariable2(const char* name, cell addr, int ident, int vclass, int tag
 					 int numdim, int idxtag[], int slength);
 symbol* addvariable3(declinfo_t* decl, cell addr, int vclass, int slength);
 void declare_methodmap_symbol(methodmap_t* map, bool can_redef);
-void declare_handle_intrinsics();
+void declare_handle_intrinsics(const char *sUsingName);
 int getlabel(void);
 char* itoh(ucell val);
 std::string get_token_string(int tok_id);
@@ -307,3 +316,9 @@ std::string get_token_string(int tok_id);
 enum class TerminatorPolicy { Newline, NewlineOrSemicolon, Semicolon };
 
 int require_newline(TerminatorPolicy policy);
+
+size_t find_string_address(const char *sString, size_t iLength);
+
+size_t find_string_address_for_replace(const char *sString, size_t iLength);
+
+void add_string_address(const char *sString, size_t iLength, size_t iAddress);

@@ -27,16 +27,16 @@
 struct memfile_t;
 
 typedef struct HashTable HashTable;
-extern struct HashTable* sp_Globals;
+extern struct HashTable *sp_Globals;
 extern symbol loctab;             /* local symbol table */
 extern symbol glbtab;             /* global symbol table */
-extern cell* litq;                /* the literal queue */
+extern cell *litq;                /* the literal queue */
 extern unsigned char pline[];     /* the line read from the input file */
-extern const unsigned char* lptr; /* points to the current position in "pline" */
+extern const unsigned char *g_sLinePtr; /* points to the current position in "pline" */
 extern constvalue libname_tab;    /* library table (#pragma library "..." syntax) */
 extern int pc_addlibtable;        /* is the library table added to the AMX file? */
-extern symbol* curfunc;           /* pointer to current function */
-extern char* inpfname;            /* name of the file currently read from */
+extern symbol *curfunc;           /* pointer to current function */
+extern char *inpfname;            /* name of the file currently read from */
 extern char outfname[];           /* intermediate (assembler) file name */
 extern char binfname[];           /* binary file name */
 extern char errfname[];           /* error file name */
@@ -50,6 +50,8 @@ extern int staging;               /* true if staging output */
 extern cell declared;             /* number of local cells declared */
 extern cell glb_declared;         /* number of global cells declared */
 extern cell code_idx;             /* number of bytes with generated code */
+extern cell opt_code_count;       /* number of bytes with optimize code */
+extern cell opt_data_count;         /* number of bytes with optimize data */
 extern int errnum;                /* number of errors */
 extern int warnnum;               /* number of warnings */
 extern int sc_debug;              /* debug/optimization options (bit field) */
@@ -60,6 +62,7 @@ extern int sc_dataalign;          /* data alignment value */
 extern int sc_showincludes;       /* show include files? */
 extern int curseg;                /* 1 if currently parsing CODE, 2 if parsing DATA */
 extern cell pc_stksize;           /* stack size */
+extern cell pc_stksize_counter;   /* Stack size counter */
 extern int freading;              /* is there an input file ready for reading? */
 extern int fline;                 /* the line number in the current file */
 extern short fnumber;             /* number of files in the input file table */
@@ -70,6 +73,11 @@ extern int sc_tabsize;            /* number of spaces that a TAB represents */
 extern int sc_status;             /* read/write status */
 extern int sc_err_status;         /* TRUE if errors should be generated even if sc_status = SKIP */
 extern int sc_rationaltag;        /* tag for rational numbers */
+extern int pc_debug_level;        /* Debug level. */
+extern bool pc_no_optional;       /* Is without optional sourcemod functions. */
+extern int pc_break_level;        /* Not insert breaks op-code for debugger. */
+extern bool pc_developer_mode;    /* Developer mode. */
+extern bool pc_auto_dynamic;      /* Automatically to allocated the size of Stack/heap size. */
 extern int pc_optimize;           /* (peephole) optimization level */
 extern int pc_memflags;           /* special flags for the stack/heap usage */
 extern int pc_functag;            /* global function tag */
@@ -87,9 +95,9 @@ extern unsigned sc_total_errors;
 extern int pc_code_version; /* override the code version */
 extern int sc_compression_level;
 
-extern void* inpf;      /* file read from (source or include) */
-extern void* inpf_org;  /* main source file */
-extern memfile_t* outf; /* file written to */
+extern void *inpf;      /* file read from (source or include) */
+extern void *inpf_org;  /* main source file */
+extern memfile_t *outf; /* file written to */
 
 extern jmp_buf errbuf; /* target of longjmp() on a fatal error */
 
@@ -109,5 +117,5 @@ extern std::vector<char*> gInputFilenameStack;
 static inline bool
 cc_ok()
 {
-	return sc_status == statWRITE && sc_total_errors == 0;
+    return sc_status == statWRITE && sc_total_errors == 0;
 }

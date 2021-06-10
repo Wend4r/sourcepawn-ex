@@ -5,9 +5,9 @@
 #include "memfile.h"
 #include "osdefs.h"
 #if defined __linux__ || defined DARWIN
-#    include <unistd.h>
+#	include <unistd.h>
 #elif defined WIN32
-#    include <io.h>
+#	include <io.h>
 #endif
 #include "sc.h"
 

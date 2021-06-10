@@ -22,16 +22,16 @@
 #include "sc.h"
 
 struct stringlist {
-	stringlist* next;
-	union {
-		char* line;
-		stringlist* tail;
-	};
+    stringlist* next;
+    union {
+        char* line;
+        stringlist* tail;
+    };
 };
 
 struct macro_t {
-	const char* first;
-	const char* second;
+    const char* first;
+    const char* second;
 };
 
 void insert_alias(const char* name, const char* alias);
@@ -47,7 +47,8 @@ void delete_substtable(void);
 stringlist* insert_sourcefile(char* string);
 char* get_sourcefile(int index);
 void delete_sourcefiletable(void);
-stringlist* insert_inputfile(char* string);
+void restore_for_os_path(char *sFilePath);
+stringlist *insert_inputfile(const char *sFilePath);
 char* get_inputfile(int index);
 void delete_inputfiletable(void);
 stringlist* insert_autolist(const char* string);

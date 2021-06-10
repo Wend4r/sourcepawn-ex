@@ -7,17 +7,21 @@
 
 #include <amtl/am-string.h>
 
-struct memfile_t {
+struct memfile_t
+{
 	std::string name;
 	std::unique_ptr<char[]> base;
 	long offs;
 	long usedoffs;
 	size_t size;
 
-	const char* pos() const {
+	const char* pos() const
+	{
 		return base.get() + offs;
 	}
-	const char* end() const {
+
+	const char* end() const
+	{
 		return base.get() + usedoffs;
 	}
 };

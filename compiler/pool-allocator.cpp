@@ -34,80 +34,80 @@ PoolAllocator::PoolAllocator()
 
 PoolAllocator::~PoolAllocator()
 {
-	unwind(nullptr);
+    unwind(nullptr);
 }
 
 char*
 PoolAllocator::enter()
 {
-	if(pools_.empty())
-		return nullptr;
-	return pools_.back()->ptr;
+    if(pools_.empty())
+        return nullptr;
+    return pools_.back()->ptr;
 }
 
 void
 PoolAllocator::leave(char* pos)
 {
-	unwind(pos);
+    unwind(pos);
 }
 
 void
 PoolAllocator::unwind(char* pos)
 {
-	while(!pools_.empty()) {
-		Pool* last = pools_.back().get();
-		if(pos && pos >= last->base.get() && pos < last->end) {
-			last->ptr = pos;
-			return;
-		}
-		pools_.pop_back();
-	}
+    while(!pools_.empty()) {
+        Pool* last = pools_.back().get();
+        if(pos && pos >= last->base.get() && pos < last->end) {
+            last->ptr = pos;
+            return;
+        }
+        pools_.pop_back();
+    }
 }
 
 PoolAllocator::Pool*
 PoolAllocator::ensurePool(size_t actualBytes)
 {
-	size_t bytesNeeded = actualBytes;
-	if(bytesNeeded < kDefaultPoolSize)
-		bytesNeeded = kDefaultPoolSize;
+    size_t bytesNeeded = actualBytes;
+    if(bytesNeeded < kDefaultPoolSize)
+        bytesNeeded = kDefaultPoolSize;
 
-	auto pool = std::make_unique<Pool>();
-	pool->base = std::make_unique<char[]>(bytesNeeded);
-	pool->ptr = pool->base.get();
-	pool->end = pool->ptr + bytesNeeded;
-	pools_.push_back(std::move(pool));
-	return pools_.back().get();
+    auto pool = std::make_unique<Pool>();
+    pool->base = std::make_unique<char[]>(bytesNeeded);
+    pool->ptr = pool->base.get();
+    pool->end = pool->ptr + bytesNeeded;
+    pools_.push_back(std::move(pool));
+    return pools_.back().get();
 }
 
 void
 PoolAllocationPolicy::reportOutOfMemory()
 {
-	fprintf(stderr, "OUT OF POOL MEMORY\n");
-	abort();
+    fprintf(stderr, "OUT OF POOL MEMORY\n");
+    abort();
 }
 
 void
 PoolAllocationPolicy::reportAllocationOverflow()
 {
-	fprintf(stderr, "OUT OF POOL MEMORY\n");
-	abort();
+    fprintf(stderr, "OUT OF POOL MEMORY\n");
+    abort();
 }
 
 void*
 PoolAllocationPolicy::Malloc(size_t bytes)
 {
-	void* p = gPoolAllocator.rawAllocate(bytes);
-	if(!p) {
-		fprintf(stderr, "OUT OF POOL MEMORY\n");
-		abort();
-	}
-	return p;
+    void* p = gPoolAllocator.rawAllocate(bytes);
+    if(!p) {
+        fprintf(stderr, "OUT OF POOL MEMORY\n");
+        abort();
+    }
+    return p;
 }
 
 void*
 PoolAllocationPolicy::am_malloc(size_t bytes)
 {
-	return PoolAllocationPolicy::Malloc(bytes);
+    return PoolAllocationPolicy::Malloc(bytes);
 }
 
 void

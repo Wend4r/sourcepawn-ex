@@ -54,60 +54,120 @@ Type::resetPtr()
 	// preserved and core types should be too. However user-defined types
 	// that attach extra structural information are cleared, as that
 	// data is not retained into the statWRITE pass.
-	if(intrinsic_)
-		return;
+	if(!intrinsic_)
+	{
+		if(kind_ != TypeKind::None)
+		{
+			if(kind_ != TypeKind::Function)
+			{
+				private_ptr_ = nullptr;
+			}
 
-	if(kind_ != TypeKind::None)
-		first_pass_kind_ = kind_;
-	kind_ = TypeKind::None;
-	private_ptr_ = nullptr;
+			first_pass_kind_ = kind_;
+		}
+
+		kind_ = TypeKind::None;
+	}
 }
 
 bool
 Type::isDeclaredButNotDefined() const
 {
 	if(kind_ != TypeKind::None)
+	{
 		return false;
-	if(first_pass_kind_ == TypeKind::None || first_pass_kind_ == TypeKind::EnumStruct) {
+	}
+
+	if(first_pass_kind_ == TypeKind::None || first_pass_kind_ == TypeKind::EnumStruct)
+	{
 		return true;
 	}
+
 	return false;
 }
 
 const char*
 Type::prettyName() const
 {
-  if(kind_ == TypeKind::Function)
-	return kindName();
-  return name();
+	if(kind_ == TypeKind::Function)
+	{
+		return kindName();
+	}
+
+	return name();
 }
 
 const char*
 Type::kindName() const
 {
-  switch(kind_) {
-	case TypeKind::EnumStruct:
-	  return "enum struct";
-	case TypeKind::Struct:
-	  return "struct";
-	case TypeKind::Methodmap:
-	  return "methodmap";
-	case TypeKind::Enum:
-	  return "enum";
-	case TypeKind::Object:
-	  return "object";
-	case TypeKind::Function:
-	  if(funcenum_ptr_) {
-		if(funcenum_ptr_->entries.size() > 1)
-		  return "typeset";
-		if(ke::StartsWith(name_, "::"))
-		  return "function";
-		return "typedef";
-	  }
-	  return "function";
-	default:
-	  return "type";
-  }
+	const char *sTypeName;
+
+	switch(kind_)
+	{
+		case TypeKind::EnumStruct:
+		{
+			sTypeName = "enum struct";
+
+			break;
+		}
+		case TypeKind::Struct:
+		{
+			sTypeName = "struct";
+
+			break;
+		}
+		case TypeKind::Methodmap:
+		{
+			sTypeName = "methodmap";
+
+			break;
+		}
+		case TypeKind::Enum:
+		{
+			sTypeName = "enum";
+
+			break;
+		}
+
+		case TypeKind::Object:
+		{
+			sTypeName = "object";
+		}
+
+		case TypeKind::Function:
+		{
+			if(funcenum_ptr_)
+			{
+				if(funcenum_ptr_->entries.size() > 1)
+				{
+					sTypeName = "typeset";
+
+					break;
+				}
+				else if(ke::StartsWith(name_, "::"))
+				{
+					sTypeName = "function";
+
+					break;
+				}
+
+				sTypeName = "typedef";
+
+				break;
+			}
+
+			sTypeName = "function";
+
+			break;
+		}
+
+		default:
+		{
+			sTypeName = "type";
+		}
+	}
+
+	return sTypeName;
 }
 
 TypeDictionary::TypeDictionary() {}
@@ -115,10 +175,14 @@ TypeDictionary::TypeDictionary() {}
 Type*
 TypeDictionary::find(const char* name)
 {
-	for(const auto& type : types_) {
-		if(strcmp(type->name(), name) == 0)
+	for(const auto& type : types_)
+	{
+		if(!strcmp(type->name(), name))
+		{
 			return type.get();
+		}
 	}
+
 	return nullptr;
 }
 
@@ -133,14 +197,20 @@ TypeDictionary::find(int tag)
 Type*
 TypeDictionary::findOrAdd(const char* name)
 {
-	for(const auto& type : types_) {
-		if(strcmp(type->name(), name) == 0)
+	for(const auto& type : types_)
+	{
+		if(!strcmp(type->name(), name))
+		{
 			return type.get();
+		}
 	}
 
-	int tag = int(types_.size());
-	std::unique_ptr<Type> type = std::make_unique<Type>(name, tag);
+	int iTag = int(types_.size());
+
+	std::unique_ptr<Type> type = std::make_unique<Type>(name, iTag);
+
 	types_.push_back(std::move(type));
+
 	return types_.back().get();
 }
 
@@ -154,7 +224,9 @@ void
 TypeDictionary::clearExtendedTypes()
 {
 	for(const auto& type : types_)
+	{
 		type->resetPtr();
+	}
 }
 
 void
@@ -177,7 +249,9 @@ TypeDictionary::init()
 	pc_tag_nullfunc_t = defineObject("nullfunc_t")->tagid();
 
 	for(const auto& type : types_)
+	{
 		type->setIntrinsic();
+	}
 }
 
 Type*
@@ -190,7 +264,9 @@ Type*
 TypeDictionary::defineFunction(const char* name, funcenum_t* fe)
 {
 	Type* type = findOrAdd(name);
+
 	type->setFunction(fe);
+
 	return type;
 }
 
@@ -198,7 +274,9 @@ Type*
 TypeDictionary::defineString()
 {
 	Type* type = findOrAdd("String");
+
 	type->setFixed();
+
 	return type;
 }
 
@@ -206,7 +284,9 @@ Type*
 TypeDictionary::defineFloat()
 {
 	Type* type = findOrAdd("Float");
+
 	type->setFixed();
+
 	return type;
 }
 
@@ -214,7 +294,9 @@ Type*
 TypeDictionary::defineVoid()
 {
 	Type* type = findOrAdd("void");
+
 	type->setFixed();
+
 	return type;
 }
 
@@ -222,7 +304,9 @@ Type*
 TypeDictionary::defineObject(const char* name)
 {
 	Type* type = findOrAdd(name);
+
 	type->setObject();
+
 	return type;
 }
 
@@ -236,7 +320,9 @@ Type*
 TypeDictionary::defineMethodmap(const char* name, methodmap_t* map)
 {
 	Type* type = findOrAdd(name);
+
 	type->setMethodmap(map);
+
 	return type;
 }
 
@@ -244,9 +330,14 @@ Type*
 TypeDictionary::defineEnumTag(const char* name)
 {
 	Type* type = findOrAdd(name);
+
 	type->setEnumTag();
+
 	if(isupper(*name))
+	{
 		type->setFixed();
+	}
+
 	return type;
 }
 
@@ -254,7 +345,9 @@ Type*
 TypeDictionary::defineEnumStruct(const char* name, symbol* sym)
 {
 	Type* type = findOrAdd(name);
+
 	type->setEnumStruct(sym);
+
 	return type;
 }
 
@@ -262,8 +355,12 @@ Type*
 TypeDictionary::defineTag(const char* name)
 {
 	Type* type = findOrAdd(name);
+
 	if(isupper(*name))
+	{
 		type->setFixed();
+	}
+
 	return type;
 }
 
@@ -271,6 +368,8 @@ Type*
 TypeDictionary::definePStruct(const char* name, pstruct_t* ps)
 {
 	Type* type = findOrAdd(name);
+
 	type->setStruct(ps);
+
 	return type;
 }

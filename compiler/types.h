@@ -132,7 +132,7 @@ class Type
 	bool isStruct() const {
 		return kind_ == TypeKind::Struct;
 	}
-	pstruct_t* asStruct() const {
+	pstruct_t *asStruct() const {
 		if(!isStruct())
 			return nullptr;
 		return pstruct_ptr_;
@@ -149,7 +149,8 @@ class Type
 	}
 
 	bool isFunction() const {
-		return kind_ == TypeKind::Function;
+		// return kind_ == TypeKind::Function;
+		return kind_ == TypeKind::Function /* FIX ME: We can only find out this sometimes in the previous parse. */ || first_pass_kind_ == TypeKind::Function;
 	}
 	funcenum_t* asFunction() const {
 		if(!isFunction())

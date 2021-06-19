@@ -1720,7 +1720,7 @@ bool
 FieldAccessExpr::AnalyzeEnumStructAccess(Type* type, symbol* root, bool from_call)
 {
 	// Enum structs are always arrays, so they're never l-values.
-	// assert(!base_->lvalue());
+	assert(!base_->lvalue());
 
 	field_ = find_enumstruct_field(type, name_->chars());
 

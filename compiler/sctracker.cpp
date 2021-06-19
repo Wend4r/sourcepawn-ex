@@ -329,6 +329,10 @@ genstackfree(int iStopID)
 		{
 			modstk_for_scope(Scope);
 		}
+		else
+		{
+			break;
+		}
 	}
 }
 
@@ -342,6 +346,10 @@ genheapfree(int stop_id)
 		if(scope.scope_id > stop_id)
 		{
 			modheap_for_scope(scope);
+		}
+		else
+		{
+			break;
 		}
 	}
 }

@@ -172,7 +172,7 @@ static int lastst = 0;                  /* last executed statement type */
 static int nestlevel = 0;               /* number of active (open) compound statements */
 static int endlessloop = 0;             /* nesting level of endless loop */
 static int verbosity = 1;               /* verbosity level, 0=quiet, 1=normal, 2=verbose */
-static int sc_reparse = 0;                     /* needs 3th parse because of changed prototypes? */
+static bool sc_reparse = false;         /* needs 3th parse because of changed prototypes? */
 static int sc_parsenum = 0;             /* number of the extra parses */
 static int wq[wqTABSZ];                 /* "while queue", internal stack for nested loops */
 static int* wqptr;                      /* pointer to next entry */
@@ -363,16 +363,16 @@ pc_compile(int argc, char* argv[])
 
 	freading = TRUE;
 
-	if(!(outf = pc_openasm(outfname))) /* first write to assembler file (may be temporary) */
+	if(!(outf = pc_openasm(outfname))) // First write to assembler file (may be temporary).
 	{
 		error(FATAL_ERROR_WRITE, outfname);
 	}
 
-	setconstants(); /* set predefined constants and tagnames */
+	setconstants(); // Set predefined constants and tagnames.
 
 	sc_status = statFIRST;
 
-	/* write starting options (from the command line or the configuration file) */
+	// Write starting options (from the command line or the configuration file).
 	if(sc_listing)
 	{
 		char string[150];
@@ -398,7 +398,7 @@ pc_compile(int argc, char* argv[])
 	gTypes.clearExtendedTypes();
 
 	pstructs_free();
-	funcenums_free();
+	// funcenums_free();
 	methodmaps_free();
 
 	sc_ctrlchar = sc_ctrlchar_org;
@@ -414,12 +414,13 @@ pc_compile(int argc, char* argv[])
 
 	pc_resetsrc(inpf, inpfmark); /* reset file position */
 
-	sc_reparse = FALSE;          /* assume no extra passes */
+	sc_reparse = false;          /* assume no extra passes */
 	sc_status = statFIRST;       /* resetglobals() resets it to IDLE */
 
-	/* look for default prefix (include) file in include paths,
-		* but only error if it was manually set on the command line
-		*/
+	/**
+	 * Look for default prefix (include) file in include paths,
+	 * but only error if it was manually set on the command line
+	 */
 	if(incfname[0])
 	{
 		int defOK = plungefile(incfname, FALSE, TRUE);
@@ -435,6 +436,44 @@ pc_compile(int argc, char* argv[])
 	Parser parser;
 
 	parser.parse();		// Process all input.
+	sc_parsenum++;
+
+	// Reset "defined" flag of all functions and global variables.
+	reduce_referrers(&glbtab);
+	delete_symbols(&glbtab, 0, FALSE);
+	delete_substtable();
+	inst_datetime_defines();
+	inst_binary_name(binfname);
+	resetglobals();
+	gTypes.clearExtendedTypes();
+	pstructs_free();
+	// funcenums_free();
+	methodmaps_free();
+	sc_ctrlchar = sc_ctrlchar_org;
+	sc_needsemicolon = lcl_needsemicolon;
+	sc_require_newdecls = lcl_require_newdecls;
+	sc_tabsize = lcl_tabsize;
+	errorset(sRESET, 0);
+	/* reset the source file */
+	inpf = inpf_org;
+	freading = TRUE;
+	pc_resetsrc(inpf, inpfmark); /* reset file position */
+	sc_reparse = false;          /* assume no extra passes */
+	sc_status = statFIRST;       /* resetglobals() resets it to IDLE */
+
+	if(incfname[0])
+	{
+		int defOK = plungefile(incfname, FALSE, TRUE);
+
+		if(!defOK && strcmp(incfname, sDEF_PREFIX) != 0)
+		{
+			error(FATAL_ERROR_READ, incfname);
+		}
+	}
+
+	preprocess(); /* fetch first line */
+	parser.parse();      /* process all input */
+
 	sc_parsenum++;
 
 	/* second (or third) pass */
@@ -493,7 +532,6 @@ pc_compile(int argc, char* argv[])
 	}
 
 	preprocess(); /* fetch first line */
-
 	parser.parse();		// Process all input.
 	sc_parsenum++;
 
@@ -1257,7 +1295,7 @@ setconstants(void)
 	add_constant("SPPP_COMPILER", 1, sGLOBAL, 0);
 	add_constant("__Pawn", VERSION_INT, sGLOBAL, 0);
 	add_constant("__LINE__", 0, sGLOBAL, 0);
-	add_constant("__FUNCTION__", 0, sGLOBAL, 0);\
+	add_constant("__FUNCTION__", 0, sGLOBAL, 0);
 
 	// litadd
 
@@ -5362,6 +5400,7 @@ newfunc(declinfo_t *decl, const int *thistag, bool fpublic, bool fstatic, bool s
 	// As long as the function stays undefined, update its address.
 	if(!sym->defined)
 	{
+		// printf("sym->name() = %s, code_idx = %i, sym->usage = %i\n", sym->name(), code_idx, sym->usage);
 		sym->setAddr(code_idx);
 	}
 
@@ -5395,7 +5434,7 @@ newfunc(declinfo_t *decl, const int *thistag, bool fpublic, bool fstatic, bool s
 	 */
 	if(!sym->prototyped && (sym->usage & uREAD) && sym->tag != 0)
 	{
-		sc_reparse = TRUE; /* must add another pass to "initial scan" phase */
+		sc_reparse = true; // Must add another pass to "initial scan" phase.
 	}
 
 	/* declare all arguments */
@@ -5443,6 +5482,8 @@ newfunc(declinfo_t *decl, const int *thistag, bool fpublic, bool fstatic, bool s
 	}
 	/* so it is not a prototype, proceed */
 
+	bool bIsMethod = thistag && *thistag != -1;
+
 	/* if this is a function that is not referred to (this can only be detected
 	 * in the second stage), shut code generation off */
 	if(sc_status == statWRITE && (sym->usage & uREAD) == 0 && !fpublic)
@@ -5454,7 +5495,7 @@ newfunc(declinfo_t *decl, const int *thistag, bool fpublic, bool fstatic, bool s
 		sym->skipped = true;
 
 		// If this is a method, output errors even if it's unused.
-		if(thistag && *thistag != -1)
+		if(bIsMethod)
 		{
 			sc_err_status = TRUE;
 		}
@@ -5595,6 +5636,8 @@ newfunc(declinfo_t *decl, const int *thistag, bool fpublic, bool fstatic, bool s
 	assert(loctab.next == NULL);
 
 	curfunc = NULL;
+
+	// printf("sym->name() = %s, cidx = %i, code_idx = %i, sc_status = %i\n", sym->name(), cidx, code_idx, sc_status);
 
 	if(sc_status == statSKIP)
 	{
@@ -5753,7 +5796,11 @@ declargs(symbol* sym, int chkshadow, const int* thistag)
 
 		symbol* pArgSym = addvariable2(argptr->name, (argcnt + 3) * sizeof(cell), argptr->ident, sLOCAL, argptr->tag, argptr->dim, argptr->numdim, argptr->idxtag, 0);
 
-		pArgSym->is_const = argptr->is_const;
+		if(argptr->is_const)
+		{
+			pArgSym->is_const = true;
+		}
+
 		pArgSym->prototyped = sym->prototyped;
 
 		markusage(pArgSym, uREAD);

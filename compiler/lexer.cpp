@@ -3888,8 +3888,9 @@ delete_symbols(symbol* root, int level, int delete_functions)
 		}
 		else
 		{
-			/* if the function was prototyped, but not implemented in this source,
-			 * mark it as such, so that its use can be flagged
+			/**
+			 * If the function was prototyped, but not implemented in this source,
+			 * mark it as such, so that its use can be flagged.
 			 */
 			if(sym->ident == iFUNCTN && !sym->defined)
 			{
@@ -3901,7 +3902,8 @@ delete_symbols(symbol* root, int level, int delete_functions)
 				sym->defined = false;
 			}
 
-			/* for user defined operators, also remove the "prototyped" flag, as
+			/**
+			 * For user defined operators, also remove the "prototyped" flag, as
 			 * user-defined operators *must* be declared before use
 			 */
 			if(sym->ident == iFUNCTN && !alpha(*sym->name()))

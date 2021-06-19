@@ -498,6 +498,8 @@ do_call(CellWriter* writer, AsmReader* reader, cell opcode)
 	assert(sym->usage & uREAD);
 	assert(!sym->skipped);
 
+	// printf("do_call(): addr = \"%s\" (%X)\n", sym->name(), static_cast<cell>(sym->addr()));
+
 	writer->push_back(opcode);
 	writer->push_back(static_cast<cell>(sym->addr()));
 }

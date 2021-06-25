@@ -93,9 +93,9 @@ struct methodmap_method_t
 	explicit methodmap_method_t(methodmap_t* parent)
 	 : name(),
 	   parent(parent),
-	   target(nullptr),
 	   getter(nullptr),
 	   setter(nullptr),
+	   target(nullptr),
 	   is_static(false)
 	{}
 

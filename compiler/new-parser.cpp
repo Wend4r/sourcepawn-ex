@@ -1007,7 +1007,11 @@ Parser::hier2()
 
 			token_ident_t ident;
 
-			if(!needsymbol(&ident))
+			if(matchtoken(tTHIS))
+			{
+				strcpy(ident.name, "this");
+			}
+			else if(!needsymbol(&ident))
 			{
 				return new ErrorExpr();
 			}

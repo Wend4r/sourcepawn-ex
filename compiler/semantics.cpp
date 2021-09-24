@@ -1121,7 +1121,9 @@ SymbolExpr::AnalyzeWithOptions(bool allow_types)
 
 	val_.ident = sym_->ident;
 	val_.sym = sym_;
-	val_.tag = sym_->tag;
+	
+	// Don't expose the tag of old enumroots.
+	val_.tag = sym_->enumroot && !gTypes.find(sym_->tag)->asEnumStruct() ? 0 : sym_->tag;
 
 	if(sym_->ident == iCONSTEXPR)
 	{

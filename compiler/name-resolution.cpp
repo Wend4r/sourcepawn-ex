@@ -126,6 +126,8 @@ EnumDecl::Bind()
 		enumsym = NULL;
 	}
 
+	cell value = 0;
+
 	for(const auto& field : fields_ )
 	{
 		if(findconst(field.name->chars()))
@@ -147,13 +149,15 @@ EnumDecl::Bind()
 			sym->enumfield = true;
 			append_constval(enumroot, field.name->chars(), field.value, tag);
 		}
+
+		value += field.value;
 	}
 
 	// set the enum name to the "next" value (typically the last value plus one)
 	if(enumsym)
 	{
 		assert(enumsym->enumroot);
-		enumsym->setAddr(0);
+		enumsym->setAddr(value);
 		// assign the constant list
 		assert(enumroot);
 		enumsym->dim.enumlist = enumroot;

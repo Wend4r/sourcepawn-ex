@@ -1517,6 +1517,13 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 	{
 		methodmap_t* map = base_val.sym->methodmap;
 
+		if(!map)
+		{
+			error(pos_, 106, name_->chars());
+		
+			return false;
+		}
+
 		method_ = methodmap_find_method(map, name_->chars());
 
 		if(method_->target)
@@ -1821,9 +1828,9 @@ FieldAccessExpr::AnalyzeStaticAccess()
 
 	symbol *field = find_enumstruct_field(type, name_->chars());
 
-	if(!field)
+	if (!field)
 	{
-		error(pos_, 105, type->name(), field_->name());
+		error(pos_, 105, type->name(), field_ ? field_->name() : "<unwnown>");
 
 		return false;
 	}

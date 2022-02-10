@@ -1528,15 +1528,15 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 
 		method_ = methodmap_find_method(map, name_->chars());
 
+		if(!method_)
+		{
+			error(pos_, 105, map->name, name_->chars());
+
+			return false;
+		}
+
 		if(method_->target)
 		{
-			if(!method_)
-			{
-				error(pos_, 105, map->name, field_->name());
-
-				return false;
-			}
-
 			if(!method_->is_static)
 			{
 				error(pos_, 176, method_->name, map->name);

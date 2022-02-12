@@ -1544,8 +1544,13 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 				return false;
 			}
 
-			val_.ident = iFUNCTN;
 			val_.sym = method_->target;
+
+			funcenum_t* fe = funcenum_for_symbol(method_->target);
+
+			// New-style "closure".
+			val_.ident = iEXPRESSION;
+			val_.tag = fe->tag;
 
 			markusage(method_->target, uREAD);
 

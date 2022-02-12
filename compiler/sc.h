@@ -539,10 +539,13 @@ int parse_decl(declinfo_t* decl, int flags);
 
 const char* type_to_name(int iTag);
 
-int info_to_type_name(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int iArrayLevel, bool bIsConst, char sTypeName[sNAMEMAX + 1]);
-int symbol_to_type_name(const symbol *pSymbol, char sTypeName[sNAMEMAX + 1]);
-int value_to_type_name(const value *pValue, char sTypeName[sNAMEMAX + 1]);
-int arginfo_to_type_name(const arginfo *pArgInfo, char sTypeName[sNAMEMAX + 1]);
+int info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int iArrayLevel, bool bIsConst, char sTypeDef[sNAMEMAX + 1]);
+int symbol_to_type_definition(const symbol *pSymbol, char sTypeDef[sNAMEMAX + 1]);
+int value_to_type_definition(const value *pValue, char sTypeDef[sNAMEMAX + 1]);
+int arginfo_to_type_definition(const arginfo *pArgInfo, char sTypeDef[sNAMEMAX + 1]);
+int funcarg_to_type_definition(const funcarg_t *pFuncArg, char sTypeDef[sNAMEMAX + 1]);
+int functag_args_to_definition(const functag_t *pFuncTag, char sArgDef[sNAMEMAX + 1]);
+int functag_info_to_definition(const Type *pFunction, char sFuncTagDef[sNAMEMAX + 1]);
 
 bool parse_new_typename(const token_t* tok, int* tagp);
 

@@ -14,10 +14,12 @@
 struct funcenum_t {
 	funcenum_t()
 	 : tag(0),
-	   name()
+	   name(),
+	   display_name()
 	{}
 	int tag;
 	char name[METHOD_NAMEMAX + 1];
+	char display_name[sNAMEMAX + 1];
 	std::vector<functag_t*> entries;
 };
 
@@ -213,6 +215,7 @@ const structarg_t* pstructs_getarg(const pstruct_t* pstruct, sp::Atom* name);
  */
 void funcenums_free();
 funcenum_t* funcenums_add_or_find(const char* name);
+funcenum_t* funcenums_add_or_find(const char* name, const char* display_name);
 void functags_add_or_find(funcenum_t* en, functag_t* src);
 funcenum_t* funcenum_for_symbol(symbol* sym);
 functag_t* functag_find_intrinsic(int tag);

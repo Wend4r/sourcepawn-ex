@@ -144,12 +144,23 @@ funcenums_add_or_find(const char* name)
 	auto e = std::make_unique<funcenum_t>();
 
 	strcpy(e->name, name);
+	e->display_name[0] = '\0';
 
 	e->tag = gTypes.defineFunction(name, e.get())->tagid();
 
 	sFuncEnums.push_back(std::move(e));
 
 	return sFuncEnums.back().get();
+}
+
+funcenum_t*
+funcenums_add_or_find(const char* name, const char* display_name)
+{
+	funcenum_t *pE = funcenums_add_or_find(name);
+
+	strcpy(pE->display_name, display_name);
+
+	return pE;
 }
 
 funcenum_t*
@@ -181,7 +192,7 @@ funcenum_for_symbol(symbol* sym)
 
 	ke::SafeSprintf(sName, sizeof(sName), "::ft:%s:%d:%d", sym->name(), sym->addr(), sym->codeaddr);
 
-	funcenum_t *pFuncEnum = funcenums_add_or_find(sName);
+	funcenum_t *pFuncEnum = funcenums_add_or_find(sName, sym->name());
 
 	functags_add_or_find(pFuncEnum, ft);
 

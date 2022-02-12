@@ -2289,8 +2289,8 @@ CallExpr::ProcessArg(arginfo *pArg, Expr *pParam, unsigned int iPosition)
 		{
 			if(val->ident == iFUNCTN || val->ident == iARRAY || val->ident == iREFARRAY)
 			{
-				arginfo_to_type_name(pArg, sArgTypeName);
-				value_to_type_name(val, sValueTypeName);
+				arginfo_to_type_definition(pArg, sArgTypeName);
+				value_to_type_definition(val, sValueTypeName);
 
 				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
 	
@@ -2326,8 +2326,8 @@ CallExpr::ProcessArg(arginfo *pArg, Expr *pParam, unsigned int iPosition)
 
 			if((!lvalue || val->ident == iARRAYCHAR) || (val->sym && val->sym->is_const && !pArg->is_const))
 			{
-				arginfo_to_type_name(pArg, sArgTypeName);
-				value_to_type_name(val, sValueTypeName);
+				arginfo_to_type_definition(pArg, sArgTypeName);
+				value_to_type_definition(val, sValueTypeName);
 
 				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
 
@@ -2343,8 +2343,8 @@ CallExpr::ProcessArg(arginfo *pArg, Expr *pParam, unsigned int iPosition)
 		{
 			if((val->ident != iARRAY && val->ident != iREFARRAY && val->ident != iARRAYCELL && val->ident != iARRAYCHAR) || (val->sym && val->sym->is_const && !pArg->is_const))
 			{
-				arginfo_to_type_name(pArg, sArgTypeName);
-				value_to_type_name(val, sValueTypeName);
+				arginfo_to_type_definition(pArg, sArgTypeName);
+				value_to_type_definition(val, sValueTypeName);
 
 				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
 
@@ -2358,8 +2358,8 @@ CallExpr::ProcessArg(arginfo *pArg, Expr *pParam, unsigned int iPosition)
 			{
 				if(pArg->numdim != 1)
 				{
-					arginfo_to_type_name(pArg, sArgTypeName);
-					value_to_type_name(val, sValueTypeName);
+					arginfo_to_type_definition(pArg, sArgTypeName);
+					value_to_type_definition(val, sValueTypeName);
 
 					error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
 
@@ -2400,8 +2400,8 @@ CallExpr::ProcessArg(arginfo *pArg, Expr *pParam, unsigned int iPosition)
 
 				if(sym->dim.array.level + 1 != pArg->numdim)
 				{
-					arginfo_to_type_name(pArg, sArgTypeName);
-					value_to_type_name(val, sValueTypeName);
+					arginfo_to_type_definition(pArg, sArgTypeName);
+					value_to_type_definition(val, sValueTypeName);
 
 					error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
 
@@ -2457,8 +2457,8 @@ CallExpr::ProcessArg(arginfo *pArg, Expr *pParam, unsigned int iPosition)
 
 			if((pArg->tag != pc_tag_string && val->tag == pc_tag_string) || (pArg->tag == pc_tag_string && val->tag != pc_tag_string))
 			{
-				arginfo_to_type_name(pArg, sArgTypeName);
-				value_to_type_name(val, sValueTypeName);
+				arginfo_to_type_definition(pArg, sArgTypeName);
+				value_to_type_definition(val, sValueTypeName);
 
 				error(pos_, 35, sArgTypeName, sValueTypeName, visual_pos); // argument type mismatch
 

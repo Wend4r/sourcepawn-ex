@@ -434,7 +434,7 @@ type_to_name(int iTag)
 }
 
 int
-info_to_type_name(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int iArrayLevel, bool bIsConst, char sTypeName[sNAMEMAX + 1])
+info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int iArrayLevel, bool bIsConst, char sTypeDef[sNAMEMAX + 1])
 {
 	const int iTypeNameSize = sNAMEMAX + 1;
 
@@ -446,18 +446,18 @@ info_to_type_name(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int 
 	{
 		static const char sConstTag[] = "const ";
 
-		iTypeNameLength = static_cast<int>(ke::SafeStrcpy(sTypeName, iTypeNameSize, sConstTag));
+		iTypeNameLength = static_cast<int>(ke::SafeStrcpy(sTypeDef, iTypeNameSize, sConstTag));
 	}
 
-	iTypeNameLength += static_cast<int>(ke::SafeStrcpy(&sTypeName[iTypeNameLength], iTypeNameSize - iTypeNameLength, sTagTypeName));
+	iTypeNameLength += static_cast<int>(ke::SafeStrcpy(&sTypeDef[iTypeNameLength], iTypeNameSize - iTypeNameLength, sTagTypeName));
 
 	switch(iIdent)
 	{
 		case iVARIABLE:
 		{
-			if(iArrayLength[0] > 0)
+			if(iArrayLevel && iArrayLength[0] > 0)
 			{
-				iTypeNameLength += static_cast<int>(ke::SafeSprintf(&sTypeName[iTypeNameLength], iTypeNameSize - iTypeNameLength, " [%d]", iArrayLength));
+				iTypeNameLength += static_cast<int>(ke::SafeSprintf(&sTypeDef[iTypeNameLength], iTypeNameSize - iTypeNameLength, " [%d]", iArrayLength));
 			}
 
 			break;
@@ -472,18 +472,18 @@ info_to_type_name(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int 
 			{
 				if(iArrayLength[0])
 				{
-					iTypeNameLength += static_cast<int>(ke::SafeStrcpy(&sTypeName[iTypeNameLength], iTypeNameSize - iTypeNameLength, " "));
+					iTypeNameLength += static_cast<int>(ke::SafeStrcpy(&sTypeDef[iTypeNameLength], iTypeNameSize - iTypeNameLength, " "));
 				}
 
 				for(int i = 0; i != iArrayLevel; i++)
 				{
 					if(iArrayLength[i])
 					{
-						iTypeNameLength += static_cast<int>(ke::SafeSprintf(&sTypeName[iTypeNameLength], iTypeNameSize - iTypeNameLength, "[%d]", iArrayLength[i]));
+						iTypeNameLength += static_cast<int>(ke::SafeSprintf(&sTypeDef[iTypeNameLength], iTypeNameSize - iTypeNameLength, "[%d]", iArrayLength[i]));
 					}
 					else
 					{
-						iTypeNameLength += static_cast<int>(ke::SafeStrcpy(&sTypeName[iTypeNameLength], iTypeNameSize - iTypeNameLength, "[]"));
+						iTypeNameLength += static_cast<int>(ke::SafeStrcpy(&sTypeDef[iTypeNameLength], iTypeNameSize - iTypeNameLength, "[]"));
 					}
 				}
 			}
@@ -496,7 +496,7 @@ info_to_type_name(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int 
 }
 
 int
-symbol_to_type_name(const symbol *pSymbol, char sTypeName[sNAMEMAX + 1])
+symbol_to_type_definition(const symbol *pSymbol, char sTypeDef[sNAMEMAX + 1])
 {
 	int iIndent = pSymbol->ident,
 	    iArrayLevel = pSymbol->dim.array.level + (iARRAY <= iIndent && iIndent <= iARRAYCHAR),
@@ -514,17 +514,17 @@ symbol_to_type_name(const symbol *pSymbol, char sTypeName[sNAMEMAX + 1])
 		iArrayLength[0] = pSymbol->dim.array.length;
 	}
 
-	return info_to_type_name(iIndent, pSymbol->tag, iArrayLength, iArrayLevel, pSymbol->is_const, sTypeName);
+	return info_to_type_definition(iIndent, pSymbol->tag, iArrayLength, iArrayLevel, pSymbol->is_const, sTypeDef);
 }
 
 int
-value_to_type_name(const value *pValue, char sTypeName[sNAMEMAX + 1])
+value_to_type_definition(const value *pValue, char sTypeDef[sNAMEMAX + 1])
 {
 	int iResult;
 
 	if(pValue->sym)
 	{
-		iResult = symbol_to_type_name(pValue->sym, sTypeName);
+		iResult = symbol_to_type_definition(pValue->sym, sTypeDef);
 	}
 	else		// Is const or lost symbol.
 	{
@@ -534,16 +534,78 @@ value_to_type_name(const value *pValue, char sTypeName[sNAMEMAX + 1])
 
 		iArrayLength[0] = 0;
 
-		iResult = info_to_type_name(iIndent, pValue->tag, iArrayLength, iARRAY <= iIndent && iIndent <= iARRAYCHAR, true, sTypeName);
+		iResult = info_to_type_definition(iIndent, pValue->tag, iArrayLength, iARRAY <= iIndent && iIndent <= iARRAYCHAR, true, sTypeDef);
 	}
 
 	return iResult;
 }
 
 int
-arginfo_to_type_name(const arginfo *pArgInfo, char sTypeName[sNAMEMAX + 1])
+arginfo_to_type_definition(const arginfo *pArgInfo, char sTypeDef[sNAMEMAX + 1])
 {
-	return info_to_type_name(pArgInfo->ident, pArgInfo->tag, pArgInfo->dim, pArgInfo->numdim, pArgInfo->is_const, sTypeName);
+	return info_to_type_definition(pArgInfo->ident, pArgInfo->tag, pArgInfo->dim, pArgInfo->numdim, pArgInfo->is_const, sTypeDef);
+}
+
+int
+funcarg_to_type_definition(const funcarg_t *pFuncArg, char sTypeDef[sNAMEMAX + 1])
+{
+	return info_to_type_definition(pFuncArg->ident, pFuncArg->tag, pFuncArg->dims, pFuncArg->dimcount, pFuncArg->fconst, sTypeDef);
+}
+
+int
+functag_args_to_definition(const functag_t *pFuncTag, char sArgDef[sNAMEMAX + 1])
+{
+	const int iMaxDefinitionSize = sNAMEMAX + 1;
+
+	int iDefinitionLength = 0;
+
+	char sArgTypeDefinition[sNAMEMAX + 1];
+
+	for(const auto &arg : pFuncTag->args)
+	{
+		funcarg_to_type_definition(&arg, sArgTypeDefinition);
+
+		if(iDefinitionLength)
+		{
+			iDefinitionLength += static_cast<int>(ke::SafeSprintf(&sArgDef[iDefinitionLength], iMaxDefinitionSize - iDefinitionLength, ", %s", sArgTypeDefinition));
+		}
+		else
+		{
+			iDefinitionLength = static_cast<int>(ke::SafeStrcpy((char *)sArgDef, iMaxDefinitionSize, sArgTypeDefinition));
+		}
+	}
+
+	return iDefinitionLength;
+}
+
+int
+functag_info_to_definition(const Type *pFunction, char sFuncTagDef[sNAMEMAX + 1])
+{
+	int iDefinitionLength = 0;
+
+	funcenum_t *pE = pFunction->toFunction();
+
+	if(pE)
+	{
+		const int iMaxDefinitionSize = sNAMEMAX + 1;
+
+		for(auto pFuncTag : pE->entries)
+		{
+			if(iDefinitionLength)
+			{
+				iDefinitionLength += static_cast<int>(ke::SafeSprintf(&sFuncTagDef[iDefinitionLength], iMaxDefinitionSize - iDefinitionLength, ", function %s (", type_to_name(pFuncTag->ret_tag)));
+			}
+			else
+			{
+				iDefinitionLength = static_cast<int>(ke::SafeSprintf((char *)sFuncTagDef, iMaxDefinitionSize, "function %s (", type_to_name(pFuncTag->ret_tag)));
+			}
+
+			iDefinitionLength += functag_args_to_definition(pFuncTag, &sFuncTagDef[iDefinitionLength]);
+			iDefinitionLength += static_cast<int>(ke::SafeStrcpy(&sFuncTagDef[iDefinitionLength], iMaxDefinitionSize - iDefinitionLength, ")"));
+		}
+	}
+
+	return iDefinitionLength;
 }
 
 bool
@@ -753,11 +815,6 @@ matchfunctags(Type *pFormal, Type *pActual)
 		return TRUE;
 	}
 
-	if(!pActual->isFunction())
-	{
-		return FALSE;
-	}
-
 	functag_t *pActualFn = functag_find_intrinsic(iActualTag);
 
 	if(pActualFn)
@@ -833,7 +890,20 @@ matchtag(int iFormalTag, int iActualTag, int iFlags)
 	{
 		if(!matchfunctags(pFormal, pActual))
 		{
-			error_once(100);
+			char sFormalFuncTag[sNAMEMAX + 1], 
+			     sActualFuncTag[sNAMEMAX + 1];
+
+			if(!functag_info_to_definition(pFormal, sFormalFuncTag))
+			{
+				ke::SafeStrcpy((char *)sFormalFuncTag, sizeof(sFormalFuncTag), "<unknown>");
+			}
+
+			if(!functag_info_to_definition(pActual, sActualFuncTag))
+			{
+				ke::SafeStrcpy((char *)sActualFuncTag, sizeof(sActualFuncTag), "<unknown>");
+			}
+
+			error(100, pActual->isFunction() ? pActual->toFunction()->display_name : "<unknown>", sFormalFuncTag, sActualFuncTag);
 
 			return FALSE;
 		}

@@ -124,7 +124,7 @@ static const char* errmsg[] = {
     /*097*/ "symbol \"%s\" does not have a matching type\n",
     /*098*/ "type \"%s\" should be \"%s\" in new-style declarations\n",
     /*099*/ "%s should not have an explicit return type\n",
-    /*100*/ "function prototypes do not match\n",
+    /*100*/ "function prototypes do not match by %s (\"%s\" vs current \"%s\")\n",
     /*101*/ "specify either all dimensions or only the last dimension\n",
     /*102*/ "cannot find %s %s\n",
     /*103*/ "%s was already defined on this %s\n",

@@ -921,7 +921,18 @@ matchtag(int iFormalTag, int iActualTag, int iFlags)
 			{
 				// printf("pMapName = %s (%s == %s)\n", pMap->name, type_to_name(pMap->tag), type_to_name(iFormalTag));
 
-				if(pMap->tag == iFormalTag /* || pMap->tag == iActualTag */)
+				if(pMap->tag == iFormalTag)
+				{
+					return TRUE;
+				}
+			}
+		}
+
+		if(methodmap_t *pMap = pFormal->asMethodmap())
+		{
+			for(; pMap; pMap = pMap->parent)
+			{
+				if(pMap->tag == iActualTag)
 				{
 					return TRUE;
 				}

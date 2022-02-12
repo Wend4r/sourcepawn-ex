@@ -1537,7 +1537,7 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 
 		if(method_->target)
 		{
-			if(!method_->is_static)
+			if(from_call && !method_->is_static)
 			{
 				error(pos_, 176, method_->name, map->name);
 

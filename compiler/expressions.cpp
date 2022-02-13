@@ -427,7 +427,10 @@ type_to_name(int iTag)
 	{
 		Type *pType = gTypes.find(iTag);
 
-		sName = pType ? pType->prettyName() : "<unknown type>";
+		if(pType)
+		{
+			sName = pType->prettyName();
+		}
 	}
 
 	return sName;

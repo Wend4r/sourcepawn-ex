@@ -446,10 +446,10 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 	{
 		static const char sConstTag[] = "const ";
 
-		nTypeDefLength = static_cast<int>(ke::SafeStrcpy(sTypeDef, iTypeNameSize, sConstTag));
+		nTypeDefLength = ke::SafeStrcpy(sTypeDef, iTypeNameSize, sConstTag);
 	}
 
-	nTypeDefLength += static_cast<int>(ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, sTagTypeName));
+	nTypeDefLength += ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, sTagTypeName);
 
 	switch(iIdent)
 	{
@@ -457,7 +457,7 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 		{
 			if(iArrayLevel && iArrayLength[0] > 0)
 			{
-				nTypeDefLength += static_cast<int>(ke::SafeSprintf(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, " [%d]", iArrayLength));
+				nTypeDefLength += ke::SafeSprintf(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, " [%d]", iArrayLength);
 			}
 
 			break;
@@ -472,18 +472,18 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 			{
 				if(iArrayLength[0])
 				{
-					nTypeDefLength += static_cast<int>(ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, " "));
+					nTypeDefLength += ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, " ");
 				}
 
 				for(int i = 0; i != iArrayLevel; i++)
 				{
 					if(iArrayLength[i])
 					{
-						nTypeDefLength += static_cast<int>(ke::SafeSprintf(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, "[%d]", iArrayLength[i]));
+						nTypeDefLength += ke::SafeSprintf(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, "[%d]", iArrayLength[i]);
 					}
 					else
 					{
-						nTypeDefLength += static_cast<int>(ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, "[]"));
+						nTypeDefLength += ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, "[]");
 					}
 				}
 			}

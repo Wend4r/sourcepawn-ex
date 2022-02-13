@@ -180,6 +180,7 @@ funcenum_for_symbol(symbol* sym)
 			dest.dimcount = arg.numdim;
 
 			memcpy(dest.dims, arg.dim, arg.numdim * sizeof(int));
+			memcpy(dest.idxtag, arg.idxtag, arg.numdim * sizeof(int));
 
 			dest.ident = arg.ident;
 			dest.fconst = arg.is_const;

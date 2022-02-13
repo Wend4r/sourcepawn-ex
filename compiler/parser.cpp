@@ -4355,6 +4355,7 @@ parse_function_type()
 		arg.dimcount = decl.type.numdim;
 
 		memcpy(arg.dims, decl.type.dim, arg.dimcount * sizeof(decl.type.dim[0]));
+		memcpy(arg.idxtag, decl.type.idxtag, arg.dimcount * sizeof(decl.type.idxtag[0]));
 
 		arg.fconst = decl.type.is_const;
 		arg.ident = decl.type.ident == iARRAY ? iREFARRAY : decl.type.ident;

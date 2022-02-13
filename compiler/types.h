@@ -84,6 +84,7 @@ struct funcarg_t {
 	int tag;
 	int dimcount;
 	int dims[sDIMEN_MAX];
+	int idxtag[sDIMEN_MAX];
 	int ident;
 	bool fconst : 1;
 };

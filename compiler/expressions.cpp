@@ -552,6 +552,25 @@ arginfo_to_type_definition(const arginfo *pArgInfo, char sTypeDef[sNAMEMAX + 1])
 size_t
 funcarg_to_type_definition(const funcarg_t *pFuncArg, char sTypeDef[sNAMEMAX + 1])
 {
+	if(pFuncArg->ident == iREFARRAY)
+	{
+		Type *pType = gTypes.find(pFuncArg->idxtag[0]);
+
+		if(pType && pType->isEnumStruct())
+		{
+			int iDimCount = pFuncArg->dimcount - 1;
+
+			int iDims[sDIMEN_MAX];
+
+			for(int i = 1; i < iDimCount; i++)
+			{
+				iDims[i] = pFuncArg->dims[i + 1];
+			}
+
+			return info_to_type_definition(pFuncArg->ident, pFuncArg->idxtag[0], iDims, iDimCount, pFuncArg->fconst, sTypeDef);
+		}
+	}
+
 	return info_to_type_definition(pFuncArg->ident, pFuncArg->tag, pFuncArg->dims, pFuncArg->dimcount, pFuncArg->fconst, sTypeDef);
 }
 

@@ -143,9 +143,8 @@ funcenums_add_or_find(const char* name)
 {
 	auto e = std::make_unique<funcenum_t>();
 
-	strcpy(e->name, name);
+	strncpy(e->name, name, sizeof(e->name));
 	e->display_name[0] = '\0';
-
 	e->tag = gTypes.defineFunction(name, e.get())->tagid();
 
 	sFuncEnums.push_back(std::move(e));
@@ -158,7 +157,7 @@ funcenums_add_or_find(const char* name, const char* display_name)
 {
 	funcenum_t *pE = funcenums_add_or_find(name);
 
-	strcpy(pE->display_name, display_name);
+	strncpy(pE->display_name, display_name, sizeof(pE->display_name));
 
 	return pE;
 }

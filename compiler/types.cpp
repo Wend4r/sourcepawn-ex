@@ -239,7 +239,7 @@ TypeDictionary::init()
 	assert(type->tagid() == 1);
 
 	pc_anytag = defineAny()->tagid();
-	pc_functag = defineFunction("Function", nullptr)->tagid();
+	pc_functag = funcenums_add_or_find("Function")->tag;
 	pc_tag_string = defineString()->tagid();
 	sc_rationaltag = defineFloat()->tagid();
 	pc_tag_void = defineVoid()->tagid();

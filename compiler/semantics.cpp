@@ -1513,48 +1513,48 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 
 			return false;
 		}
-	}
 
-	if(base_val.ident == iMETHODMAP)
-	{
-		methodmap_t* map = base_val.sym->methodmap;
-
-		if(!map)
+		case iMETHODMAP:
 		{
-			error(pos_, 106, name_->chars());
-		
-			return false;
-		}
+			methodmap_t* map = base_val.sym->methodmap;
 
-		method_ = methodmap_find_method(map, name_->chars());
-
-		if(!method_)
-		{
-			error(pos_, 105, map->name, name_->chars());
-
-			return false;
-		}
-
-		if(method_->target)
-		{
-			if(from_call && !method_->is_static)
+			if(!map)
 			{
-				error(pos_, 176, method_->name, map->name);
+				error(pos_, 106, name_->chars());
+			
+				return false;
+			}
+
+			method_ = methodmap_find_method(map, name_->chars());
+
+			if(!method_)
+			{
+				error(pos_, 105, map->name, name_->chars());
 
 				return false;
 			}
 
-			val_.sym = method_->target;
+			if(method_->target)
+			{
+				if(from_call && !method_->is_static)
+				{
+					error(pos_, 176, method_->name, map->name);
 
-			funcenum_t* fe = funcenum_for_symbol(method_->target);
+					return false;
+				}
 
-			// New-style "closure".
-			val_.ident = iEXPRESSION;
-			val_.tag = fe->tag;
+				val_.sym = method_->target;
 
-			markusage(method_->target, uREAD);
+				funcenum_t* fe = funcenum_for_symbol(method_->target);
 
-			return true;
+				// New-style "closure".
+				val_.ident = iFUNCTN;
+				val_.tag = fe->tag;
+
+				markusage(method_->target, uREAD);
+
+				return true;
+			}
 		}
 	}
 

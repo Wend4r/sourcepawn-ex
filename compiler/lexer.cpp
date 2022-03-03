@@ -120,16 +120,6 @@ plungequalifiedfile(char* name)
 	gInputFilenameStack.push_back(inpfname);
 	sPreprocIfStack.push_back(iflevel);
 
-	if(pc_show_lines && sc_status == statFIRST)
-	{
-		TargetFileInfo aFile;
-
-		strncpy(aFile.sName, inpfname, sizeof(aFile.sName));
-		aFile.nLineCount = fline;
-
-		gTargetFilesInfo.push_back(aFile);
-	}
-
 	assert(!SKIPPING);
 	assert(skiplevel == iflevel); /* these two are always the same when "parsing" */
 
@@ -329,17 +319,6 @@ readline(unsigned char *line)
 			free(inpfname);      /* return memory allocated for the include file name */
 			inpfname = ke::PopBack(&gInputFilenameStack);
 			inpf = ke::PopBack(&gInputFileStack);
-
-			if(pc_show_lines)
-			{
-				TargetFileInfo aFile;
-
-				strncpy(aFile.sName, inpfname, sizeof(aFile.sName));
-				aFile.nLineCount = fline;
-
-				gTargetFilesInfo.push_back(aFile);
-			}
-
 			insert_dbgfile(inpfname);
 			setfiledirect(inpfname);
 			assert(sc_status == statFIRST || strcmp(get_inputfile(fcurrent), inpfname) == 0);

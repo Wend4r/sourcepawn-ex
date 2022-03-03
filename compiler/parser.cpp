@@ -189,7 +189,6 @@ int glbstringread = 0;
 char g_tmpfile[_MAX_PATH] = {0};
 
 args::ToggleOption opt_show_stats(nullptr, "--show-stats", Some(false), "Show compiler statistics on exit.");
-args::ToggleOption show_lines(nullptr, "--show-lines", Some(false), "Show compiler number of file lines");
 args::ToggleOption show_time(nullptr, "--show-time", Some(false), "Show compiler worked time.");
 args::IntOption debug_level("-g", "--debug-level", Some(2), "Debug level (0=without all debug info, 1=without debug sections, 2=all debug info (def)");
 args::ToggleOption no_optional("-nO", "--no-optional", Some(false), "Ignores optional functions");
@@ -585,26 +584,8 @@ cleanup:
 			{
 				pConsole->AddMessageFormat("\nOptimize code size:%8ld bytes\nOptimize data size:%8ld bytes\n", 128, (long)opt_code_count, (long)opt_data_count);
 			}
-
+	
 			pConsole->AddMessageFormat("\nPool allocation:   %8" KE_FMT_SIZET " bytes\nPool unused:       %8" KE_FMT_SIZET " bytes\nPool bookkeeping:  %8" KE_FMT_SIZET " bytes\n", 256, iAllocated, iReserved - iAllocated, iBookKeeping);
-		}
-
-		if(show_lines.value())
-		{
-			pConsole->AddMessage("\nNumber of lines in files: ", -1, false);
-
-			{
-				size_t nTotalLines = 0;
-
-				for(const auto aFile : gTargetFilesInfo)
-				{
-					pConsole->AddMessageFormat("\n %s has %d lines", 128, aFile.sName, aFile.nLineCount);
-					nTotalLines += aFile.nLineCount;
-				}
-
-				pConsole->AddMessageFormat("\nTotal of %d lines\n", 128, nTotalLines);
-			}
-
 		}
 	}
 
@@ -889,7 +870,6 @@ initglobals(void)
 	warnnum = 0;                       /* number of warnings */
 	verbosity = 1;                     /* verbosity level, no copyright banner */
 	sc_debug = sCHKBOUNDS | sSYMBOLIC; /* sourcemod: full debug stuff */
-	pc_show_lines = 0;                 /* Show lines. */
 	pc_debug_level = 0;                /* Debug level. */
 	pc_no_optional = false;            /* Is without optional sourcemod functions. */
 	pc_break_level = 0;                /* Bkearks level. */
@@ -1015,7 +995,6 @@ parseoptions(int argc, char** argv, char* oname, char* ename, char* pname)
 	sc_compression_level = opt_compression.value();
 	sc_tabsize = opt_tabsize.value();
 	sc_needsemicolon = opt_semicolons.value();
-	pc_show_lines = show_lines.value();
 	pc_debug_level = debug_level.value();
 	pc_no_optional = no_optional.value();
 	pc_break_level = break_level.value();

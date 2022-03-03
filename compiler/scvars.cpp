@@ -84,6 +84,7 @@ int sc_rationaltag = 0;                    /* tag for rational numbers */
 int sc_allowproccall = 0;                  /* allow/detect tagnames in lex() */
 short sc_is_utf8 = FALSE;                  /* is this source file in UTF-8 encoding */
 std::string pc_deprecate;                  /* if non-empty, mark next declaration as deprecated */
+int pc_show_lines = 0;                     /* Show lines. */
 int pc_debug_level = 0;                    /* Debug level. */
 bool pc_no_optional = false;               /* Is without optional sourcemod functions. */
 int pc_break_level = 0;                    /* Not insert breaks op-code for debugger. */
@@ -109,6 +110,7 @@ std::vector<short> gCurrentFileStack;
 std::vector<int> gCurrentLineStack;
 std::vector<void*> gInputFileStack;
 std::vector<char*> gInputFilenameStack;
+std::vector<TargetFileInfo> gTargetFilesInfo; /* Lines info for output */
 
 jmp_buf errbuf;
 

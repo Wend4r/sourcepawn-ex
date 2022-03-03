@@ -73,6 +73,7 @@ extern int sc_tabsize;            /* number of spaces that a TAB represents */
 extern int sc_status;             /* read/write status */
 extern int sc_err_status;         /* TRUE if errors should be generated even if sc_status = SKIP */
 extern int sc_rationaltag;        /* tag for rational numbers */
+extern int pc_show_lines;         /* Show lines. */
 extern int pc_debug_level;        /* Debug level. */
 extern bool pc_no_optional;       /* Is without optional sourcemod functions. */
 extern int pc_break_level;        /* Not insert breaks op-code for debugger. */
@@ -111,6 +112,13 @@ extern std::vector<short> gCurrentFileStack;
 extern std::vector<int> gCurrentLineStack;
 extern std::vector<void*> gInputFileStack;
 extern std::vector<char*> gInputFilenameStack;
+
+struct TargetFileInfo
+{
+	char sName[_MAX_PATH];
+	size_t nLineCount;
+};
+extern std::vector<TargetFileInfo> gTargetFilesInfo;
 
 // Returns true if compilation is in its second phase (writing phase) and has
 // so far proceeded without error.

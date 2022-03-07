@@ -71,7 +71,7 @@ static unsigned char term_expr[] = "";
 static int listline = -1; /* "current line" for the list file */
 
 static ke::HashMap<sp::CharsAndLength, int, KeywordTablePolicy> s_sKeywords;
-static ke::HashMap<sp::CharsAndLength, size_t, KeywordTablePolicy> s_mapStringsCache;
+static ke::HashMap<sp::CharsAndLength, cell, KeywordTablePolicy> s_mapStringsCache;
 
 extern const char *sc_tokens[];
 
@@ -3500,7 +3500,7 @@ require_newline(TerminatorPolicy policy)
 	return FALSE;
 }
 
-size_t
+cell
 find_string_address(const char *psString, size_t nLength)
 {
 	sp::CharsAndLength aKey(psString, nLength);
@@ -3510,7 +3510,7 @@ find_string_address(const char *psString, size_t nLength)
 	return resResult.found() ? resResult->value : 0;
 }
 
-size_t
+cell
 find_string_address_for_replace(const char *psString, size_t nLength)
 {
 	opt_data_count += static_cast<cell>(nLength);
@@ -3519,13 +3519,13 @@ find_string_address_for_replace(const char *psString, size_t nLength)
 }
 
 void
-add_string_address(const char *psString, size_t nLength, size_t nAddress)
+add_string_address(const char *psString, size_t nLength, cell iAddress)
 {
 	sp::CharsAndLength aKey(psString, nLength);
 
 	auto itKeyForAdd = s_mapStringsCache.findForAdd(aKey);
 
-	s_mapStringsCache.add(itKeyForAdd, aKey, nAddress);
+	s_mapStringsCache.add(itKeyForAdd, aKey, iAddress);
 }
 
 void

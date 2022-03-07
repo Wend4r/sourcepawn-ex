@@ -71,7 +71,7 @@ static unsigned char term_expr[] = "";
 static int listline = -1; /* "current line" for the list file */
 
 static ke::HashMap<sp::CharsAndLength, int, KeywordTablePolicy> s_sKeywords;
-static ke::HashMap<sp::CharsAndLength, size_t, KeywordTablePolicy> s_sChacheStrings;
+static ke::HashMap<sp::CharsAndLength, size_t, KeywordTablePolicy> s_mapStringsCache;
 
 extern const char *sc_tokens[];
 
@@ -2450,7 +2450,7 @@ lexinit()
 	memset(&sPreprocessBuffer, 0, sizeof(sPreprocessBuffer));
 	sTokenBuffer = &sNormalBuffer;
 
-	s_sChacheStrings.init();
+	s_mapStringsCache.init();
 
 	if(!s_sKeywords.elements())
 	{
@@ -3503,11 +3503,11 @@ require_newline(TerminatorPolicy policy)
 size_t
 find_string_address(const char *psString, size_t iLength)
 {
-	sp::CharsAndLength Key(sString, iLength);
+	sp::CharsAndLength Key(psString, iLength);
 
-	auto Result = s_sChacheStrings.find(Key);
+	auto resResult = s_mapStringsCache.find(Key);
 
-	return Result.found() ? Result->value : 0;
+	return resResult.found() ? resResult->value : 0;
 }
 
 size_t
@@ -3515,7 +3515,7 @@ find_string_address_for_replace(const char *psString, size_t iLength)
 {
 	opt_data_count += static_cast<cell>(iLength);
 
-	return find_string_address(sString, iLength);
+	return find_string_address(psString, iLength);
 }
 
 void
@@ -3523,9 +3523,9 @@ add_string_address(const char *psString, size_t iLength, size_t iAddress)
 {
 	sp::CharsAndLength Key(psString, iLength);
 
-	auto KeyForAdd = s_sChacheStrings.findForAdd(Key);
+	auto itKeyForAdd = s_mapStringsCache.findForAdd(Key);
 
-	s_sChacheStrings.add(KeyForAdd, Key, iAddress);
+	s_mapStringsCache.add(itKeyForAdd, Key, iAddress);
 }
 
 void
@@ -3537,7 +3537,7 @@ litadd(const char *psString, size_t iLength)
 
 	for(size_t i = 0; i < iLength; i++)
 	{
-		iValue |= (unsigned char)sString[i] << (8 * iByte);
+		iValue |= (unsigned char)psString[i] << (8 * iByte);
 
 		if(iByte == sizeof(ucell) - 1)
 		{
@@ -4451,14 +4451,14 @@ void
 declare_handle_intrinsics(const char *psUsingName)
 {
 	// Must not have an existing Handle methodmap.
-	if(methodmap_find_by_name(sUsingName))
+	if(methodmap_find_by_name(psUsingName))
 	{
 		error_once(156);		// invalid 'using' declaration
 
 		return;
 	}
 
-	methodmap_t* map = methodmap_add(nullptr, Layout_MethodMap, sUsingName);
+	methodmap_t* map = methodmap_add(nullptr, Layout_MethodMap, psUsingName);
 
 	map->nullable = true;
 
@@ -4466,7 +4466,7 @@ declare_handle_intrinsics(const char *psUsingName)
 
 	char sUsingDestructor[133];
 
-	ke::SafeSprintf(sUsingDestructor, sizeof(sUsingDestructor), "Close%s", sUsingName);
+	ke::SafeSprintf(sUsingDestructor, sizeof(sUsingDestructor), "Close%s", psUsingName);
 
 	symbol* pSymDestructor = findglb(sUsingDestructor);
 
@@ -4476,7 +4476,7 @@ declare_handle_intrinsics(const char *psUsingName)
 	
 		dtor->target = pSymDestructor;
 
-		ke::SafeSprintf(dtor->name, sizeof(dtor->name), "~%s", sUsingName);
+		ke::SafeSprintf(dtor->name, sizeof(dtor->name), "~%s", psUsingName);
 
 		map->dtor = dtor.get();
 		map->methods.push_back(std::move(dtor));

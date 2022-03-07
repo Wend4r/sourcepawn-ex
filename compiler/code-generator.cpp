@@ -746,15 +746,15 @@ StringExpr::DoEmit()
 
 	size_t iLength = text_->length();
 
-	size_t iAddr = find_string_address_for_replace(sTextStr, iLength);
+	size_t iAddr = find_string_address_for_replace(psTextStr, iLength);
 
 	if(!iAddr)
 	{
 		iAddr = (litidx + glb_declared) * sizeof(cell);
 
-		litadd(sTextStr, iLength);
+		litadd(psTextStr, iLength);
 
-		add_string_address(sTextStr, iLength, iAddr);
+		add_string_address(psTextStr, iLength, iAddr);
 	}
 
 	ldconst(static_cast<cell>(iAddr), sPRI);

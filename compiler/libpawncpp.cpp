@@ -58,11 +58,11 @@ static int OutputMessage(unsigned short iForegroundFLags, const char *psOutputTe
 
 		DWORD nNumberOfCharsWritten;
 
-		// iResult = WriteConsole(hOutputSteam, sOutputText, iOutputLength, &nNumberOfCharsWritten, NULL);
-		iResult = WriteFile(hOutputSteam, sOutputText, iOutputLength, &nNumberOfCharsWritten, NULL);
+		// iResult = WriteConsole(hOutputSteam, psOutputText, iOutputLength, &nNumberOfCharsWritten, NULL);
+		iResult = WriteFile(hOutputSteam, psOutputText, iOutputLength, &nNumberOfCharsWritten, NULL);
 	}
 #else
-	iResult = fwrite(sOutputText, sizeof(char), iOutputLength, stdout);
+	iResult = fwrite(psOutputText, sizeof(char), iOutputLength, stdout);
 	fflush(stdout);
 #endif
 
@@ -79,7 +79,7 @@ void CompilerMessages::AddMessage(const char *psMessage, int iLength, bool bIsCo
 {
 	if(iLength == -1)
 	{
-		iLength = static_cast<int>(strlen(sMessage));
+		iLength = static_cast<int>(strlen(psMessage));
 	}
 
 	CompilerMessages::Message *pMessageStruct = new CompilerMessages::Message();
@@ -88,13 +88,12 @@ void CompilerMessages::AddMessage(const char *psMessage, int iLength, bool bIsCo
 	{
 		char *sMessageCopy = new char[iLength];
 
-		strncpy(sMessageCopy, sMessage, iLength);
-
-		pMessageStruct->sText = sMessageCopy;
+		strncpy(sMessageCopy, psMessage, iLength);
+		pMessageStruct->psText = sMessageCopy;
 	}
 	else
 	{
-		pMessageStruct->sText = sMessage;
+		pMessageStruct->psText = psMessage;
 	}
 
 	pMessageStruct->iTextLength = iLength;
@@ -111,7 +110,7 @@ int CompilerMessages::AddMessageFormat(const char *psFormatMessage, int iMaxLeng
 
 	va_start(ArgsList, iMaxLength);
 
-	int iMessageLength = static_cast<int>(ke::SafeVsprintf(sReadyMessage, static_cast<size_t>(iMaxLength), sFormatMessage, ArgsList));
+	int iMessageLength = static_cast<int>(ke::SafeVsprintf(sReadyMessage, static_cast<size_t>(iMaxLength), psFormatMessage, ArgsList));
 
 	if(iMessageLength >> 31)		// Is minus.
 	{
@@ -122,7 +121,7 @@ int CompilerMessages::AddMessageFormat(const char *psFormatMessage, int iMaxLeng
 
 	CompilerMessages::Message *pMessageStruct = new CompilerMessages::Message();
 
-	pMessageStruct->sText = sReadyMessage;
+	pMessageStruct->psText = sReadyMessage;
 	pMessageStruct->iTextLength = iMessageLength;
 
 	this->m_pMessagesVector->push_back(pMessageStruct);
@@ -153,8 +152,7 @@ int CompilerMessages::Print(unsigned short iForegroundFLags)
 		{
 			// Read function args: L <- R.
 			iTextLength = (pMessageBuffer = pMessagesVector->at(i))->iTextLength;
-
-			memcpy(&sOutputText[j], pMessageBuffer->sText, iTextLength);
+			memcpy(&sOutputText[j], pMessageBuffer->psText, iTextLength);
 
 			j += iTextLength;
 		}
@@ -182,7 +180,7 @@ CompilerMessages::~CompilerMessages()
 	{
 		if((pMessageStruct = pMessagesVector->at(i))->bTextIsCopy)
 		{
-			delete[] pMessageStruct->sText;
+			delete[] pMessageStruct->psText;
 		}
 
 		delete pMessageStruct;
@@ -207,7 +205,7 @@ CompilerMessages *GetGlobalCompilerMessages()
 
 int PrintOnceMessage(unsigned short iForegroundFLags, const char *psMessage, int iLength)
 {
-	return OutputMessage(iForegroundFLags, sMessage, iLength != -1 ? iLength : static_cast<int>(strlen(sMessage)));
+	return OutputMessage(iForegroundFLags, psMessage, iLength != -1 ? iLength : static_cast<int>(strlen(psMessage)));
 }
 
 int PrintOnceMessageFormat(unsigned short iForegroundFLags, const char *psFormatMessage, int iMaxLength, ...)
@@ -220,7 +218,7 @@ int PrintOnceMessageFormat(unsigned short iForegroundFLags, const char *psFormat
 
 	va_start(ArgsList, iMaxLength);
 
-	int iMessageLength = vsnprintf(sOutputText, iMaxLength, sFormatMessage, ArgsList);
+	int iMessageLength = vsnprintf(sOutputText, iMaxLength, psFormatMessage, ArgsList);
 
 	if(iMessageLength >> 31)		// Is minus.
 	{

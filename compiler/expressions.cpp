@@ -409,19 +409,19 @@ type_to_name(int iTag)
 
 	if(!iTag)
 	{
-		sName = "int";
+		psName = "int";
 	}
 	else if(iTag == sc_rationaltag)
 	{
-		sName = "float";
+		psName = "float";
 	}
 	else if(iTag == pc_tag_string)
 	{
-		sName = "char";
+		psName = "char";
 	}
 	else if(iTag == pc_anytag)
 	{
-		sName = "any";
+		psName = "any";
 	}
 	else
 	{
@@ -429,11 +429,11 @@ type_to_name(int iTag)
 
 		if(pType)
 		{
-			sName = pType->prettyName();
+			psName = pType->prettyName();
 		}
 	}
 
-	return sName;
+	return psName;
 }
 
 size_t
@@ -452,7 +452,7 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 		nTypeDefLength = ke::SafeStrcpy(sTypeDef, iTypeNameSize, sConstTag);
 	}
 
-	nTypeDefLength += ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, sTagTypeName);
+	nTypeDefLength += ke::SafeStrcpy(&sTypeDef[nTypeDefLength], iTypeNameSize - nTypeDefLength, psTagTypeName);
 
 	switch(iIdent)
 	{

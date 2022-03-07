@@ -763,11 +763,11 @@ generate_segment(AsmReader &reader, std::vector<cell> *code_buffer, std::vector<
 		const char *psInstruction = reader.next_token_on_line();
 
 		// Ignore empty lines.
-		if(sInstruction)
+		if(psInstruction)
 		{
-			if(tolower(sInstruction[0]) == 'l' && sInstruction[1] == '.')
+			if(tolower(psInstruction[0]) == 'l' && psInstruction[1] == '.')
 			{
-				int lindex = (int)num2long(sInstruction + 2, nullptr);
+				int lindex = (int)num2long(psInstruction + 2, nullptr);
 
 				assert(lindex >= 0 && lindex < sc_labnum);
 				assert(sLabelTable[lindex] == -1);
@@ -779,7 +779,7 @@ generate_segment(AsmReader &reader, std::vector<cell> *code_buffer, std::vector<
 
 			const char *psPos = reader.end_of_token();
 
-			int iOPIndex = findopcode(sInstruction, (sPos - sInstruction));
+			int iOPIndex = findopcode(psInstruction, (psPos - psInstruction));
 
 			OPCODEC &OPCodeInfo = opcodelist[iOPIndex];
 

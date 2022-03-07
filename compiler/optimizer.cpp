@@ -73,8 +73,8 @@
 #	pragma warning(pop)
 #endif
 
-static int stgstring(char *sStart, char *sEnd);
-static void stgopt(char *sStart, char *sEnd, int (*funcOutPut)(char *sStr));
+static int stgstring(char *psStart, char *psEnd);
+static void stgopt(char *psStart, char *psEnd, int (*funcOutPut)(char *sStr));
 
 #define sSTG_GROW 512
 #define sSTG_MAX 20480
@@ -163,9 +163,9 @@ stgbuffer_cleanup(void)
  *     sSTARTREORDER    identifies the beginning of a series of expression
  *                      strings that must be written to the output file in
  *                      reordered order
- *    sENDREORDER       identifies the sEnd of 'reverse evaluation'
+ *    sENDREORDER       identifies the psEnd of 'reverse evaluation'
  *    sEXPRSTART + idx  only valid within a block that is evaluated in
- *                      reordered order, it identifies the sStart of an
+ *                      reordered order, it identifies the psStart of an
  *                      expression; the "idx" value is the argument position
  *
  *  Global references: stgidx  (altered)
@@ -235,7 +235,7 @@ filewrite(char* sStr)
  *                     staging (referred to only)
  */
 void
-stgwrite(const char *pst)
+stgwrite(const char *st)
 {
 	int st_len = static_cast<int>(strlen(st));
 
@@ -323,7 +323,7 @@ stgout(int index)
 
 typedef struct
 {
-	char *sStart, *sEnd;
+	char *psStart, *psEnd;
 } argstack;
 
 /*  stgstring
@@ -334,22 +334,22 @@ typedef struct
  *  to functions from right to left. When arguments are "named" rather than
  *  positional, the order in the source stream is indeterminate.
  *  This function calls itself recursively in case it needs to re-order code
- *  strings, and it uses a private stack (or list) to mark the sStart and the
+ *  strings, and it uses a private stack (or list) to mark the psStart and the
  *  end of expressions in their correct (reversed) order.
  *  In any case, stgstring() sends a block as large as possible to the
  *  optimizer stgopt().
  *
- *  In "reorder" mode, each set of code strings must sStart with the token
+ *  In "reorder" mode, each set of code strings must psStart with the token
  *  sEXPRSTART, even the first. If the token sSTARTREORDER is represented
  *  by '[', sENDREORDER by ']' and sEXPRSTART by '|' the following applies:
  *     '[]...'     valid, but useless; no output
  *     '[|...]     valid, but useless; only one string
  *     '[|...|...] valid and usefull
- *     '[...|...]  invalid, first string doesn't sStart with '|'
+ *     '[...|...]  invalid, first string doesn't psStart with '|'
  *     '[|...|]    invalid
  */
 static int
-stgstring(char *sStart, char *sEnd)
+stgstring(char *psStart, char *psEnd)
 {
 	char *sPtr;
 
@@ -359,11 +359,11 @@ stgstring(char *sStart, char *sEnd)
 
 	int reordered = 0;
 
-	while(sStart < sEnd)
+	while(psStart < psEnd)
 	{
-		if(*sStart == sSTARTREORDER)
+		if(*psStart == sSTARTREORDER)
 		{
-			sStart++; /* skip token */
+			psStart++; /* skip token */
 
 			/* allocate a argstack with SP_MAX_CALL_ARGUMENTS items */
 			if(!(pArgStack = (argstack*)malloc(SP_MAX_CALL_ARGUMENTS * sizeof(argstack))))
@@ -378,12 +378,12 @@ stgstring(char *sStart, char *sEnd)
 
 			do
 			{
-				switch(*sStart)
+				switch(*psStart)
 				{
 					case sSTARTREORDER:
 					{
 						nest++;
-						sStart++;
+						psStart++;
 
 						break;
 					}
@@ -391,24 +391,24 @@ stgstring(char *sStart, char *sEnd)
 					case sENDREORDER:
 					{
 						nest--;
-						sStart++;
+						psStart++;
 
 						break;
 					}
 
 					default:
 					{
-						if((*sStart & sEXPRSTART) == sEXPRSTART)
+						if((*psStart & sEXPRSTART) == sEXPRSTART)
 						{
 							if(nest == 1)
 							{
 								if(arg >= 0)
 								{
-									pArgStack[arg].sEnd = sStart - 1; /* finish previous argument */
+									pArgStack[arg].psEnd = psStart - 1; /* finish previous argument */
 								}
 
-								arg = (unsigned char)*sStart - sEXPRSTART;
-								pArgStack[arg].sStart = sStart + 1;
+								arg = (unsigned char)*psStart - sEXPRSTART;
+								pArgStack[arg].psStart = psStart + 1;
 
 								if(arg >= argc)
 								{
@@ -416,11 +416,11 @@ stgstring(char *sStart, char *sEnd)
 								}
 							}
 
-							sStart++;
+							psStart++;
 						}
 						else
 						{
-							sStart += strlen(sStart) + 1;
+							psStart += strlen(psStart) + 1;
 						}
 					}
 				}
@@ -429,29 +429,29 @@ stgstring(char *sStart, char *sEnd)
 
 			if(arg >= 0)
 			{
-				pArgStack[arg].sEnd = sStart - 1; /* finish previous argument */
+				pArgStack[arg].psEnd = psStart - 1; /* finish previous argument */
 			}
 
 			while(argc > 0)
 			{
 				argc--;
-				stgstring(pArgStack[argc].sStart, pArgStack[argc].sEnd);
+				stgstring(pArgStack[argc].psStart, pArgStack[argc].psEnd);
 			}
 
 			free(pArgStack);
 		}
 		else
 		{
-			sPtr = sStart;
+			sPtr = psStart;
 
-			while(sPtr < sEnd && *sPtr != sSTARTREORDER)
+			while(sPtr < psEnd && *sPtr != sSTARTREORDER)
 			{
 				sPtr += strlen(sPtr) + 1;
 			}
 
-			stgopt(sStart, sPtr, rebuffer);
+			stgopt(psStart, sPtr, rebuffer);
 
-			sStart = sPtr;
+			psStart = sPtr;
 		}
 	}
 
@@ -555,7 +555,7 @@ matchsequence(const char *psStart, const char *psEnd, const char *psPattern, cha
 	int iVar, i;
 	char sStr[MAX_ALIAS + 1];
 
-	const char *psStartOrg = sStart;
+	const char *psStartOrg = psStart;
 
 	cell iValue;
 	char* sPtr;
@@ -567,33 +567,33 @@ matchsequence(const char *psStart, const char *psEnd, const char *psPattern, cha
 		sSymbols[iVar][0] = '\0';
 	}
 
-	while(*sStart == '\t' || *sStart == ' ')
+	while(*psStart == '\t' || *psStart == ' ')
 	{
-		sStart++;
+		psStart++;
 	}
 
-	while(*sPattern)
+	while(*psPattern)
 	{
-		if(sStart >= sEnd)
+		if(psStart >= psEnd)
 		{
 			return FALSE;
 		}
 
-		switch(*sPattern)
+		switch(*psPattern)
 		{
 			case '%': /* new "symbol" */
 			{
-				sPattern++;
+				psPattern++;
 
-				assert(isdigit(*sPattern));
-				iVar = atoi(sPattern) - 1;
+				assert(isdigit(*psPattern));
+				iVar = atoi(psPattern) - 1;
 				assert(iVar >= 0 && iVar < MAX_OPT_VARS);
-				assert(*sStart == '-' || alphanum(*sStart));
+				assert(*psStart == '-' || alphanum(*psStart));
 
-				for(i = 0; sStart < sEnd && (*sStart == '-' || *sStart == '+' || alphanum(*sStart)); i++, sStart++)
+				for(i = 0; psStart < psEnd && (*psStart == '-' || *psStart == '+' || alphanum(*psStart)); i++, psStart++)
 				{
 					assert(i <= MAX_ALIAS);
-					sStr[i] = *sStart;
+					sStr[i] = *psStart;
 				}
 
 				sStr[i] = '\0';
@@ -615,35 +615,35 @@ matchsequence(const char *psStart, const char *psEnd, const char *psPattern, cha
 
 			case '-':
 			{
-				iValue = -strtol(sPattern + 1, (char**)&sPattern, 16);
+				iValue = -strtol(psPattern + 1, (char**)&psPattern, 16);
 				sPtr = itoh((ucell)iValue);
 
 				while(*sPtr)
 				{
-					if(tolower(*sStart) != tolower(*sPtr))
+					if(tolower(*psStart) != tolower(*sPtr))
 					{
 						return FALSE;
 					}
 
-					sStart++;
+					psStart++;
 					sPtr++;
 				}
 
-				sPattern--; /* there is an increment following at the sEnd of the loop */
+				psPattern--; /* there is an increment following at the psEnd of the loop */
 
 				break;
 			}
 
 			case ' ':
 			{
-				if(*sStart != '\t' && *sStart != ' ')
+				if(*psStart != '\t' && *psStart != ' ')
 				{
 					return FALSE;
 				}
 
-				while(sStart < sEnd && (*sStart == '\t' || *sStart == ' '))
+				while(psStart < psEnd && (*psStart == '\t' || *psStart == ' '))
 				{
-					sStart++;
+					psStart++;
 				}
 
 				break;
@@ -651,33 +651,33 @@ matchsequence(const char *psStart, const char *psEnd, const char *psPattern, cha
 
 			case '!':
 			{
-				while(sStart < sEnd && (*sStart == '\t' || *sStart == ' '))
+				while(psStart < psEnd && (*psStart == '\t' || *psStart == ' '))
 				{
-					sStart++; /* skip trailing white space */
+					psStart++; /* skip trailing white space */
 				}
 
-				if(*sStart == ';')
+				if(*psStart == ';')
 				{
-					while(sStart < sEnd && *sStart != '\n')
+					while(psStart < psEnd && *psStart != '\n')
 					{
-						sStart++; /* skip trailing comment */
+						psStart++; /* skip trailing comment */
 					}
 				}
 
-				if(*sStart != '\n')
+				if(*psStart != '\n')
 				{
 					return FALSE;
 				}
 
-				// assert(*(sStart + 1) == '\0');
+				// assert(*(psStart + 1) == '\0');
 
-				sStart += 2; /* skip '\n' and '\0' */
+				psStart += 2; /* skip '\n' and '\0' */
 
-				if(sPattern[1])
+				if(psPattern[1])
 				{
-					while((sStart < sEnd && *sStart == '\t') || *sStart == ' ')
+					while((psStart < psEnd && *psStart == '\t') || *psStart == ' ')
 					{
-						sStart++; /* skip leading white space of next instruction */
+						psStart++; /* skip leading white space of next instruction */
 					}
 				}
 
@@ -686,19 +686,19 @@ matchsequence(const char *psStart, const char *psEnd, const char *psPattern, cha
 
 			default:
 			{
-				if(tolower(*sStart) != tolower(*sPattern))
+				if(tolower(*psStart) != tolower(*psPattern))
 				{
 					return FALSE;
 				}
 
-				sStart++;
+				psStart++;
 			}
 		}
 
-		sPattern++;
+		psPattern++;
 	}
 
-	*iMatchLength = (int)(sStart - sStartOrg);
+	*iMatchLength = (int)(psStart - psStartOrg);
 
 	return TRUE;
 }
@@ -712,26 +712,26 @@ replacesequence(const char *psPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1
 
 	/**
 	 * Сalculate the length of the new buffer
-	 * this is the length of the sPattern plus the length of all sSymbols (note
-	 * that the same symbol may occur multiple times in the sPattern) plus
-	 * line endings and startings ('\t' to sStart a line and '\n\0' to sEnd one)
+	 * this is the length of the psPattern plus the length of all sSymbols (note
+	 * that the same symbol may occur multiple times in the psPattern) plus
+	 * line endings and startings ('\t' to psStart a line and '\n\0' to psEnd one)
 	 */
 	assert(iReplaceLength != NULL);
 
 	*iReplaceLength = 0;
-	sLinePtr = psPattern;
+	psLinePtr = psPattern;
 
-	while(*sLinePtr)
+	while(*psLinePtr)
 	{
-		switch(*sLinePtr)
+		switch(*psLinePtr)
 		{
 			case '%':
 			{
-				sLinePtr++; /* skip '%' */
+				psLinePtr++; /* skip '%' */
 
-				assert(isdigit(*sLinePtr));
+				assert(isdigit(*psLinePtr));
 
-				iVar = atoi(sLinePtr) - 1;
+				iVar = atoi(psLinePtr) - 1;
 
 				assert(iVar >= 0 && iVar < MAX_OPT_VARS);
 				assert(sSymbols[iVar][0] != '\0'); /* variable should be defined */
@@ -754,7 +754,7 @@ replacesequence(const char *psPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1
 			}
 		}
 
-		sLinePtr++;
+		psLinePtr++;
 	}
 
 	/* allocate a buffer to replace the sequence in */
@@ -764,25 +764,25 @@ replacesequence(const char *psPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1
 		return NULL;
 	}
 
-	/* replace the sPattern into this temporary buffer */
+	/* replace the psPattern into this temporary buffer */
 	char* sPtr = buffer;
 
 	*sPtr++ = '\t'; /* the "replace" patterns do not have tabs */
 
-	while(*sPattern)
+	while(*psPattern)
 	{
 		assert((int)(sPtr - buffer) < *iReplaceLength);
 
-		switch(*sPattern)
+		switch(*psPattern)
 		{
 			case '%':
 			{
 				/* write out the symbol */
-				sPattern++;
+				psPattern++;
 
-				assert(isdigit(*sPattern));
+				assert(isdigit(*psPattern));
 
-				iVar = atoi(sPattern) - 1;
+				iVar = atoi(psPattern) - 1;
 
 				assert(iVar >= 0 && iVar < MAX_OPT_VARS);
 				assert(sSymbols[iVar][0] != '\0'); /* variable should be defined */
@@ -795,11 +795,11 @@ replacesequence(const char *psPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1
 
 			case '!':
 			{
-				/* finish the line, optionally sStart the next line with an indent */
+				/* finish the line, optionally psStart the next line with an indent */
 				*sPtr++ = '\n';
 				*sPtr++ = '\0';
 
-				if(*(sPattern + 1))
+				if(*(psPattern + 1))
 				{
 					*sPtr++ = '\t';
 				}
@@ -809,11 +809,11 @@ replacesequence(const char *psPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1
 
 			default:
 			{
-				*sPtr++ = *sPattern;
+				*sPtr++ = *psPattern;
 			}
 		}
 
-		sPattern++;
+		psPattern++;
 	}
 
 	assert((int)(sPtr - buffer) == *iReplaceLength);
@@ -850,11 +850,11 @@ strreplace(char* dest, char* replace, int sub_length, int iReplaceLength, int de
  */
 
 static void
-stgopt(char* sStart, char* sEnd, int (*funcOutPut)(char* sStr))
+stgopt(char* psStart, char* psEnd, int (*funcOutPut)(char* sStr))
 {
 	char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1];
 
-	char *sDebut = sStart; /* save original sStart of the buffer */
+	char *sDebut = psStart; /* save original psStart of the buffer */
 
 	// printf("sDebut = %s\n", sDebut);
 
@@ -871,19 +871,19 @@ stgopt(char* sStart, char* sEnd, int (*funcOutPut)(char* sStr))
 		do
 		{
 			matches = 0;
-			sStart = sDebut;
+			psStart = sDebut;
 
-			while(sStart < sEnd)
+			while(psStart < psEnd)
 			{
 				seq = 0;
 
-				while(g_pSequences[seq].sFind != NULL)
+				while(g_pSequences[seq].psFind != NULL)
 				{
 					assert(seq >= 0);
 
 					if(g_pSequences[seq].iOptimizeLevel <= pc_optimize)
 					{
-						if(!*g_pSequences[seq].sFind)
+						if(!*g_pSequences[seq].psFind)
 						{
 							if(pc_optimize == sOPTIMIZE_LEVEL1)
 							{
@@ -896,9 +896,9 @@ stgopt(char* sStart, char* sEnd, int (*funcOutPut)(char* sStr))
 								continue;
 							}
 						}
-						if(matchsequence(sStart, sEnd, g_pSequences[seq].sFind, sSymbols, &iMatchLength))
+						if(matchsequence(psStart, psEnd, g_pSequences[seq].psFind, sSymbols, &iMatchLength))
 						{
-							char *sReplace = replacesequence(g_pSequences[seq].sReplace, sSymbols, &iReplaceLength);
+							char *sReplace = replacesequence(g_pSequences[seq].psReplace, sSymbols, &iReplaceLength);
 
 							/* If the replacement is bigger than the original section, we may need
 							* to "grow" the staging buffer. This is quite complex, due to the
@@ -912,9 +912,9 @@ stgopt(char* sStart, char* sEnd, int (*funcOutPut)(char* sStr))
 
 							if(iMatchLength >= iReplaceLength)
 							{
-								strreplace(sStart, sReplace, iMatchLength, iReplaceLength, (int)(sEnd - sStart));
+								strreplace(psStart, sReplace, iMatchLength, iReplaceLength, (int)(psEnd - psStart));
 
-								sEnd -= iMatchLength - iReplaceLength;
+								psEnd -= iMatchLength - iReplaceLength;
 
 								free(sReplace);
 
@@ -934,28 +934,28 @@ stgopt(char* sStart, char* sEnd, int (*funcOutPut)(char* sStr))
 						}
 					}
 
-					// assert(g_pSequences[seq].sFind == NULL || (*g_pSequences[seq].sFind == '\0' && pc_optimize == sOPTIMIZE_DEFAULT));
+					// assert(g_pSequences[seq].psFind == NULL || (*g_pSequences[seq].psFind == '\0' && pc_optimize == sOPTIMIZE_DEFAULT));
 
 					seq++;
 				}
 
-				sStart += strlen(sStart) + 1; /* to next string */
-			} /* while(sStart<sEnd) */
+				psStart += strlen(psStart) + 1; /* to next string */
+			} /* while(psStart<psEnd) */
 		}
 		while(matches > 0);
 	}
 	/* if(pc_optimize>sOPTIMIZE_NONE && sc_status==statWRITE) */
 
-	for(sStart = sDebut; sStart < sEnd; sStart += strlen(sStart) + 1)
+	for(psStart = sDebut; psStart < psEnd; psStart += strlen(psStart) + 1)
 	{
-		funcOutPut(sStart);
+		funcOutPut(psStart);
 	}
 
 	// if(pc_optimize == sOPTIMIZE_LEVEL3)
 	// {
 	// 	ke::SaveAndSet<int> disable_phopt(&pc_optimize, sOPTIMIZE_LEVEL2);
 
-	// 	stgopt(sDebut, sEnd, funcOutPut);
+	// 	stgopt(sDebut, psEnd, funcOutPut);
 	// }
 }
 

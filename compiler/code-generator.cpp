@@ -744,20 +744,19 @@ StringExpr::DoEmit()
 {
 	const char *psTextStr = text_->chars();
 
-	size_t iLength = text_->length();
+	size_t nLength = text_->length();
 
-	size_t iAddr = find_string_address_for_replace(psTextStr, iLength);
+	size_t nAddr = find_string_address_for_replace(psTextStr, nLength);
 
-	if(!iAddr)
+	if(!nAddr)
 	{
-		iAddr = (litidx + glb_declared) * sizeof(cell);
+		nAddr = (litidx + glb_declared) * sizeof(cell);
 
-		litadd(psTextStr, iLength);
-
-		add_string_address(psTextStr, iLength, iAddr);
+		litadd(psTextStr, nLength);
+		add_string_address(psTextStr, nLength, nAddr);
 	}
 
-	ldconst(static_cast<cell>(iAddr), sPRI);
+	ldconst(static_cast<cell>(nAddr), sPRI);
 }
 
 void

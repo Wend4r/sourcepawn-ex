@@ -317,8 +317,8 @@ enum class TerminatorPolicy { Newline, NewlineOrSemicolon, Semicolon };
 
 int require_newline(TerminatorPolicy policy);
 
-size_t find_string_address(const char *psString, size_t iLength);
+size_t find_string_address(const char *psString, size_t nLength);
 
-size_t find_string_address_for_replace(const char *psString, size_t iLength);
+size_t find_string_address_for_replace(const char *psString, size_t nLength);
 
-void add_string_address(const char *psString, size_t iLength, size_t iAddress);
+void add_string_address(const char *psString, size_t nLength, size_t iAddress);

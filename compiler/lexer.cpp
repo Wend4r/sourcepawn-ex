@@ -1388,11 +1388,11 @@ command(void)
 
 						// Remove next line symbol.
 						{
-							std::size_t iFoundIndex = pc_deprecate.find('\n');
+							std::size_t nFoundIndex = pc_deprecate.find('\n');
 
-							if(iFoundIndex != std::string::npos)
+							if(nFoundIndex != std::string::npos)
 							{
-								pc_deprecate[iFoundIndex] = '\0';
+								pc_deprecate[nFoundIndex] = '\0';
 							}
 						}
 
@@ -3501,41 +3501,41 @@ require_newline(TerminatorPolicy policy)
 }
 
 size_t
-find_string_address(const char *psString, size_t iLength)
+find_string_address(const char *psString, size_t nLength)
 {
-	sp::CharsAndLength Key(psString, iLength);
+	sp::CharsAndLength aKey(psString, nLength);
 
-	auto resResult = s_mapStringsCache.find(Key);
+	auto resResult = s_mapStringsCache.find(aKey);
 
 	return resResult.found() ? resResult->value : 0;
 }
 
 size_t
-find_string_address_for_replace(const char *psString, size_t iLength)
+find_string_address_for_replace(const char *psString, size_t nLength)
 {
-	opt_data_count += static_cast<cell>(iLength);
+	opt_data_count += static_cast<cell>(nLength);
 
-	return find_string_address(psString, iLength);
+	return find_string_address(psString, nLength);
 }
 
 void
-add_string_address(const char *psString, size_t iLength, size_t iAddress)
+add_string_address(const char *psString, size_t nLength, size_t nAddress)
 {
-	sp::CharsAndLength Key(psString, iLength);
+	sp::CharsAndLength aKey(psString, nLength);
 
-	auto itKeyForAdd = s_mapStringsCache.findForAdd(Key);
+	auto itKeyForAdd = s_mapStringsCache.findForAdd(aKey);
 
-	s_mapStringsCache.add(itKeyForAdd, Key, iAddress);
+	s_mapStringsCache.add(itKeyForAdd, aKey, nAddress);
 }
 
 void
-litadd(const char *psString, size_t iLength)
+litadd(const char *psString, size_t nLength)
 {
 	ucell iValue = 0;
 
 	int iByte = 0;
 
-	for(size_t i = 0; i < iLength; i++)
+	for(size_t i = 0; i < nLength; i++)
 	{
 		iValue |= (unsigned char)psString[i] << (8 * iByte);
 

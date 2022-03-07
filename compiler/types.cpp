@@ -100,38 +100,38 @@ Type::prettyName() const
 const char*
 Type::kindName() const
 {
-	const char *sTypeName;
+	const char *psTypeName;
 
 	switch(kind_)
 	{
 		case TypeKind::EnumStruct:
 		{
-			sTypeName = "enum struct";
+			psTypeName = "enum struct";
 
 			break;
 		}
 		case TypeKind::Struct:
 		{
-			sTypeName = "struct";
+			psTypeName = "struct";
 
 			break;
 		}
 		case TypeKind::Methodmap:
 		{
-			sTypeName = "methodmap";
+			psTypeName = "methodmap";
 
 			break;
 		}
 		case TypeKind::Enum:
 		{
-			sTypeName = "enum";
+			psTypeName = "enum";
 
 			break;
 		}
 
 		case TypeKind::Object:
 		{
-			sTypeName = "object";
+			psTypeName = "object";
 		}
 
 		case TypeKind::Function:
@@ -140,34 +140,34 @@ Type::kindName() const
 			{
 				if(funcenum_ptr_->entries.size() > 1)
 				{
-					sTypeName = "typeset";
+					psTypeName = "typeset";
 
 					break;
 				}
 				else if(ke::StartsWith(name_, "::"))
 				{
-					sTypeName = "function";
+					psTypeName = "function";
 
 					break;
 				}
 
-				sTypeName = "typedef";
+				psTypeName = "typedef";
 
 				break;
 			}
 
-			sTypeName = "function";
+			psTypeName = "function";
 
 			break;
 		}
 
 		default:
 		{
-			sTypeName = "type";
+			psTypeName = "type";
 		}
 	}
 
-	return sTypeName;
+	return psTypeName;
 }
 
 TypeDictionary::TypeDictionary() {}

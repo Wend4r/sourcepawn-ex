@@ -30,8 +30,8 @@
 
 typedef struct
 {
-	const char *sFind;
-	const char *sReplace;
+	const char *psFind;
+	const char *psReplace;
 	int iSaveSize;         // Number of bytes saved (in bytecode)
 	int iOptimizeLevel;    // Minimum level of optimization to replace
 } SEQUENCE;

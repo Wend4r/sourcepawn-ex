@@ -760,7 +760,7 @@ generate_segment(AsmReader &reader, std::vector<cell> *code_buffer, std::vector<
 
 	do
 	{
-		const char *sInstruction = reader.next_token_on_line();
+		const char *psInstruction = reader.next_token_on_line();
 
 		// Ignore empty lines.
 		if(sInstruction)
@@ -777,7 +777,7 @@ generate_segment(AsmReader &reader, std::vector<cell> *code_buffer, std::vector<
 				continue;
 			}
 
-			const char *sPos = reader.end_of_token();
+			const char *psPos = reader.end_of_token();
 
 			int iOPIndex = findopcode(sInstruction, (sPos - sInstruction));
 

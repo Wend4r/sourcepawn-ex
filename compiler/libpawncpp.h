@@ -41,7 +41,7 @@ public:
 	 *                            it will be calculated by strlen().
 	 * @param bIsCopy             Is copy input message string.
 	 */
-	void AddMessage(const char *sMessage, int iLength = -1, bool bIsCopy = true);
+	void AddMessage(const char *psMessage, int iLength = -1, bool bIsCopy = true);
 
 	/**
 	 * Adds a format message to the buffered vector with messages.
@@ -52,7 +52,7 @@ public:
 	 * 
 	 * @return                    Size after formatting.
 	 */
-	int AddMessageFormat(const char *sFormatMessage, int iMaxLength, ...);
+	int AddMessageFormat(const char *psFormatMessage, int iMaxLength, ...);
 
 	/**
 	 * Fast prints a message from the message buffer.
@@ -74,7 +74,7 @@ public:
 private:
 	struct Message
 	{
-		const char *sText;
+		const char *psText;
 		bool bTextIsCopy;
 		int iTextLength;
 	};
@@ -99,7 +99,7 @@ CompilerMessages *GetGlobalCompilerMessages();
  * 
  * @return                    Returns system call result.
  */
-int PrintOnceMessage(unsigned short iForegroundFLags, const char *sMessage, int iLength = -1);
+int PrintOnceMessage(unsigned short iForegroundFLags, const char *psMessage, int iLength = -1);
 
 /**
  * Prints a format message.
@@ -112,7 +112,7 @@ int PrintOnceMessage(unsigned short iForegroundFLags, const char *sMessage, int 
  * 
  * @return                    Returns system call.
  */
-int PrintOnceMessageFormat(unsigned short iForegroundFLags, const char *sFormatMessage, int iMaxLength, ...);
+int PrintOnceMessageFormat(unsigned short iForegroundFLags, const char *psFormatMessage, int iMaxLength, ...);
 
 /**
  * Returns the current epoch time in milliseconds.

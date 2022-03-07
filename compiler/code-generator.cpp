@@ -742,7 +742,7 @@ TaggedValueExpr::DoEmit()
 void
 StringExpr::DoEmit()
 {
-	const char *sTextStr = text_->chars();
+	const char *psTextStr = text_->chars();
 
 	size_t iLength = text_->length();
 

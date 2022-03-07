@@ -405,7 +405,7 @@ checkval_string(const value* sym1, const value* sym2)
 const char*
 type_to_name(int iTag)
 {
-	const char *sName = "<unknown type>";
+	const char *psName = "<unknown type>";
 
 	if(!iTag)
 	{
@@ -443,7 +443,7 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 
 	size_t nTypeDefLength = 0;
 
-	const char *sTagTypeName = type_to_name(iTag);
+	const char *psTagTypeName = type_to_name(iTag);
 
 	if(bIsConst)
 	{

@@ -48,7 +48,7 @@ stringlist* insert_sourcefile(char* string);
 char* get_sourcefile(int index);
 void delete_sourcefiletable(void);
 void restore_for_os_path(char *sFilePath);
-stringlist *insert_inputfile(const char *sFilePath);
+stringlist *insert_inputfile(const char *psFilePath);
 char* get_inputfile(int index);
 void delete_inputfiletable(void);
 stringlist* insert_autolist(const char* string);

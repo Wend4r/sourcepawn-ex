@@ -308,7 +308,7 @@ symbol* addvariable2(const char* name, cell addr, int ident, int vclass, int tag
 					 int numdim, int idxtag[], int slength);
 symbol* addvariable3(declinfo_t* decl, cell addr, int vclass, int slength);
 void declare_methodmap_symbol(methodmap_t* map, bool can_redef);
-void declare_handle_intrinsics(const char *sUsingName);
+void declare_handle_intrinsics(const char *psUsingName);
 int getlabel(void);
 char* itoh(ucell val);
 std::string get_token_string(int tok_id);
@@ -317,8 +317,8 @@ enum class TerminatorPolicy { Newline, NewlineOrSemicolon, Semicolon };
 
 int require_newline(TerminatorPolicy policy);
 
-size_t find_string_address(const char *sString, size_t iLength);
+size_t find_string_address(const char *psString, size_t iLength);
 
-size_t find_string_address_for_replace(const char *sString, size_t iLength);
+size_t find_string_address_for_replace(const char *psString, size_t iLength);
 
-void add_string_address(const char *sString, size_t iLength, size_t iAddress);
+void add_string_address(const char *psString, size_t iLength, size_t iAddress);

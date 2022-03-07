@@ -392,9 +392,9 @@ void restore_for_os_path(char *sFilePath)
 /* ----- parsed file list (explicit + included files) ------------ */
 static stringlist inputfiles;
 
-stringlist *insert_inputfile(const char *sFilePath)
+stringlist *insert_inputfile(const char *psFilePath)
 {
-	return sc_status != statFIRST ? insert_string(&inputfiles, sFilePath) : NULL;
+	return sc_status != statFIRST ? insert_string(&inputfiles, psFilePath) : NULL;
 }
 
 char*

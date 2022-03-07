@@ -42,7 +42,7 @@
 #	include <sys/types.h>
 #endif
 
-static int OutputMessage(unsigned short iForegroundFLags, const char *sOutputText, int iOutputLength)
+static int OutputMessage(unsigned short iForegroundFLags, const char *psOutputText, int iOutputLength)
 {
 	int iResult = 0;
 
@@ -75,7 +75,7 @@ CompilerMessages::CompilerMessages()
 	this->m_iTotalStringLength = 0;
 }
 
-void CompilerMessages::AddMessage(const char *sMessage, int iLength, bool bIsCopy)
+void CompilerMessages::AddMessage(const char *psMessage, int iLength, bool bIsCopy)
 {
 	if(iLength == -1)
 	{
@@ -103,7 +103,7 @@ void CompilerMessages::AddMessage(const char *sMessage, int iLength, bool bIsCop
 	this->m_iTotalStringLength += iLength;
 }
 
-int CompilerMessages::AddMessageFormat(const char *sFormatMessage, int iMaxLength, ...)
+int CompilerMessages::AddMessageFormat(const char *psFormatMessage, int iMaxLength, ...)
 {
 	char *sReadyMessage = new char[iMaxLength];
 
@@ -205,12 +205,12 @@ CompilerMessages *GetGlobalCompilerMessages()
 	return pConsole;
 }
 
-int PrintOnceMessage(unsigned short iForegroundFLags, const char *sMessage, int iLength)
+int PrintOnceMessage(unsigned short iForegroundFLags, const char *psMessage, int iLength)
 {
 	return OutputMessage(iForegroundFLags, sMessage, iLength != -1 ? iLength : static_cast<int>(strlen(sMessage)));
 }
 
-int PrintOnceMessageFormat(unsigned short iForegroundFLags, const char *sFormatMessage, int iMaxLength, ...)
+int PrintOnceMessageFormat(unsigned short iForegroundFLags, const char *psFormatMessage, int iMaxLength, ...)
 {
 	int iResult = -1;
 

@@ -3501,7 +3501,7 @@ require_newline(TerminatorPolicy policy)
 }
 
 size_t
-find_string_address(const char *sString, size_t iLength)
+find_string_address(const char *psString, size_t iLength)
 {
 	sp::CharsAndLength Key(sString, iLength);
 
@@ -3511,7 +3511,7 @@ find_string_address(const char *sString, size_t iLength)
 }
 
 size_t
-find_string_address_for_replace(const char *sString, size_t iLength)
+find_string_address_for_replace(const char *psString, size_t iLength)
 {
 	opt_data_count += static_cast<cell>(iLength);
 
@@ -3519,9 +3519,9 @@ find_string_address_for_replace(const char *sString, size_t iLength)
 }
 
 void
-add_string_address(const char *sString, size_t iLength, size_t iAddress)
+add_string_address(const char *psString, size_t iLength, size_t iAddress)
 {
-	sp::CharsAndLength Key(sString, iLength);
+	sp::CharsAndLength Key(psString, iLength);
 
 	auto KeyForAdd = s_sChacheStrings.findForAdd(Key);
 
@@ -3529,7 +3529,7 @@ add_string_address(const char *sString, size_t iLength, size_t iAddress)
 }
 
 void
-litadd(const char *sString, size_t iLength)
+litadd(const char *psString, size_t iLength)
 {
 	ucell iValue = 0;
 
@@ -4448,7 +4448,7 @@ declare_methodmap_symbol(methodmap_t* map, bool can_redef)
 }
 
 void
-declare_handle_intrinsics(const char *sUsingName)
+declare_handle_intrinsics(const char *psUsingName)
 {
 	// Must not have an existing Handle methodmap.
 	if(methodmap_find_by_name(sUsingName))

@@ -658,7 +658,7 @@ br_find_etc_dir (const char *default_etc_dir)
  * @returns A newly-allocated string. This string should be freed when no longer needed.
  */
 char *
-br_strcat (const char *str1, const char *str2)
+br_strcat (const char *pstr1, const char *pstr2)
 {
 	char *result;
 	size_t len1, len2;
@@ -703,7 +703,7 @@ br_build_path (const char *dir, const char *file)
 
 /* Emulates glibc's strndup() */
 static char *
-br_strndup (const char *str, size_t size)
+br_strndup (const char *pstr, size_t size)
 {
 	char *result = (char *) NULL;
 	size_t len;

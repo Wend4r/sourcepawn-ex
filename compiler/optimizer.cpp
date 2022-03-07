@@ -235,7 +235,7 @@ filewrite(char* sStr)
  *                     staging (referred to only)
  */
 void
-stgwrite(const char* st)
+stgwrite(const char *pst)
 {
 	int st_len = static_cast<int>(strlen(st));
 
@@ -550,12 +550,12 @@ phopt_cleanup(void)
 #endif
 
 static int
-matchsequence(const char* sStart, const char* sEnd, const char* sPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1], int *iMatchLength)
+matchsequence(const char *psStart, const char *psEnd, const char *psPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1], int *iMatchLength)
 {
 	int iVar, i;
 	char sStr[MAX_ALIAS + 1];
 
-	const char* sStartOrg = sStart;
+	const char *psStartOrg = sStart;
 
 	cell iValue;
 	char* sPtr;
@@ -704,9 +704,9 @@ matchsequence(const char* sStart, const char* sEnd, const char* sPattern, char s
 }
 
 static char*
-replacesequence(const char *sPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1], int *iReplaceLength)
+replacesequence(const char *psPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1], int *iReplaceLength)
 {
-	const char* sLinePtr;
+	const char *psLinePtr;
 	int iVar;
 	char* buffer;
 
@@ -719,7 +719,7 @@ replacesequence(const char *sPattern, char sSymbols[MAX_OPT_VARS][MAX_ALIAS + 1]
 	assert(iReplaceLength != NULL);
 
 	*iReplaceLength = 0;
-	sLinePtr = sPattern;
+	sLinePtr = psPattern;
 
 	while(*sLinePtr)
 	{

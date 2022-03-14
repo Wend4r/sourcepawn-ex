@@ -27,6 +27,7 @@
 // name, a "." to separate it, a "~" for constructors, or a ".get/.set" for
 // accessors.
 #define METHOD_NAMEMAX sNAMEMAX * 2 + 6
+#define FUNCTAGS_MAX (sNAMEMAX + 15) * 50 /* function int () +++ */
 
 class Type;
 

@@ -539,13 +539,13 @@ int parse_decl(declinfo_t* decl, int flags);
 
 const char* type_to_name(int iTag);
 
-size_t info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int iArrayLevel, bool bIsConst, char sTypeDef[sNAMEMAX + 1]);
-size_t symbol_to_type_definition(const symbol *pSymbol, char sTypeDef[sNAMEMAX + 1]);
-size_t value_to_type_definition(const value *pValue, char sTypeDef[sNAMEMAX + 1]);
-size_t arginfo_to_type_definition(const arginfo *pArgInfo, char sTypeDef[sNAMEMAX + 1]);
-size_t funcarg_to_type_definition(const funcarg_t *pFuncArg, char sTypeDef[sNAMEMAX + 1]);
-size_t functag_args_to_definition(const functag_t *pFuncTag, char sArgDef[sNAMEMAX + 1]);
-size_t functag_info_to_definition(const Type *pFunction, char sFuncTagDef[sNAMEMAX + 1]);
+size_t info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX], int iArrayLevel, bool bIsConst, char *psTypeDef, size_t nMaxLength);
+size_t symbol_to_type_definition(const symbol *pSymbol, char *psTypeDef, size_t nMaxLength);
+size_t value_to_type_definition(const value *pValue, char *psTypeDef, size_t nMaxLength);
+size_t arginfo_to_type_definition(const arginfo *pArgInfo, char *psTypeDef, size_t nMaxLength);
+size_t funcarg_to_type_definition(const funcarg_t *pFuncArg, char *psTypeDef, size_t nMaxLength);
+size_t functag_args_to_definition(const functag_t *pFuncTag, char *psArgDef, size_t nMaxLength);
+size_t functag_info_to_definition(const Type *pFunction, char *psFuncTagDef, size_t nMaxLength);
 
 bool parse_new_typename(const token_t* tok, int* tagp);
 

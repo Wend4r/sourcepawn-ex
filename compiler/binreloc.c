@@ -651,29 +651,29 @@ br_find_etc_dir (const char *default_etc_dir)
  * Utility functions
  ***********************/
 
-/** Concatenate str1 and str2 to a newly allocated string.
+/** Concatenate psz1 and psz2 to a newly allocated string.
  *
- * @param str1 A string.
- * @param str2 Another string.
+ * @param psz1 A string.
+ * @param psz2 Another string.
  * @returns A newly-allocated string. This string should be freed when no longer needed.
  */
 char *
-br_strcat (const char *pstr1, const char *pstr2)
+br_strcat (const char *psz1, const char *psz2)
 {
 	char *result;
 	size_t len1, len2;
 
-	if(str1 == NULL)
-		str1 = "";
-	if(str2 == NULL)
-		str2 = "";
+	if(psz1 == NULL)
+		psz1 = "";
+	if(psz2 == NULL)
+		psz2 = "";
 
-	len1 = strlen (str1);
-	len2 = strlen (str2);
+	len1 = strlen (psz1);
+	len2 = strlen (psz2);
 
 	result = (char *) malloc (len1 + len2 + 1);
-	memcpy (result, str1, len1);
-	memcpy (result + len1, str2, len2);
+	memcpy (result, psz1, len1);
+	memcpy (result + len1, psz2, len2);
 	result[len1 + len2] = '\0';
 
 	return result;
@@ -703,22 +703,22 @@ br_build_path (const char *dir, const char *file)
 
 /* Emulates glibc's strndup() */
 static char *
-br_strndup (const char *pstr, size_t size)
+br_strndup (const char *psz, size_t size)
 {
 	char *result = (char *) NULL;
 	size_t len;
 
-	if(str == (const char *) NULL)
+	if(psz == (const char *) NULL)
 		return (char *) NULL;
 
-	len = strlen (str);
+	len = strlen (psz);
 	if(len == 0)
 		return strdup ("");
 	if(size > len)
 		size = len;
 
 	result = (char *) malloc (len + 1);
-	memcpy (result, str, size);
+	memcpy (result, psz, size);
 	result[size] = '\0';
 	return result;
 }

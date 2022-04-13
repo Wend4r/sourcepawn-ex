@@ -1064,7 +1064,7 @@ parseoptions(int argc, char** argv, char* oname, char* ename, char* pname)
 
 		if(chdir(ptr))
 		{
-			fprintf(stderr, "chdir failed: %s\n", strerror(errno));
+			fprintf(stderr, "chdir '%s' failed: %s\n", ptr, strerror(errno));
 			exit(1);
 		}
 	}

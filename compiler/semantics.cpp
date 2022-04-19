@@ -1494,7 +1494,7 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 
 		case iARRAYCELL:
 		{
-			if(base_val.sym && base_val.sym->dim.array.level)
+			if(base_val.sym && base_val.sym->dim.array.length)
 			{
 				Type *pType = gTypes.find(base_val.sym->x.tags.index);
 

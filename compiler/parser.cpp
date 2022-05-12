@@ -1297,6 +1297,11 @@ setconstants(void)
 	add_constant("__LINE__", 0, sGLOBAL, 0);
 	add_constant("__FUNCTION__", 0, sGLOBAL, 0);
 
+	if(pc_developer_mode)
+	{
+		add_constant("__emit_enabled", 1, sGLOBAL, 0);
+	}
+
 	// litadd
 
 	debug = 0;

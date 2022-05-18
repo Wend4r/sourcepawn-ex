@@ -601,11 +601,11 @@ functag_info_to_definition(const Type *pFunction, char *sFuncTagDef, size_t nMax
 {
 	size_t nDefLength = 0;
 
-	funcenum_t *pE = pFunction->toFunction();
+	funcenum_t *pE = pFunction->asFunction();
 
 	if(pE)
 	{
-		for(auto pFuncTag : pE->entries)
+		for(functag_t *pFuncTag : pE->entries)
 		{
 			if(nDefLength)
 			{

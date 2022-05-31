@@ -276,7 +276,10 @@ ErrorReport::create_va(int iErrorNumber, int fileno, int lineno, int colno, va_l
 	char msg[2048];
 
 	ke::SafeVsprintf(msg, sizeof(msg), format, ap);
-	ke::SafeSprintf(msg, sizeof(msg), "%s(%d) : %s %03d: %s", report.filename, report.lineno, prefix, report.number, msg); // Is MS style (old).
+
+	char fill[2048];
+
+	ke::SafeSprintf(fill, sizeof(fill), "%s(%d) : %s %03d: %s", report.filename, report.lineno, prefix, report.number, msg); // Is MS style (old).
 
 	/**
 	 * "pattern":
@@ -291,7 +294,7 @@ ErrorReport::create_va(int iErrorNumber, int fileno, int lineno, int colno, va_l
 	 */
 	// ke::SafeSprintf(full, sizeof(full), "%s:%d:%d: %s %03d: %s", report.filename, report.lineno, report.colno + 1 /* Started by 0 */, prefix, report.number, msg);
 
-	report.message = msg;
+	report.message = fill;
 
 	return report;
 }

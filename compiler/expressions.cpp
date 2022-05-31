@@ -464,8 +464,14 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 			break;
 		}
 
-		case iARRAY:
 		case iREFARRAY:
+		{
+			nTypeDefLength += ke::SafeStrcpy(&psTypeDef[nTypeDefLength], nMaxLength - nTypeDefLength, " &");
+
+			break;
+		}
+
+		case iARRAY:
 		case iARRAYCELL:
 		case iARRAYCHAR:
 		{

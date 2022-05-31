@@ -464,13 +464,8 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 			break;
 		}
 
+		case iREFERENCE:
 		case iREFARRAY:
-		{
-			nTypeDefLength += ke::SafeStrcpy(&psTypeDef[nTypeDefLength], nMaxLength - nTypeDefLength, " &");
-
-			break;
-		}
-
 		case iARRAY:
 		case iARRAYCELL:
 		case iARRAYCHAR:
@@ -493,6 +488,10 @@ info_to_type_definition(int iIdent, int iTag, const int iArrayLength[sDIMEN_MAX]
 						nTypeDefLength += ke::SafeStrcpy(&psTypeDef[nTypeDefLength], nMaxLength - nTypeDefLength, "[]");
 					}
 				}
+			}
+			else
+			{
+				nTypeDefLength += ke::SafeStrcpy(&psTypeDef[nTypeDefLength], nMaxLength - nTypeDefLength, " &");
 			}
 
 			break;

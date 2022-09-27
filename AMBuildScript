@@ -70,10 +70,13 @@ class Config(object):
 
       have_gcc = cxx.family == 'gcc'
       have_clang = cxx.family == 'clang' or cxx.family == 'emscripten'
+
       if have_clang or have_gcc:
         cxx.cflags += ['-fvisibility=hidden']
         cxx.cxxflags += ['-fvisibility-inlines-hidden']
-        if have_clang or (have_gcc and cxx.version >= '4.7'):
+        if have_clang and cxx.version >= '4.6':
+          cxx.cxxflags += ['-Wno-unused-but-set-variable']
+        if have_clang or (have_gcc and decodcxx.versione_version >= '4.7'):
           cxx.cxxflags += ['-Wno-delete-non-virtual-dtor']
         if not (have_gcc and cxx.version <= 6.3):
           cxx.cxxflags += ['-Wno-unused-private-field']

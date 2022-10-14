@@ -303,9 +303,8 @@ delete_sourcefiletable(void)
 
 void restore_for_os_path(char *sFilePath)
 {
-	size_t nLength = 0;
-
 #if defined __WIN32__ || defined _WIN32 || defined __MSDOS__
+	size_t nLength = 0;
 
 	// bool bIsFoundSpace = false;
 
@@ -337,55 +336,6 @@ void restore_for_os_path(char *sFilePath)
 	// }
 
 	sFilePath[nLength] = '\0';
-
-#else // Unix systems
-
-	size_t nCountSpaces = 0;
-
-	while(sFilePath[nLength])
-	{
-		if(sFilePath[nLength] == '\\')
-		{
-			sFilePath[nLength++] = '/';
-
-			continue;
-		}
-		else if(sFilePath[nLength] == ' ')
-		{
-			nCountSpaces++;
-		}
-
-		nLength++;
-	}
-
-	if(nCountSpaces)
-	{
-		nLength += nCountSpaces;
-
-		size_t i = 0;
-
-		while(i != nLength)
-		{
-			if(sFilePath[i] == ' ')
-			{
-				char sCopyBuffer[_MAX_PATH];
-
-				// nLength++;
-
-				strncpy(sCopyBuffer, &sFilePath[i], sizeof(sCopyBuffer) - i);
-
-				sFilePath[i++] = '\\';
-				nLength++;
-
-				strncpy(&sFilePath[i], sCopyBuffer, nLength - i);
-			}
-
-			i++;
-		}
-
-		sFilePath[i] = '\0';
-	}
-
 #endif
 }
 

@@ -192,6 +192,7 @@ class Config(object):
         cxx.cflags += ['-mmacosx-version-min=10.7']
         cxx.linkflags += ['-stdlib=libc++']
         cxx.linkflags += ['-mmacosx-version-min=10.7']
+        cxx.defines += ['_POSIX_C_SOURCE', '_DARWIN_C_SOURCE']
       elif cxx.target.platform == 'windows':
         cxx.defines += ['WIN32', '_WINDOWS']
         cxx.cxxdefines += ['NOMINMAX']

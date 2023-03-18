@@ -1604,10 +1604,19 @@ FieldAccessExpr::AnalyzeWithOptions(bool from_call)
 		return false;
 	}
 
-	val_.ident = iFUNCTN;
-	val_.sym = method_->target;
+	if(method_->target)
+	{
+		val_.ident = iFUNCTN;
+		val_.sym = method_->target;
 
-	markusage(method_->target, uREAD);
+		markusage(method_->target, uREAD);
+	}
+	else
+	{
+		error(pos_, 105, map->name, method_->name);
+
+		return false;
+	}
 
 	return true;
 }
